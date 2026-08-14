@@ -1,0 +1,16 @@
+{
+  "name": "planbee",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "mobile:install": "npm --prefix mobile install",
+    "mobile:start": "npm --prefix mobile start",
+    "mobile:ios": "npm --prefix mobile run ios",
+    "mobile:lint": "npm --prefix mobile run lint",
+    "mobile:test": "npm --prefix mobile test -- --runInBand",
+    "server:start": "./server/gradlew -p server bootRun",
+    "server:test": "./server/gradlew -p server test",
+    "test": "npm run mobile:test && npm run server:test"
+  },
+  "engines": {"node": ">=22.11.0 <23"}
+}

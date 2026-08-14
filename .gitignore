@@ -1,0 +1,14 @@
+.DS_Store
+.idea/
+.vscode/
+*.iml
+.env
+.env.*
+!.env.example
+mobile/node_modules/
+mobile/ios/Pods/
+mobile/ios/build/
+mobile/android/.gradle/
+mobile/android/app/build/
+server/.gradle/
+server/build/
