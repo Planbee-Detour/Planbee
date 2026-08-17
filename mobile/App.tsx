@@ -1,6 +1,8 @@
 import React, {useCallback, useEffect, useState} from 'react';
 import {ActivityIndicator, Pressable, StatusBar, StyleSheet, Text, View} from 'react-native';
-import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
+import {SafeAreaView} from 'react-native-safe-area-context';
+
+import {AppProviders} from './src/app/providers';
 
 const API_BASE_URL = 'http://localhost:8080';
 type ApiState = 'loading' | 'online' | 'offline';
@@ -58,10 +60,10 @@ function HomeScreen() {
 
 function App() {
   return (
-    <SafeAreaProvider>
+    <AppProviders>
       <StatusBar barStyle="dark-content" backgroundColor="#FFF9ED" />
       <HomeScreen />
-    </SafeAreaProvider>
+    </AppProviders>
   );
 }
 

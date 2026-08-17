@@ -5,6 +5,15 @@
 .env
 .env.*
 !.env.example
+
+# 에이전트 CLI 로컬 생성물 — `make harness` 가 다시 만든다.
+# git 에 올라가는 원본은 AGENTS.md 와 .agents/ 뿐이다.
+/CLAUDE.md
+/GEMINI.md
+/.claude/
+/.gemini/
+/.codex/
+
 mobile/node_modules/
 mobile/ios/Pods/
 mobile/ios/build/

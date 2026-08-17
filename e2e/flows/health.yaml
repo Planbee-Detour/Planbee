@@ -1,0 +1,21 @@
+# 앱 <-> 서버 연동 확인. 목킹이 전혀 없는 유일한 계층이다.
+#
+# 이 플로우가 통과한다는 것은:
+#   앱 번들 → 네이티브 링크 → 네트워크 → 실제 API → 실제 PostgreSQL 까지 전 구간이 살아있다는 뜻.
+#
+# 엣지케이스는 여기 넣지 않는다. 느리고 잘 깨지는 테스트가 쌓이면 하네스 전체가 신뢰를 잃는다.
+# (AGENTS.md 절대규칙 5 / integration-tester 역할 정의)
+appId: org.reactjs.native.example.Planbee
+name: 서버 연동 확인
+---
+- launchApp:
+    clearState: true
+
+# 앱이 실행되고 첫 화면이 보인다
+- assertVisible: 'Planbee'
+
+# 실제 API 를 호출한 결과가 화면에 반영된다
+- tapOn: '다시 확인'
+- assertVisible:
+    text: '서버 연결됨'
+    timeout: 10000

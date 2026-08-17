@@ -7,8 +7,9 @@
     "mobile:start": "npm --prefix mobile start",
     "mobile:ios": "npm --prefix mobile run ios",
     "mobile:lint": "npm --prefix mobile run lint",
+    "mobile:typecheck": "npm --prefix mobile run typecheck",
     "mobile:test": "npm --prefix mobile test -- --runInBand",
-    "server:start": "./server/gradlew -p server bootRun",
+    "server:start": "sh -c 'set -a; [ -f .env ] && . ./.env; set +a; ./server/gradlew -p server bootRun'",
     "server:test": "./server/gradlew -p server test",
     "test": "npm run mobile:test && npm run server:test"
   },
