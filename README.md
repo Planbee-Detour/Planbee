@@ -87,7 +87,6 @@ Maestro 설치: `curl -Ls https://get.maestro.mobile.dev | bash`
 |---|---|
 | [HARNESS.md](HARNESS.md) | 하네스 구성 상세 — 무엇을 왜 그렇게 만들었는지 |
 | [WORKFLOW.md](WORKFLOW.md) | 개발 워크플로우 — 어떤 순서와 명령으로 사용하는지 |
-| [TODO.md](TODO.md) | 미완료 항목 — 아직 못 한 것과 의도적으로 미룬 것 |
 
 ## 에이전트 하네스
 
