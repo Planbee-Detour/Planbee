@@ -181,6 +181,33 @@ tools: Read, Write, Edit, Bash, Grep, Glob
 `needsShell` 은 벤더 중립 개념입니다 — 생성기가 이걸 Claude 의 `tools` 목록으로 번역합니다.
 CLI 를 추가할 때 manifest 는 그대로 두고 생성기에 출력 형식만 추가하면 됩니다.
 
+역할별로 도구가 더 필요하면 `mcpTools` 에 적습니다. 기본 목록 뒤에 덧붙습니다.
+
+```json
+{
+  "name": "ux-designer",
+  "needsShell": false,
+  "mcpTools": ["mcp__pencil__get_app_state", "mcp__pencil__execute"]
+}
+```
+
+`docs/design/planbee.pen` 은 암호화 파일이라 `Read`/`Grep` 으로 열리지 않고 pencil MCP
+도구로만 다룰 수 있습니다 (`docs/conventions/common.md` C-9). 그래서 pen 을 그리는
+**ux-designer** 에게는 pencil 도구 4개를, pen 을 참고해 화면을 만드는
+**mobile-developer** 에게는 읽기에 필요한 2개를 붙였습니다. pencil 에는 읽기 전용
+도구가 따로 없어 `execute` 하나로 읽기와 쓰기를 겸하므로, mobile-developer 의
+"pen 은 읽기 전용" 제약은 도구가 아니라 역할 문서가 강제합니다.
+
+권한 설정(`.claude/settings.json`)도 같이 생성됩니다 — pencil 도구 4개는 `allow`,
+`Read(./**/*.pen)` 은 `deny`. 암호화 파일을 일반 도구로 여는 사고를 기계로 막습니다.
+
+**제약 — pencil MCP 는 에디터에 파일이 열려 있어야 동작합니다.** 서버가 VS Code
+Pencil 확장이라 `.pen` 탭이 닫혀 있으면 `A file needs to be open in the editor` 로
+실패합니다. 서브에이전트는 탭을 열 수 없으므로, pen 작업을 시킬 때는 사람이 먼저
+`code docs/design/planbee.pen` 으로 열어 둬야 합니다. 그리고 편집 결과는 에디터
+버퍼에만 남으므로 **`Cmd+S` 를 눌러야 디스크에 저장됩니다** — 저장 전에는 `git diff`
+에 아무것도 안 잡힙니다.
+
 ### 디스패처
 
 ```bash
@@ -249,9 +276,9 @@ AGENT_CLI=codex ./scripts/agent.sh server-reviewer "schedule 기능 리뷰"
 결과만 돌려주므로, **전달은 반드시 파일로** 이뤄집니다.
 
 ```text
-docs/features/<기능>/
+docs/features/<기능>/   # 폴더 이름 = 기능 이름 (로그인 → docs/features/login/)
 ├── PRD.md          # product-manager  — 유저 스토리 + 인수조건(AC-1, AC-2...)
-├── design.md       # ux-designer      — 화면·상태·문구
+├── design.md       # ux-designer      — UI/UX 명세: 화면·상태·문구
 ├── contract.yaml   # tech-lead        — OpenAPI (구현보다 먼저)
 ├── status.md       # 전원             — 파이프라인 상태 머신
 ├── review/         # *-reviewer       — 리뷰 리포트
@@ -619,12 +646,32 @@ E2E에 엣지케이스를 넣기 시작하면 느리고 깨지기 쉬운 테스�
 | 용도 | 라이브러리 |
 |---|---|
 | 영속성 | Spring Data JPA + PostgreSQL 17 |
+| 동적 쿼리 | QueryDSL 5.1.0 (`jakarta` classifier, 버전은 Spring Boot BOM 관리) |
 | 마이그레이션 | Flyway (`ddl-auto=validate` — 스키마 소유자는 Flyway) |
 | API 문서 | springdoc-openapi 2.8.6 |
 | 보안 | Spring Security + oauth2-resource-server |
 | 구조 검증 | ArchUnit 1.4.1 |
 | 포맷 | Spotless 7.0.4 |
 | 테스트 | JUnit 5, Testcontainers, RestAssured, JaCoCo |
+
+#### QueryDSL 을 넣은 이유와 주의점
+
+동적 조건(필터·검색·정렬 조합)을 JPQL 문자열로 이어붙이면 컴파일이 잡아주지 못하고,
+엔티티 필드명이 바뀌어도 런타임에야 터집니다. QueryDSL 은 그걸 컴파일 오류로 만듭니다.
+선택 기준은 `docs/conventions/server.md` S-23 에 있습니다 — **단순 조회까지 QueryDSL 로
+쓰는 것은 규칙 위반**입니다.
+
+- **`jakarta` classifier 가 필수**입니다. Spring Boot 3.x 는 Jakarta EE 9+ 라
+  classifier 없는 아티팩트는 `javax.persistence` 를 참조해 컴파일되지 않습니다.
+- **버전은 고정하지 않았습니다.** Spring Boot BOM 이 `querydsl-bom` 을 import 하므로
+  3.5.16 기준 5.1.0 이 자동으로 잡힙니다. 부트를 올릴 때 함께 올라갑니다.
+- **Q타입은 생성물입니다.** `annotationProcessor` 가
+  `server/build/generated/sources/annotationProcessor/java/main/` 에 만들고,
+  Gradle 이 이 경로를 main 소스셋에 자동 등록하며 `clean` 이 `build/` 째로 지웁니다.
+  별도 `sourceSets` 설정을 넣지 않은 이유입니다. `build/` 는 이미 `.gitignore` 대상이라
+  커밋될 일이 없습니다. (server.md S-24)
+- **엔티티가 하나도 없으면 Q타입도 생성되지 않습니다.** 현재 저장소 상태가 그렇습니다 —
+  첫 엔티티가 들어오는 커밋에서 처음으로 Q타입이 생깁니다.
 
 ### 모바일 (React Native 0.86 / React 19.2)
 

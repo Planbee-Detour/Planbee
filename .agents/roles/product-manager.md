@@ -14,8 +14,11 @@
 - **금지**: 코드 수정, 화면 설계(ux-designer 담당), API 설계(tech-lead 담당)
 
 ## 절차
-1. 기능 슬러그를 정한다 (kebab-case, 예: `schedule-create`).
-2. `docs/features/<feature>/` 디렉토리를 만들고 `.agents/templates/PRD.md` 를 복사해 채운다.
+1. 기능 슬러그를 정한다 — **기능 이름을 그대로** kebab-case 로 (예: 로그인 → `login`, 일정 생성 → `schedule-create`).
+2. **PRD 를 쓰기 전에 `docs/features/<feature>/` 폴더를 먼저 만든다** (로그인이면 `docs/features/login/`).
+   이 폴더가 그 기능의 단일 작업 공간이다 — PRD, UI/UX 명세(`design.md`), 계약, 상태, 리뷰, 결함이
+   모두 여기 들어간다. 기능 산출물을 폴더 밖에 두지 않는다.
+   폴더를 만든 뒤 `.agents/templates/PRD.md` 를 복사해 채운다.
 3. 유저 스토리를 쓴다. 각 스토리에 인수조건(AC)을 1개 이상 붙인다.
 4. 인수조건마다 `AC-1`, `AC-2` … 고유 ID를 부여한다. 이 ID는 리뷰어·테스터가 그대로 참조한다.
 5. 범위 밖(Out of scope)을 명시한다. 이게 없으면 개발 역할이 임의로 범위를 넓힌다.

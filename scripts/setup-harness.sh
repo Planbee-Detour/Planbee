@@ -53,6 +53,8 @@ body = (
 for role in manifest['roles']:
     name = role['name']
     tools = CODE_TOOLS if role['needsShell'] else DOC_TOOLS
+    if role.get('mcpTools'):
+        tools += ', ' + ', '.join(role['mcpTools'])
 
     (claude_agents / f'{name}.md').write_text(
         f"---\nname: {name}\ndescription: {role['description']}\ntools: {tools}\n---\n\n"
@@ -107,9 +109,14 @@ cat > .claude/settings.json <<'JSON'
       "Bash(git diff:*)",
       "Bash(git log:*)",
       "Bash(git show:*)",
-      "Bash(./scripts/agent.sh:*)"
+      "Bash(./scripts/agent.sh:*)",
+      "mcp__pencil__get_app_state",
+      "mcp__pencil__read_skill",
+      "mcp__pencil__get_style",
+      "mcp__pencil__execute"
     ],
     "deny": [
+      "Read(./**/*.pen)",
       "Read(./.env)",
       "Read(./.env.*)",
       "Read(./**/*.keystore)",

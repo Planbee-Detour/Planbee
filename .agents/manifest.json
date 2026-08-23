@@ -2,7 +2,8 @@
   "_comment": [
     "역할 메타데이터. scripts/setup-harness.sh 가 이 파일을 읽어 각 CLI 어댑터를 로컬에 생성한다.",
     "역할의 실제 내용은 .agents/roles/<name>.md 에 있다. 여기에는 메타데이터만 둔다.",
-    "needsShell: 명령 실행(빌드/테스트)이 필요한 역할인지. 문서만 쓰는 역할은 셸이 필요 없다."
+    "needsShell: 명령 실행(빌드/테스트)이 필요한 역할인지. 문서만 쓰는 역할은 셸이 필요 없다.",
+    "mcpTools: 그 역할에만 추가로 붙이는 MCP 도구 이름. 기본 도구 목록 뒤에 덧붙는다."
   ],
   "roles": [
     {
@@ -13,7 +14,13 @@
     {
       "name": "ux-designer",
       "needsShell": false,
-      "description": "PRD를 화면·상태·문구 명세로 구체화한다. PRD 확정 후 사용."
+      "mcpTools": [
+        "mcp__pencil__get_app_state",
+        "mcp__pencil__read_skill",
+        "mcp__pencil__get_style",
+        "mcp__pencil__execute"
+      ],
+      "description": "PRD를 화면·상태·문구 명세로 구체화하고 planbee.pen 으로 시각화한다. PRD 확정 후 사용."
     },
     {
       "name": "tech-lead",
@@ -38,6 +45,10 @@
     {
       "name": "mobile-developer",
       "needsShell": true,
+      "mcpTools": [
+        "mcp__pencil__get_app_state",
+        "mcp__pencil__execute"
+      ],
       "description": "디자인·계약대로 React Native 화면을 구현한다. mobile/src 만 수정."
     },
     {

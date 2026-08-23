@@ -357,6 +357,19 @@ X에 해당하는 npm 패키지를 설치한 뒤 다시 실행하세요.
 make format-server    # 자동 정리
 ```
 
+### 서버에서 `cannot find symbol: QSchedule` / IDE 가 Q타입을 못 찾음
+
+Q타입은 손으로 쓰는 파일이 아니라 `annotationProcessor` 가 컴파일할 때 만드는 생성물입니다
+(`server/build/generated/sources/annotationProcessor/java/main/`). 한 번 컴파일하면 생깁니다.
+
+```bash
+make test-server                  # 컴파일하면서 Q타입 생성
+```
+
+그래도 없다면 **해당 클래스에 `@Entity` 가 붙어 있는지** 확인하세요.
+`@Entity` 가 없는 클래스는 Q타입이 생성되지 않습니다.
+Q타입을 직접 만들거나 커밋하지 마세요 (`docs/conventions/server.md` S-24).
+
 ---
 
 ## 10. 커밋 전 체크리스트

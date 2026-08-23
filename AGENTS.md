@@ -7,10 +7,13 @@
 
 ## 프로젝트
 
-- **Mobile**: React Native 0.86 / React 19.2 / TypeScript, iOS 우선 (`mobile/`)
+- **Mobile**: React Native 0.86 / React 19.2 / TypeScript (`mobile/`)
+  - **배포는 iOS 최우선, 구현은 안드로이드 병행** — 플랫폼 차이는 분기해 양쪽을 모두 구현한다
+    (`docs/conventions/mobile.md` M-19·M-20). 배포 판단은 사람에게 묻는다(절대 규칙 8).
   - 내비게이션 React Navigation 7, 서버 상태 react-query 5, 클라 상태 zustand,
     폼 react-hook-form + zod, 스타일 NativeWind 4, 저장 MMKV/Keychain, 테스트 RNTL + msw
-- **Server**: Java 21 / Spring Boot 3.5.16 / Gradle (`server/`), JPA + Flyway + springdoc
+- **Server**: Java 21 / Spring Boot 3.5.16 / Gradle (`server/`), JPA + QueryDSL + Flyway + springdoc
+  - 단순 조회는 Spring Data JPA, 동적 조건·다중 조인·프로젝션은 QueryDSL (`docs/conventions/server.md` S-23)
 - **DB**: PostgreSQL 17. 로컬은 `make db-up`, 테스트는 Testcontainers. 스키마 소유자는 Flyway.
 - **인증**: 이메일 + 비밀번호. 자체 발급 JWT(HS256), 검증은 oauth2-resource-server. 기본 정책은 거부.
 - **오류 형식**: RFC 9457 ProblemDetail + `code` 확장. 모바일은 `code` 로만 분기한다.
@@ -58,14 +61,30 @@
 에이전트끼리 직접 대화하지 않습니다. 모든 전달은 파일로 이뤄집니다.
 
 ```
-docs/features/<feature>/
+docs/features/<feature>/   # <feature> = 기능 이름 (kebab-case). 로그인 기능이면 docs/features/login/
 ├── PRD.md          # product-manager
-├── design.md       # ux-designer
+├── design.md       # ux-designer 1단계 — UI/UX 명세 (화면의 동작·구성, 마크다운)
 ├── contract.yaml   # tech-lead (OpenAPI, 구현보다 먼저 확정)
 ├── status.md       # 파이프라인 상태 — 작업 시작 전 반드시 읽고, 끝나면 갱신
 ├── review/         # *-reviewer
 └── defects.md      # *-reviewer, *-tester 가 append
+
+docs/design/planbee.pen   # ux-designer 2단계 — design.md 를 시각화한 디자인 파일 (시각적 원본)
 ```
+
+**기능별 폴더가 그 기능의 단일 작업 공간입니다.** product-manager 가 PRD 를 쓸 때
+기능 이름으로 폴더를 먼저 만들고(예: 로그인 → `docs/features/login/`),
+그 기능의 산출물(PRD·UI/UX 명세·계약·상태·리뷰·결함)은 전부 그 폴더 안에 둡니다.
+UI/UX 명세 문서는 `design.md` **하나**입니다 — 같은 역할의 문서를 더 쪼개지 않습니다.
+
+ux-designer 는 **`design.md` 명세를 먼저 완료한 뒤** 그 내용을 `planbee.pen` 으로 시각화합니다.
+md 없이 pen 부터 그리지 않습니다.
+
+디자인을 구성할 때 기본으로 참고하는 파일은 **`docs/design/planbee.pen`** 입니다.
+색·타이포·간격·컴포넌트의 시각적 원본이며, `Screen 01 — Design System` 프레임에 정의된
+토큰과 컴포넌트를 먼저 확인해 재사용합니다. 거기 없는 값을 즉석에서 만들지 않습니다.
+브랜드·디자인 시스템의 서술적 기준은 `docs/design/planbee-design-prompt.md` 에 있습니다.
+`.pen` 은 암호화 파일이라 `Read`/`Grep` 으로 열리지 않습니다 — pencil MCP 도구로만 다룹니다.
 
 작업을 시작하기 전에 `status.md`를 읽고, 끝낸 뒤 해당 체크박스를 갱신하세요.
 
@@ -108,12 +127,21 @@ product-manager → ux-designer → tech-lead(계약 확정)
 7. **시크릿을 읽거나 만들지 않는다.** `.env`는 열지 말고 `.env.example`만 참조합니다.
    설정 파일(`application.properties`, `docker-compose.yml`)에 값을 직접 쓰지 않고 `${VAR}` 로만 참조합니다.
    새 환경 변수가 필요하면 `.env.example` 에 정의를 추가하세요. (`docs/conventions/common.md` C-4)
+8. **배포에 관한 판단은 사람에게 묻는다.** 이 앱은 **iOS 배포가 최우선**입니다.
+   번들 ID·팀·서명 방식, 최소 iOS 버전 상향, 새 권한(위치·알림·사진 등) 추가와 그 사용 목적 문자열,
+   심사에 영향을 주는 서드파티 SDK 도입, 앱 이름·아이콘·스크린샷, 데이터 수집 항목 신고 —
+   이런 결정은 에이전트가 임의로 하지 않습니다. 작업을 멈추고 `status.md` 에 `ASK` 와 질문을 적은 뒤
+   사람에게 넘깁니다. 구현 자체는 안드로이드에서도 성립하도록 만듭니다
+   (`docs/conventions/mobile.md` M-19·M-20).
 
 ## 코딩 규칙
 
-- `docs/conventions/common.md` — 공통 (에러 응답, 커밋, 네이밍)
+- `docs/conventions/common.md` — 공통 (에러 응답, 커밋, API 필드 명명, 데이터 조합 위치)
 - `docs/conventions/mobile.md`
 - `docs/conventions/server.md`
+
+API 경계의 두 축은 계약과 함께 확정합니다:
+**필드 이름은 `snake_case`**(C-7 / S-21 / M-17), **데이터 조합은 백엔드**(C-8 / S-22 / M-18).
 
 규칙은 파일을 만들면서 하나씩 추가합니다. 구현 중 결정이 나면 **같은 커밋에서** 규칙을 추가하세요.
 각 규칙에는 등급을 붙입니다: `[LINT]` 기계 강제 / `[MUST]` 리뷰어 차단 / `[SHOULD]` 제안만.

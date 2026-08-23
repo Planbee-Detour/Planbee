@@ -67,6 +67,63 @@ server/src/main/java/com/planbee/api/
 
 - 지연 로딩은 서비스의 트랜잭션 안에서 해결한다. 컨트롤러/직렬화 시점에 쿼리가 나가게 두지 않는다.
 
+### S-23. 조회 방식 선택 기준 — Spring Data JPA 와 QueryDSL `[MUST]`
+
+**QueryDSL 5.1.0** (Spring Boot BOM 관리 버전, `jakarta` classifier). 2026-08 도입.
+`common.QuerydslConfig` 가 `JPAQueryFactory` 빈을 등록한다.
+
+**어느 쪽을 쓰는가 — 판단 기준은 "조건이 실행 시점에 바뀌는가"다.**
+
+| 상황 | 쓰는 것 |
+|---|---|
+| 단건·단순 조건 조회, 저장, 삭제 | Spring Data JPA 메서드 (`findByIdAndOwnerId`) |
+| 조건이 고정된 짧은 조인 | `@Query` 또는 `@EntityGraph` |
+| 조건이 **실행 시점에 달라지는** 조회 (필터·검색·정렬 조합) | QueryDSL |
+| 다중 조인 + 페이징 | QueryDSL |
+| 엔티티 전체가 아니라 **일부 컬럼만** 필요한 조회 | QueryDSL 프로젝션 |
+
+- **메서드 이름으로 표현되는 조회에 QueryDSL 을 쓰지 않는다.** `findById` 를
+  `queryFactory.selectFrom(...)` 으로 다시 쓰면 코드만 길어진다.
+- **문자열을 이어붙여 JPQL 을 만들지 않는다.** 조건이 `if` 로 붙었다 떨어졌다 하면 QueryDSL 로 간다.
+  동적 조건은 `BooleanExpression` 을 반환하는 private 메서드로 쪼개고 `where(...)` 에 나열한다.
+  `where` 에 넘긴 인자가 `null` 이면 그 조건은 무시되므로, "값이 있을 때만 거는 조건"은
+  `null` 을 반환하는 메서드로 표현한다. `BooleanBuilder` 에 `if` 를 쌓지 않는다.
+- QueryDSL 코드는 **리포지토리 안에 둔다.** 서비스에서 `JPAQueryFactory` 를 직접 주입받지 않는다 (S-3).
+  Spring Data 리포지토리와 함께 쓸 때는 `<Domain>RepositoryCustom` 인터페이스 +
+  `<Domain>RepositoryImpl` 구현으로 붙인다 (이름 규칙을 지켜야 Spring Data 가 합쳐준다).
+
+### S-24. Q타입은 생성물이다 — 커밋하지 않는다 `[LINT]`
+
+- Q타입(`QSchedule` 등)은 `annotationProcessor` 가 컴파일할 때
+  `server/build/generated/sources/annotationProcessor/java/main/` 에 만든다.
+- 이 경로는 `server/.gitignore` 의 `build/` 로 이미 제외된다. **손으로 만들거나 수정하지 않는다.**
+  엔티티를 고쳤는데 Q타입이 안 맞으면 `make test-server` 로 다시 컴파일하면 된다.
+- **엔티티가 없으면 Q타입도 없다.** 새 엔티티를 추가하면 Flyway 마이그레이션도 같은 커밋에 넣는다 (S-14).
+- 등급 근거: 커밋 대상이 아닌 것이 커밋되는 사고는 `.gitignore` 가 기계로 막는다 —
+  리뷰어가 볼 필요가 없어 `[LINT]` 다.
+
+### S-25. QueryDSL 조회는 N+1 을 만들지 않는다 `[MUST]`
+
+- 연관을 함께 읽어야 하면 `join(...).fetchJoin()` 을 쓴다. 결과를 순회하며 게터로
+  지연 로딩을 터뜨리지 않는다. (S-16 과 같은 이유 — `open-in-view=false` 라 밖에서는 아예 실패한다)
+- **컬렉션 페치 조인과 페이징을 같이 쓰지 않는다.** Hibernate 가 전체를 메모리로 올린다.
+  ID 만 페이징으로 뽑고 두 번째 쿼리에서 `in` 으로 채우거나, `@BatchSize` 를 쓴다.
+- 페치 조인이 여러 컬렉션에 걸리면(`MultipleBagFetchException`) 쿼리를 나눈다.
+- 등급 근거: "쿼리가 몇 번 나갔는가"는 실행해봐야 알 수 있어 정적 검사로 못 잡는다.
+  server-tester 가 통합 테스트에서, 리뷰어가 페치 전략에서 막는다.
+
+### S-26. 화면이 일부 필드만 쓰면 프로젝션 DTO 로 받는다 `[MUST]`
+
+- `Projections.constructor(...)` 로 **전용 record 에 바로 담는다.** 엔티티를 통째로 읽어
+  서비스에서 손으로 옮겨 담지 않는다.
+- 프로젝션 대상은 `<domain>/dto/` 의 record 다. 응답 DTO 와 같은 것을 써도 되고,
+  조회 전용 형태가 필요하면 따로 만든다. 어느 쪽이든 **엔티티는 리포지토리 밖으로 나가지 않는다** (S-4).
+- `Tuple` 을 서비스나 컨트롤러로 반환하지 않는다. 필드 순서에 의존하는 코드가 되어
+  컬럼이 하나 늘면 조용히 깨진다. 리포지토리 안에서 record 로 변환한다.
+- S-22 의 화면 단위 조합은 대개 이 프로젝션으로 해결된다 — 여러 테이블의 필드를
+  한 record 로 뽑아 한 번에 내린다.
+- 등급 근거: "이 화면이 어떤 필드를 쓰는가"는 정적 검사 대상이 아니다. 리뷰어 판단 사항이다.
+
 ## 시각
 
 ### S-8. 시각은 주입받는다 `[LINT]`
@@ -111,6 +168,30 @@ server/src/main/java/com/planbee/api/
 - 코드를 추가하면 **같은 커밋에서** `docs/api/error-codes.md` 에 등록한다.
 - 카탈로그에 없는 코드를 응답에 쓰는 것은 계약 위반이다.
 - 이미 배포된 코드 문자열은 바꾸지 않는다. 앱이 그 값으로 분기한다.
+
+### S-21. 직렬화 경계에서만 `snake_case` 로 바꾼다 `[MUST]`
+
+`common.md` C-7 의 서버 측 이행 방법이다.
+
+- **Java 식별자는 `camelCase` 를 유지한다.** record 필드명을 `created_at` 으로 적지 않는다.
+- 표기 변환은 **전역 설정 한 곳**에서 한다:
+  `spring.jackson.property-naming-strategy=SNAKE_CASE`.
+  DTO 마다 `@JsonProperty` 를 손으로 붙이지 않는다 — 빠뜨리면 응답에 두 표기가 섞인다.
+  — TODO: 현재 `application.properties` 에 이 설정이 없다. Jackson 기본값은 Java 필드명을
+  그대로 노출하므로, 두 단어 이상 필드를 가진 **첫 DTO 를 만드는 커밋에서** 추가한다.
+- 쿼리 파라미터·경로 변수도 대상이다. `@RequestParam("page_size") int pageSize` 처럼
+  **바인딩 이름을 명시**한다. 이름을 생략하면 `pageSize` 로 노출된다.
+- 생성되는 스펙(`make contract-export`)의 프로퍼티 이름이 계약과 다르면 구현을 고친다. (C-5)
+
+### S-22. 응답은 화면 단위로 조합해서 내린다 `[MUST]`
+
+`common.md` C-8 의 서버 측 이행 방법이다.
+
+- 모바일이 두 번 호출해서 합쳐야 하는 응답을 만들지 않는다. 조합은 서비스의
+  트랜잭션 안에서 끝낸다 (S-6, S-16).
+- 표시용 파생값(거리, 소요시간, D-day, 상태 문구)은 서버가 계산해 응답 필드로 넣는다.
+  계산에 현재 시각이 필요하면 `Clock` 을 주입받는다 (S-8).
+- 조합 때문에 N+1 쿼리가 생기지 않게 한다. 페치 조인이나 단일 조회 쿼리로 해결한다.
 
 ## 인증 / 인가
 

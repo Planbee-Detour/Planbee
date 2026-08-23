@@ -6,7 +6,7 @@ Planbee는 iOS를 우선 지원하는 React Native 앱과 Java Spring Boot API�
 
 - Mobile: React Native 0.86.0, React 19.2, TypeScript, iOS 우선
   - React Navigation 7, TanStack Query 5, zustand, react-hook-form + zod, NativeWind 4
-- API: Java 21, Spring Boot 3.5.16, Gradle, JPA + Flyway + springdoc
+- API: Java 21, Spring Boot 3.5.16, Gradle, JPA + QueryDSL + Flyway + springdoc
 - Database: PostgreSQL 17 (로컬은 Docker Compose, 테스트는 Testcontainers)
 
 ## 구조
