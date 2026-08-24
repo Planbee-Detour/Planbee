@@ -7,7 +7,8 @@
 ## 파이프라인
 
 - [ ] product-manager — PRD.md
-- [ ] ux-designer — design.md
+- [ ] ux-designer — design.md (UI/UX 명세)
+- [ ] ux-designer — planbee.pen (시각화)  ← **md 확정 후 필수. 이게 없으면 UI/UX 단계는 미완료**
 - [ ] tech-lead — contract.yaml  ← **이게 끝나야 아래 두 갈래를 시작한다**
 - [ ] server-developer
 - [ ] server-reviewer — PASS / FAIL

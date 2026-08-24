@@ -5,6 +5,9 @@
 `AGENTS.md` 의 파이프라인에 따라 진행하세요. 각 단계는 해당 역할에게 위임합니다.
 역할 정의는 `.agents/roles/<역할>.md` 에 있습니다.
 
+사람이 **"xxx 기능 개발할 거야, 순서대로 진행해줘"** 라고 말한 경우도 이 커맨드와 같은 요청입니다.
+`AGENTS.md` 의 "기능 개발 요청 — 순서대로 진행해줘" 절이 기준입니다.
+
 ## 시작 전
 
 1. 기능 슬러그를 정한다 (kebab-case).
@@ -14,17 +17,32 @@
 ## 순서
 
 1. `product-manager` — PRD.md
-2. `ux-designer` — design.md
+2. `ux-designer` — design.md (UI/UX 명세) → **`planbee.pen` 시각화까지 끝나야 이 단계가 완료**
 3. `tech-lead` — contract.yaml  ← **여기가 끝나야 4·5를 시작한다**
-4. `server-developer` → `server-reviewer` → `server-tester`
-5. `mobile-developer` → `mobile-reviewer` → `mobile-tester`
+4. `server-developer` → `server-reviewer` → `server-tester`   (백엔드)
+5. `mobile-developer` → `mobile-reviewer` → `mobile-tester`   (프론트)
 6. `integration-tester`
 
 4와 5는 서로 독립이므로 **동시에 위임**하세요. 각 갈래 안에서는 순서를 지킵니다.
 
+## 1·2단계 — 모호하면 묻는다
+
+`product-manager` 와 `ux-designer` 단계에서는 **모호한 부분을 스스로 판단하지 않습니다.**
+빠진 정보가 있으면 선택지와 권장안을 붙인 닫힌 질문으로 **3~5개씩 묶어 사람에게 묻고**,
+답을 받은 뒤 문서에 적습니다. 여기서 채운 추측은 계약·구현·테스트까지 그대로 굳어집니다.
+
+위임한 역할이 질문을 돌려주면 임의로 대신 답하지 말고 **사람에게 그대로 전달**하고,
+답을 받아 다시 위임하세요. 사람이 "알아서 해줘" 라고 하면 그때 정하되 가정을 문서에 남깁니다.
+
+3단계(계약)부터는 확정된 PRD·design.md 를 근거로 진행합니다. 여기서 모호함이 드러나면
+임의 해석하지 말고 1·2단계 문서를 고친 뒤 다시 내려옵니다.
+
 ## 단계 간 규칙
 
 - 각 단계가 끝나면 `status.md` 체크박스가 갱신됐는지 확인한다.
+- 2단계는 `design.md` 와 `planbee.pen` **둘 다** 생겼는지 확인한다. md 만 있으면 미완료다.
+  pencil MCP 가 "파일이 열려 있어야 한다" 로 실패하면 사람에게 `code docs/design/planbee.pen`
+  으로 열어 달라고 요청하고 기다린다. 건너뛰고 3단계로 넘어가지 않는다.
 - 리뷰어/테스터가 `FAIL` 이면 `defects.md` 를 근거로 해당 developer 에게 재작업을 위임하고,
   같은 단계를 다시 실행한다.
 - **재작업은 대상별 2회까지.** 3회차에 접어들면 중단하고 `status.md` 에 `ESCALATE` 를 기록한 뒤

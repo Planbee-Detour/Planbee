@@ -32,6 +32,29 @@ make verify
 
 `make verify`가 통과하면 준비 완료입니다.
 
+### 에이전트에게 맡길 때 — "환경에 맞게 세팅해줘"
+
+위 명령을 직접 치는 대신 쓰는 CLI(Claude Code / Codex / Gemini)에게 그대로 시켜도 됩니다.
+**정본에서 그 CLI 가 읽는 파일을 생성하라**는 뜻이고, 에이전트가 따르는 절차는
+`AGENTS.md` 의 "환경 세팅 — 정본에서 생성한다" 에 적혀 있습니다.
+
+에이전트가 하는 일
+
+1. `make env` — `.env` / `mobile/.env` 생성 (**값은 채우지 않습니다**, 기존 파일은 그대로)
+2. `make harness` — 자기 CLI 어댑터 생성
+3. Codex 라면 확인을 받은 뒤 `make harness-codex` (`~/.codex/prompts/` — 저장소 밖)
+4. 생성 결과와 사람이 직접 해야 할 일 보고
+
+에이전트가 하지 않는 일
+
+- `CLAUDE.md` / `GEMINI.md` / `.claude/` / `.gemini/` 를 손으로 쓰거나 고치는 것 — 전부 생성물입니다
+- `.env` 를 열거나 값을 채우는 것 (절대 규칙 7)
+- 지원되지 않는 CLI 라고 어댑터를 즉석에서 손으로 만드는 것 —
+  `scripts/setup-harness.sh` 에 출력 분기를 추가하고 다시 생성합니다 ([HARNESS.md](HARNESS.md) 3장)
+
+사람이 남아서 해야 하는 것은 둘뿐입니다 — `.env` 값 채우기, 그리고 Codex 를 쓴다면
+`~/.codex/config.toml` 의 승인·샌드박스 정책 설정.
+
 ### Maestro (E2E 테스트용, 선택)
 
 ```bash
@@ -89,14 +112,40 @@ product-manager → ux-designer → tech-lead(계약 확정)
 
 **계약(tech-lead)이 끝나야 서버·모바일 두 갈래를 시작합니다.** 그 뒤로는 병렬입니다.
 
-### 방법 A — Claude Code에서 한 번에
+### 방법 A — 한 문장으로 맡기기 (처음 쓰는 사람용)
+
+에이전트에게 이렇게 말하면 됩니다. 슬래시 커맨드를 몰라도 됩니다.
 
 ```
-/feature 일정 생성 기능
+일정 생성 기능을 개발할 거야. 순서대로 진행해줘.
 ```
+
+Claude Code 라면 `/feature 일정 생성 기능` 도 같은 요청입니다.
+둘 다 아래 순서를 **끝까지** 밟습니다.
+
+| # | 단계 | 나오는 것 |
+|---|---|---|
+| 1 | PRD 작성 | `docs/features/<슬러그>/PRD.md` |
+| 2 | UI/UX 명세 | `design.md` |
+| 3 | **UI/UX 시각화 (필수)** | `docs/design/planbee.pen` |
+| 4 | API 계약 확정 | `contract.yaml` |
+| 5 | 백엔드 개발 | 서버 코드 → 리뷰 → 테스트 |
+| 6 | 프론트 개발 | 모바일 코드 → 리뷰 → 테스트 |
+| 7 | 통합 테스트 | `e2e/flows/` |
 
 `docs/features/<슬러그>/status.md`를 읽고 미완료 단계부터 이어서 진행합니다.
 이미 진행 중인 기능이면 중단된 지점부터 재개됩니다.
+
+**1·2단계에서는 에이전트가 질문을 합니다.** PRD 와 UI/UX 는 모호한 부분을 에이전트가
+스스로 정하지 않고, 선택지와 권장안을 붙여 3~5개씩 묶어 묻습니다 —
+"빈 목록일 때 (A) 안내 문구 / (B) 예시 카드 / (C) 온보딩, 어느 쪽인가요? (권장: A)" 처럼.
+고르기만 하면 됩니다. 판단을 맡기고 싶으면 "알아서 해줘" 라고 답하면 되고,
+그때는 무엇을 가정했는지 PRD 에 남습니다. 여기서 대충 넘어간 것은 계약·구현·테스트까지
+그대로 굳어지므로, **질문에 답하는 이 구간이 가장 중요합니다.**
+
+**3단계(pen 시각화)는 생략되지 않습니다.** `design.md` 만 쓰고 계약으로 넘어가지 않습니다.
+pencil MCP 는 에디터에 파일이 열려 있어야 동작하므로, 에이전트가 요청하면
+`code docs/design/planbee.pen` 으로 열어 주고 편집 후 `Cmd+S` 로 저장하세요.
 
 ### 방법 B — 역할을 하나씩 (CLI 무관)
 
@@ -140,7 +189,8 @@ cat docs/features/schedule-create/defects.md   # 열린 결함
 | 단계 | 산출물 | 확인할 것 |
 |---|---|---|
 | product-manager | `PRD.md` | 모든 AC가 "무엇을 관측하면 통과인가"를 명시하는가 |
-| ux-designer | `design.md` | 화면마다 로딩/정상/비어있음/오류 4가지가 다 있는가 |
+| ux-designer (1단계) | `design.md` | 화면마다 로딩/정상/비어있음/오류 4가지가 다 있는가 |
+| ux-designer (2단계) | `docs/design/planbee.pen` | md 의 모든 화면이 아트보드로 그려졌는가 (**필수 단계**) |
 | tech-lead | `contract.yaml`, `docs/api/openapi.yaml` | 성공·실패 응답이 모두 있는가, nullable이 명시됐는가 |
 | server-developer | `server/src/main/` | `make verify-server` |
 | mobile-developer | `mobile/src/` | `make verify-mobile` |
@@ -240,6 +290,7 @@ public ScheduleResponse create(...) { ... }
 | 역할 설명·툴 권한 | `.agents/manifest.json` | `make harness` |
 | 파이프라인 순서 | `.agents/commands/feature.md` | `make harness` |
 | Claude 권한 목록 | `scripts/setup-harness.sh` | `make harness` |
+| 새 CLI 대응·생성 형식 | `scripts/setup-harness.sh` (+ `.gitignore`) | `make harness` |
 | 프로젝트 공통 규칙 | `AGENTS.md` | 즉시 반영 |
 
 **`CLAUDE.md`, `GEMINI.md`, `.claude/`, `.gemini/` 는 직접 고치지 마세요.**
