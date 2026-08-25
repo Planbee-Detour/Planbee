@@ -95,6 +95,9 @@ print("  슬래시 커맨드      feature")
 PY
 
 echo "── Claude Code 권한 설정 ──"
+# deny 목록 주의: `.env.*` 같은 넓은 패턴을 쓰면 `.env.example` 까지 막힌다.
+# AGENTS.md 절대 규칙 7 은 에이전트에게 "`.env.example` 만 참조" 하라고 지시하므로
+# 그 파일은 반드시 읽을 수 있어야 한다. 실제 시크릿이 들어가는 변형만 열거한다.
 mkdir -p .claude
 cat > .claude/settings.json <<'JSON'
 {
@@ -118,7 +121,11 @@ cat > .claude/settings.json <<'JSON'
     "deny": [
       "Read(./**/*.pen)",
       "Read(./.env)",
-      "Read(./.env.*)",
+      "Read(./.env.local)",
+      "Read(./.env.*.local)",
+      "Read(./.env.development*)",
+      "Read(./.env.production*)",
+      "Read(./.env.test*)",
       "Read(./**/*.keystore)",
       "Read(./**/*.p12)"
     ]
