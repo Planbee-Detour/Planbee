@@ -107,22 +107,88 @@
       "y": 0,
       "name": "AI/Identity",
       "reusable": true,
+      "clip": true,
       "width": 36,
       "height": 36,
       "fill": "$Color/Brand/HoneyLight",
       "cornerRadius": 12,
-      "justifyContent": "center",
-      "alignItems": "center",
+      "layout": "none",
       "children": [
         {
           "type": "polygon",
           "polygonCount": 6,
           "cornerRadius": 2,
           "id": "aMWYV",
+          "x": 9,
+          "y": 9,
           "name": "Hex Mark",
           "fill": "$Color/Brand/Honey",
           "width": 18,
           "height": 18
+        },
+        {
+          "type": "path",
+          "id": "FYzKX",
+          "x": 3.336,
+          "y": 1.737,
+          "geometry": "M27.72 6.90305l-11.4-6.48c-0.984-0.552-2.208-0.576-3.264 0l-11.448 6.432c-0.912 0.552-1.608 1.536-1.608 2.592l0 13.392c0 1.104 0.576 2.208 1.584 2.904l11.424 6.36c0.984 0.576 2.328 0.576 3.336 0.07199l11.352-6.35999c0.936-0.528 1.608-1.512 1.608-2.904l0-13.416c0-1.032-0.576-1.992-1.584-2.592z",
+          "fill": "#FFC114",
+          "width": 29.304,
+          "height": 32.5445
+        },
+        {
+          "type": "path",
+          "id": "WhiYK",
+          "x": 15.72,
+          "y": 10.224,
+          "geometry": "M3.84 3.936c0.384-0.36 0.624-0.912 0.624-1.608 0-1.104-0.936-2.328-2.304-2.328-1.368 0-2.16 1.152-2.16 2.232 0 0.552 0.192 1.104 0.6 1.584l1.368-0.048 0.552 0.024 1.32 0.144z",
+          "fill": "#000100",
+          "width": 4.464,
+          "height": 3.936
+        },
+        {
+          "type": "path",
+          "id": "ViLPo",
+          "x": 14.016,
+          "y": 14.016,
+          "geometry": "M7.656 4.416c-0.744-0.744-2.808-3.432-3.456-4.416l-0.504 0c-0.408 0.768-2.64 3.528-3.432 4.416-0.168 0.648-0.264 1.176-0.264 1.92 0 2.544 1.536 5.328 3.96 5.328 2.424 0 3.984-2.712 3.984-5.28 0-0.648-0.096-1.32-0.288-1.968z",
+          "fill": "#000100",
+          "width": 7.944,
+          "height": 11.664
+        },
+        {
+          "type": "path",
+          "id": "S9t2iP",
+          "x": 7.826,
+          "y": 14.016,
+          "geometry": "M8.49397 0.12c-2.16 0.288-4.824 0.864-7.84801 1.824-0.672 0.216-0.84 0.768-0.408 1.344 0.528 0.72 2.328 2.328 3.24 2.88 0.48 0.288 0.96 0.36 1.464-0.096 0.312-0.264 0.936-0.936 1.512-1.632 0.84-0.768 3.144-3.696 3.40801-4.44l-1.368 0.12z",
+          "fill": "#FFFFFF",
+          "width": 9.862,
+          "height": 6.3991,
+          "stroke": "#FFC114",
+          "strokeWidth": 0.0215202696,
+          "strokeLinecap": "round"
+        },
+        {
+          "type": "path",
+          "id": "MvvgT",
+          "x": 18.24,
+          "y": 14.016,
+          "geometry": "M9.36 1.968c-1.872-0.6-4.44-1.32-8.064-1.824l-1.296-0.144c0.48 0.888 2.592 3.576 3.432 4.44 0.576 0.648 1.224 1.392 1.536 1.632 0.552 0.456 1.008 0.36 1.44 0.096 0.696-0.384 2.64-1.992 3.336-2.928 0.48-0.624 0.144-1.128-0.384-1.272z",
+          "fill": "#FFFFFF",
+          "width": 9.9751,
+          "height": 6.39,
+          "stroke": "#FFC114",
+          "strokeWidth": 0.0215202696,
+          "strokeLinecap": "round"
+        },
+        {
+          "type": "rectangle",
+          "id": "kvgjX",
+          "x": -0.024,
+          "y": 0.024,
+          "width": 36,
+          "height": 36
         }
       ]
     },
@@ -1958,7 +2024,7 @@
       "id": "e1CxS",
       "x": 1920,
       "y": 600,
-      "name": "Screen 04 — Place Detail",
+      "name": "Screen 04a — Place Detail / 정상",
       "clip": true,
       "width": 390,
       "fill": "$Color/Neutral/Background",
@@ -2012,9 +2078,9 @@
               "id": "GYVhO",
               "x": 20,
               "y": 64,
-              "name": "Back Button",
-              "width": 38,
-              "height": 38,
+              "name": "Back Button · 뒤로",
+              "width": 44,
+              "height": 44,
               "fill": "#FFFFFFE6",
               "cornerRadius": 999,
               "justifyContent": "center",
@@ -2035,11 +2101,11 @@
             {
               "type": "frame",
               "id": "B7Xjw4",
-              "x": 332,
+              "x": 326,
               "y": 64,
-              "name": "Bookmark Button",
-              "width": 38,
-              "height": 38,
+              "name": "Bookmark Button · 북마크",
+              "width": 44,
+              "height": 44,
               "fill": "#FFFFFFE6",
               "cornerRadius": 999,
               "justifyContent": "center",
@@ -2093,7 +2159,7 @@
                       "id": "x5cAQJ",
                       "name": "Category",
                       "fill": "$Color/Brand/HoneyDark",
-                      "content": "실내·전시",
+                      "content": "역사 · 문화",
                       "fontFamily": "$Font/Family",
                       "fontSize": "$Font/Size/Caption",
                       "fontWeight": "600"
@@ -2103,7 +2169,7 @@
                       "id": "c1aozA",
                       "name": "Status",
                       "fill": "$Color/Semantic/Success",
-                      "content": "운영중",
+                      "content": "운영 중",
                       "fontFamily": "$Font/Family",
                       "fontSize": "$Font/Size/Caption",
                       "fontWeight": "500"
@@ -2329,7 +2395,7 @@
                       "id": "NTvgt",
                       "name": "Reason Title",
                       "fill": "$Color/Brand/HoneyDark",
-                      "content": "Planbee의 추천 이유",
+                      "content": "Planbee 추천 이유",
                       "fontFamily": "$Font/Family",
                       "fontSize": "$Font/Size/BodySmall",
                       "fontWeight": "600"
@@ -2375,8 +2441,8 @@
                   "name": "Map",
                   "width": "fill_container",
                   "height": 140,
-                  "fill": "#E9EDE7",
-                  "cornerRadius": 12,
+                  "fill": "$Color/Neutral/Background",
+                  "cornerRadius": "$Radius/Card",
                   "stroke": "$Color/Neutral/Border",
                   "strokeWidth": 1,
                   "strokeAlignment": "inner",
@@ -2414,10 +2480,10 @@
               "type": "text",
               "id": "dL6rI",
               "name": "Source",
-              "fill": "#A3A3A3",
-              "content": "장소 정보 · 한국관광공사 제공",
+              "fill": "$Color/Text/Secondary",
+              "content": "한국관광공사 제공",
               "fontFamily": "$Font/Family",
-              "fontSize": 11,
+              "fontSize": "$Font/Size/Caption",
               "fontWeight": "normal"
             }
           ]
@@ -2448,7 +2514,7 @@
               "width": "fill_container",
               "descendants": {
                 "HO4R2": {
-                  "content": "Planbee에게 묻기",
+                  "content": "Planbee에게 물어보기",
                   "fontSize": "$Font/Size/BodySmall"
                 }
               }
@@ -18547,6 +18613,1603 @@
                   }
                 }
               ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "NrP0U",
+      "x": 3770,
+      "y": 600,
+      "name": "Screen 04b — Place Detail / 로딩",
+      "clip": true,
+      "width": 390,
+      "height": 980,
+      "fill": "$Color/Neutral/Background",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "u2C4KT",
+          "name": "Loading Hero Skeleton",
+          "width": "fill_container",
+          "height": 300,
+          "fill": "$Color/Neutral/Border",
+          "layout": "none",
+          "children": [
+            {
+              "id": "KT865",
+              "type": "ref",
+              "ref": "uD3vY",
+              "name": "Loading Status Bar",
+              "x": 0,
+              "y": 0,
+              "width": 390
+            },
+            {
+              "type": "frame",
+              "id": "EkWIJ",
+              "x": 20,
+              "y": 64,
+              "name": "Back Button · 뒤로",
+              "width": 44,
+              "height": 44,
+              "fill": "$Color/Neutral/Surface",
+              "cornerRadius": "$Radius/Chip",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "OH8ws",
+                  "name": "Back Icon",
+                  "width": 20,
+                  "height": 20,
+                  "icon": "chevron-left",
+                  "library": "lucide",
+                  "fill": "$Color/Text/Primary"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "xYY33",
+          "name": "Loading Content · 장소 정보를 불러오는 중",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": "$Space/16",
+          "padding": "$Space/20",
+          "children": [
+            {
+              "type": "frame",
+              "id": "a52Ni",
+              "name": "Category Skeleton",
+              "width": 96,
+              "height": 14,
+              "fill": "$Color/Neutral/Border",
+              "cornerRadius": 7
+            },
+            {
+              "type": "frame",
+              "id": "R51UPe",
+              "name": "Title Skeleton 1",
+              "width": "fill_container",
+              "height": 28,
+              "fill": "$Color/Neutral/Border",
+              "cornerRadius": 8
+            },
+            {
+              "type": "frame",
+              "id": "XgVMs",
+              "name": "Title Skeleton 2",
+              "width": 220,
+              "height": 28,
+              "fill": "$Color/Neutral/Border",
+              "cornerRadius": 8
+            },
+            {
+              "type": "frame",
+              "id": "DM85o",
+              "name": "Info Row Skeleton 1",
+              "width": "fill_container",
+              "gap": "$Space/8",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "JjENN",
+                  "name": "Info Icon Skeleton 1",
+                  "width": 16,
+                  "height": 16,
+                  "fill": "$Color/Neutral/Border",
+                  "cornerRadius": 8
+                },
+                {
+                  "type": "frame",
+                  "id": "Z8MB4u",
+                  "name": "Info Text Skeleton 1",
+                  "width": 210,
+                  "height": 16,
+                  "fill": "$Color/Neutral/Border",
+                  "cornerRadius": 8
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "szaVh",
+              "name": "Info Row Skeleton 2",
+              "width": "fill_container",
+              "gap": "$Space/8",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "t7J9om",
+                  "name": "Info Icon Skeleton 2",
+                  "width": 16,
+                  "height": 16,
+                  "fill": "$Color/Neutral/Border",
+                  "cornerRadius": 8
+                },
+                {
+                  "type": "frame",
+                  "id": "o0tBg",
+                  "name": "Info Text Skeleton 2",
+                  "width": 250,
+                  "height": 16,
+                  "fill": "$Color/Neutral/Border",
+                  "cornerRadius": 8
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "pnvUY",
+              "name": "Info Row Skeleton 3",
+              "width": "fill_container",
+              "gap": "$Space/8",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "tX7yI",
+                  "name": "Info Icon Skeleton 3",
+                  "width": 16,
+                  "height": 16,
+                  "fill": "$Color/Neutral/Border",
+                  "cornerRadius": 8
+                },
+                {
+                  "type": "frame",
+                  "id": "q788Q",
+                  "name": "Info Text Skeleton 3",
+                  "width": 210,
+                  "height": 16,
+                  "fill": "$Color/Neutral/Border",
+                  "cornerRadius": 8
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "oWtFD",
+              "name": "Body Skeleton",
+              "width": "fill_container",
+              "height": 72,
+              "fill": "$Color/Neutral/Border",
+              "cornerRadius": 12
+            },
+            {
+              "type": "frame",
+              "id": "Yr46b",
+              "name": "AI Recommendation Skeleton",
+              "width": "fill_container",
+              "height": 112,
+              "fill": "$Color/Neutral/Border",
+              "cornerRadius": "$Radius/Card"
+            },
+            {
+              "type": "frame",
+              "id": "QFWWQ",
+              "name": "Map Skeleton",
+              "width": "fill_container",
+              "height": 140,
+              "fill": "$Color/Neutral/Border",
+              "cornerRadius": "$Radius/Card"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "lsHw6",
+      "x": 4240,
+      "y": 600,
+      "name": "Screen 04c — Place Detail / 찾을 수 없음",
+      "clip": true,
+      "width": 390,
+      "height": 844,
+      "fill": "$Color/Neutral/Background",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "MlLA4",
+          "name": "Empty Header",
+          "width": "fill_container",
+          "height": 100,
+          "layout": "none",
+          "children": [
+            {
+              "id": "WPnHS",
+              "type": "ref",
+              "ref": "uD3vY",
+              "name": "Empty Status Bar",
+              "x": 0,
+              "y": 0,
+              "width": 390
+            },
+            {
+              "type": "frame",
+              "id": "teH8P",
+              "x": 20,
+              "y": 48,
+              "name": "Back Button · 뒤로",
+              "width": 44,
+              "height": 44,
+              "fill": "$Color/Neutral/Surface",
+              "cornerRadius": "$Radius/Chip",
+              "stroke": "$Color/Neutral/Border",
+              "strokeWidth": 1,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "x60gr",
+                  "name": "Back Icon",
+                  "width": 20,
+                  "height": 20,
+                  "icon": "chevron-left",
+                  "library": "lucide",
+                  "fill": "$Color/Text/Primary"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "WMPBK",
+          "name": "Empty State Content",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "gap": "$Space/16",
+          "padding": "$Space/32",
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "dhViC",
+              "name": "Place Not Found Icon",
+              "width": 64,
+              "height": 64,
+              "fill": "$Color/Brand/HoneyLight",
+              "cornerRadius": "$Radius/Chip",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "JdZX3",
+                  "name": "Map Pin Off Icon",
+                  "width": 28,
+                  "height": 28,
+                  "icon": "map-pin-off",
+                  "library": "lucide",
+                  "fill": "$Color/Brand/HoneyDark"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "B7r7J",
+              "name": "Empty Title",
+              "fill": "$Color/Text/Primary",
+              "content": "장소 정보를 찾을 수 없어요",
+              "textAlign": "center",
+              "fontFamily": "$Font/Family",
+              "fontSize": "$Font/Size/H2",
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "jOG5w",
+              "name": "Empty Body",
+              "fill": "$Color/Text/Secondary",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "장소가 삭제되었거나 현재 공개되지 않았어요.",
+              "textAlign": "center",
+              "fontFamily": "$Font/Family",
+              "fontSize": "$Font/Size/BodySmall",
+              "fontWeight": "normal"
+            },
+            {
+              "id": "Dot1Q",
+              "type": "ref",
+              "ref": "wYvla",
+              "name": "Previous Screen Button",
+              "width": 240,
+              "descendants": {
+                "qoMJa": {
+                  "content": "이전 화면으로"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "pIIvX",
+      "x": 4710,
+      "y": 600,
+      "name": "Screen 04d — Place Detail / 오류",
+      "clip": true,
+      "width": 390,
+      "height": 844,
+      "fill": "$Color/Neutral/Background",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "tzvgI",
+          "name": "Error Header",
+          "width": "fill_container",
+          "height": 100,
+          "layout": "none",
+          "children": [
+            {
+              "id": "sSLV5",
+              "type": "ref",
+              "ref": "uD3vY",
+              "name": "Error Status Bar",
+              "x": 0,
+              "y": 0,
+              "width": 390
+            },
+            {
+              "type": "frame",
+              "id": "SzKwm",
+              "x": 20,
+              "y": 48,
+              "name": "Back Button · 뒤로",
+              "width": 44,
+              "height": 44,
+              "fill": "$Color/Neutral/Surface",
+              "cornerRadius": "$Radius/Chip",
+              "stroke": "$Color/Neutral/Border",
+              "strokeWidth": 1,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "QDARf",
+                  "name": "Back Icon",
+                  "width": 20,
+                  "height": 20,
+                  "icon": "chevron-left",
+                  "library": "lucide",
+                  "fill": "$Color/Text/Primary"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "q2HkFZ",
+          "name": "Error State Content",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "gap": "$Space/16",
+          "padding": "$Space/32",
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "OM5Yg",
+              "name": "Network Error Icon",
+              "width": 64,
+              "height": 64,
+              "fill": "$Color/Neutral/Surface",
+              "cornerRadius": "$Radius/Chip",
+              "stroke": "$Color/Semantic/Error",
+              "strokeWidth": 1,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "wzvxa",
+                  "name": "Wifi Off Icon",
+                  "width": 28,
+                  "height": 28,
+                  "icon": "wifi-off",
+                  "library": "lucide",
+                  "fill": "$Color/Semantic/Error"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "w6cKc",
+              "name": "Error Title",
+              "fill": "$Color/Text/Primary",
+              "content": "장소 정보를 불러오지 못했어요",
+              "textAlign": "center",
+              "fontFamily": "$Font/Family",
+              "fontSize": "$Font/Size/H2",
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "BICBY",
+              "name": "Error Body",
+              "fill": "$Color/Text/Secondary",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "연결을 확인하고 다시 시도해 주세요.",
+              "textAlign": "center",
+              "fontFamily": "$Font/Family",
+              "fontSize": "$Font/Size/BodySmall",
+              "fontWeight": "normal"
+            },
+            {
+              "id": "c96n6z",
+              "type": "ref",
+              "ref": "wYvla",
+              "name": "Retry Button",
+              "width": 240,
+              "descendants": {
+                "qoMJa": {
+                  "content": "다시 시도"
+                }
+              }
+            },
+            {
+              "id": "x4zDv",
+              "type": "ref",
+              "ref": "j0SzQ",
+              "name": "Previous Screen Button",
+              "width": 240,
+              "descendants": {
+                "HO4R2": {
+                  "content": "이전 화면으로"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "erQYd",
+      "x": 5180,
+      "y": 600,
+      "name": "Screen 16a — Nearby Places / 정상 목록",
+      "clip": true,
+      "width": 390,
+      "height": 844,
+      "fill": "$Color/Neutral/Background",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "diL9U",
+          "type": "ref",
+          "ref": "uD3vY",
+          "name": "Status Bar",
+          "width": 390
+        },
+        {
+          "type": "frame",
+          "id": "w3XRt",
+          "name": "Navigation Header",
+          "width": "fill_container",
+          "height": 56,
+          "gap": "$Space/12",
+          "padding": [
+            6,
+            20
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "DJYKV",
+              "name": "Back Button · 뒤로",
+              "width": 44,
+              "height": 44,
+              "fill": "$Color/Neutral/Surface",
+              "cornerRadius": "$Radius/Chip",
+              "stroke": "$Color/Neutral/Border",
+              "strokeWidth": 1,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "Z5jIl",
+                  "name": "Back Icon",
+                  "width": 20,
+                  "height": 20,
+                  "icon": "chevron-left",
+                  "library": "lucide",
+                  "fill": "$Color/Text/Primary"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "nEejl",
+              "name": "Screen Title",
+              "fill": "$Color/Text/Primary",
+              "content": "주변 장소",
+              "fontFamily": "$Font/Family",
+              "fontSize": "$Font/Size/Title",
+              "fontWeight": "600"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "kAjZ8",
+          "name": "Intro and Controls",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": "$Space/12",
+          "padding": [
+            12,
+            20,
+            16,
+            20
+          ],
+          "children": [
+            {
+              "type": "text",
+              "id": "wfsOz",
+              "name": "Subtitle",
+              "fill": "$Color/Text/Secondary",
+              "content": "현재 위치에서 가까운 장소를 모았어요.",
+              "fontFamily": "$Font/Family",
+              "fontSize": "$Font/Size/BodySmall",
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "uOvzh",
+              "name": "View Toggle",
+              "width": "fill_container",
+              "height": 44,
+              "fill": "$Color/Neutral/Surface",
+              "cornerRadius": "$Radius/Button",
+              "gap": 4,
+              "padding": 4,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "njkWa",
+                  "name": "목록 Toggle",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "fill": "$Color/Brand/HoneyLight",
+                  "cornerRadius": "$Radius/Button",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "RPIa9",
+                      "name": "목록 Label",
+                      "fill": "$Color/Text/Primary",
+                      "content": "목록",
+                      "fontFamily": "$Font/Family",
+                      "fontSize": "$Font/Size/BodySmall",
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Y8Qolq",
+                  "name": "지도 Toggle",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "fill": "#00000000",
+                  "cornerRadius": "$Radius/Button",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "SIzra",
+                      "name": "지도 Label",
+                      "fill": "$Color/Text/Primary",
+                      "content": "지도",
+                      "fontFamily": "$Font/Family",
+                      "fontSize": "$Font/Size/BodySmall",
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "h3IIV",
+              "name": "Quick Filters",
+              "gap": "$Space/8",
+              "children": [
+                {
+                  "id": "K7zAb",
+                  "type": "ref",
+                  "ref": "c5GCVE",
+                  "name": "Filter 거리순",
+                  "descendants": {
+                    "W8UxCw": {
+                      "content": "거리순"
+                    }
+                  }
+                },
+                {
+                  "id": "rIZEw",
+                  "type": "ref",
+                  "ref": "c5GCVE",
+                  "name": "Filter 운영 중",
+                  "descendants": {
+                    "W8UxCw": {
+                      "content": "운영 중"
+                    }
+                  }
+                },
+                {
+                  "id": "d6YRw",
+                  "type": "ref",
+                  "ref": "c5GCVE",
+                  "name": "Filter 실내",
+                  "descendants": {
+                    "W8UxCw": {
+                      "content": "실내"
+                    }
+                  }
+                },
+                {
+                  "id": "jNL8r",
+                  "type": "ref",
+                  "ref": "c5GCVE",
+                  "name": "Filter 카페",
+                  "descendants": {
+                    "W8UxCw": {
+                      "content": "카페"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "w8pjUP",
+          "name": "Nearby Place List",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": "$Space/12",
+          "padding": [
+            0,
+            20,
+            24,
+            20
+          ],
+          "children": [
+            {
+              "id": "x1im5",
+              "type": "ref",
+              "ref": "aojsb",
+              "name": "Place Row · 경복궁",
+              "width": "fill_container"
+            },
+            {
+              "id": "B9K78o",
+              "type": "ref",
+              "ref": "aojsb",
+              "name": "Place Row · 익선동 한옥거리",
+              "width": "fill_container"
+            },
+            {
+              "id": "TYn3A",
+              "type": "ref",
+              "ref": "aojsb",
+              "name": "Place Row · 서울공예박물관",
+              "width": "fill_container"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "ffsX1",
+      "x": 5650,
+      "y": 600,
+      "name": "Screen 16b — Nearby Places / 정상 지도",
+      "clip": true,
+      "width": 390,
+      "height": 844,
+      "fill": "$Color/Neutral/Background",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "cV426",
+          "type": "ref",
+          "ref": "uD3vY",
+          "name": "Status Bar",
+          "width": 390
+        },
+        {
+          "type": "frame",
+          "id": "c7mOok",
+          "name": "Navigation Header",
+          "width": "fill_container",
+          "height": 56,
+          "gap": "$Space/12",
+          "padding": [
+            6,
+            20
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "E2wJq3",
+              "name": "Back Button · 뒤로",
+              "width": 44,
+              "height": 44,
+              "fill": "$Color/Neutral/Surface",
+              "cornerRadius": "$Radius/Chip",
+              "stroke": "$Color/Neutral/Border",
+              "strokeWidth": 1,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "BhMAG",
+                  "name": "Back Icon",
+                  "width": 20,
+                  "height": 20,
+                  "icon": "chevron-left",
+                  "library": "lucide",
+                  "fill": "$Color/Text/Primary"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "aTUy8",
+              "name": "Screen Title",
+              "fill": "$Color/Text/Primary",
+              "content": "주변 장소",
+              "fontFamily": "$Font/Family",
+              "fontSize": "$Font/Size/Title",
+              "fontWeight": "600"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "bZ19s",
+          "name": "Intro and Controls",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": "$Space/12",
+          "padding": [
+            12,
+            20,
+            16,
+            20
+          ],
+          "children": [
+            {
+              "type": "text",
+              "id": "I8XWb",
+              "name": "Subtitle",
+              "fill": "$Color/Text/Secondary",
+              "content": "현재 위치에서 가까운 장소를 모았어요.",
+              "fontFamily": "$Font/Family",
+              "fontSize": "$Font/Size/BodySmall",
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "MgRce",
+              "name": "View Toggle",
+              "width": "fill_container",
+              "height": 44,
+              "fill": "$Color/Neutral/Surface",
+              "cornerRadius": "$Radius/Button",
+              "gap": 4,
+              "padding": 4,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "WPc4j",
+                  "name": "목록 Toggle",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "fill": "#00000000",
+                  "cornerRadius": "$Radius/Button",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "LUxk0",
+                      "name": "목록 Label",
+                      "fill": "$Color/Text/Primary",
+                      "content": "목록",
+                      "fontFamily": "$Font/Family",
+                      "fontSize": "$Font/Size/BodySmall",
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "fEuyP",
+                  "name": "지도 Toggle",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "fill": "$Color/Brand/HoneyLight",
+                  "cornerRadius": "$Radius/Button",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "i08hO",
+                      "name": "지도 Label",
+                      "fill": "$Color/Text/Primary",
+                      "content": "지도",
+                      "fontFamily": "$Font/Family",
+                      "fontSize": "$Font/Size/BodySmall",
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "dbtnD",
+              "name": "Quick Filters",
+              "gap": "$Space/8",
+              "children": [
+                {
+                  "id": "yOByr",
+                  "type": "ref",
+                  "ref": "c5GCVE",
+                  "name": "Filter 거리순",
+                  "descendants": {
+                    "W8UxCw": {
+                      "content": "거리순"
+                    }
+                  }
+                },
+                {
+                  "id": "L0xsmS",
+                  "type": "ref",
+                  "ref": "c5GCVE",
+                  "name": "Filter 운영 중",
+                  "descendants": {
+                    "W8UxCw": {
+                      "content": "운영 중"
+                    }
+                  }
+                },
+                {
+                  "id": "l73Xq",
+                  "type": "ref",
+                  "ref": "c5GCVE",
+                  "name": "Filter 실내",
+                  "descendants": {
+                    "W8UxCw": {
+                      "content": "실내"
+                    }
+                  }
+                },
+                {
+                  "id": "DqLh8",
+                  "type": "ref",
+                  "ref": "c5GCVE",
+                  "name": "Filter 카페",
+                  "descendants": {
+                    "W8UxCw": {
+                      "content": "카페"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ypKNP",
+          "name": "Mock Map",
+          "width": "fill_container",
+          "height": "fill_container",
+          "fill": "$Color/Neutral/Surface",
+          "stroke": "$Color/Neutral/Border",
+          "strokeWidth": 1,
+          "layout": "none",
+          "children": [
+            {
+              "type": "frame",
+              "id": "WeB4l",
+              "x": 72,
+              "y": 110,
+              "name": "경복궁 마커",
+              "width": 48,
+              "height": 48,
+              "fill": "$Color/Brand/Honey",
+              "cornerRadius": "$Radius/Chip",
+              "stroke": "$Color/Brand/HoneyDark",
+              "strokeWidth": 1,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "xIZuT",
+                  "name": "Marker Icon",
+                  "width": 20,
+                  "height": 20,
+                  "icon": "map-pin",
+                  "library": "lucide",
+                  "fill": "$Color/Text/Primary"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "BoJdb",
+              "x": 238,
+              "y": 165,
+              "name": "익선동 마커",
+              "width": 40,
+              "height": 40,
+              "fill": "$Color/Neutral/Surface",
+              "cornerRadius": "$Radius/Chip",
+              "stroke": "$Color/Brand/HoneyDark",
+              "strokeWidth": 1,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "ZHKW6",
+                  "name": "Marker Icon",
+                  "width": 20,
+                  "height": 20,
+                  "icon": "map-pin",
+                  "library": "lucide",
+                  "fill": "$Color/Text/Primary"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "OYU9k",
+              "x": 150,
+              "y": 300,
+              "name": "공예박물관 마커",
+              "width": 40,
+              "height": 40,
+              "fill": "$Color/Neutral/Surface",
+              "cornerRadius": "$Radius/Chip",
+              "stroke": "$Color/Brand/HoneyDark",
+              "strokeWidth": 1,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "jLTiG",
+                  "name": "Marker Icon",
+                  "width": 20,
+                  "height": 20,
+                  "icon": "map-pin",
+                  "library": "lucide",
+                  "fill": "$Color/Text/Primary"
+                }
+              ]
+            },
+            {
+              "id": "VRucd",
+              "type": "ref",
+              "ref": "a1KXFa",
+              "name": "Selected Place Card · 경복궁",
+              "x": 20,
+              "y": 320,
+              "width": 350
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "K648IF",
+      "x": 6120,
+      "y": 600,
+      "name": "Screen 16c — Nearby Places / 로딩",
+      "clip": true,
+      "width": 390,
+      "height": 844,
+      "fill": "$Color/Neutral/Background",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "alNAd",
+          "type": "ref",
+          "ref": "uD3vY",
+          "name": "Status Bar",
+          "width": 390
+        },
+        {
+          "type": "frame",
+          "id": "c1CFa",
+          "name": "Navigation Header",
+          "width": "fill_container",
+          "height": 56,
+          "gap": "$Space/12",
+          "padding": [
+            6,
+            20
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "SuEzp",
+              "name": "Back Button · 뒤로",
+              "width": 44,
+              "height": 44,
+              "fill": "$Color/Neutral/Surface",
+              "cornerRadius": "$Radius/Chip",
+              "stroke": "$Color/Neutral/Border",
+              "strokeWidth": 1,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "B4iAQM",
+                  "name": "Back Icon",
+                  "width": 20,
+                  "height": 20,
+                  "icon": "chevron-left",
+                  "library": "lucide",
+                  "fill": "$Color/Text/Primary"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "WiGN3",
+              "name": "Screen Title",
+              "fill": "$Color/Text/Primary",
+              "content": "주변 장소",
+              "fontFamily": "$Font/Family",
+              "fontSize": "$Font/Size/Title",
+              "fontWeight": "600"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "vjdOS",
+          "name": "Intro and Controls",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": "$Space/12",
+          "padding": [
+            12,
+            20,
+            16,
+            20
+          ],
+          "children": [
+            {
+              "type": "text",
+              "id": "B39Yy7",
+              "name": "Subtitle",
+              "fill": "$Color/Text/Secondary",
+              "content": "현재 위치에서 가까운 장소를 모았어요.",
+              "fontFamily": "$Font/Family",
+              "fontSize": "$Font/Size/BodySmall",
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "VLnpB",
+              "name": "View Toggle",
+              "width": "fill_container",
+              "height": 44,
+              "fill": "$Color/Neutral/Surface",
+              "cornerRadius": "$Radius/Button",
+              "gap": 4,
+              "padding": 4,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "fVy2M",
+                  "name": "목록 Toggle",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "fill": "$Color/Brand/HoneyLight",
+                  "cornerRadius": "$Radius/Button",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "aD6lC",
+                      "name": "목록 Label",
+                      "fill": "$Color/Text/Primary",
+                      "content": "목록",
+                      "fontFamily": "$Font/Family",
+                      "fontSize": "$Font/Size/BodySmall",
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "g6J1T",
+                  "name": "지도 Toggle",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "fill": "#00000000",
+                  "cornerRadius": "$Radius/Button",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "evhZW",
+                      "name": "지도 Label",
+                      "fill": "$Color/Text/Primary",
+                      "content": "지도",
+                      "fontFamily": "$Font/Family",
+                      "fontSize": "$Font/Size/BodySmall",
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "BNXsb",
+              "name": "Quick Filters",
+              "gap": "$Space/8",
+              "children": [
+                {
+                  "id": "BEYSc",
+                  "type": "ref",
+                  "ref": "c5GCVE",
+                  "name": "Filter 거리순",
+                  "descendants": {
+                    "W8UxCw": {
+                      "content": "거리순"
+                    }
+                  }
+                },
+                {
+                  "id": "iGcXd",
+                  "type": "ref",
+                  "ref": "c5GCVE",
+                  "name": "Filter 운영 중",
+                  "descendants": {
+                    "W8UxCw": {
+                      "content": "운영 중"
+                    }
+                  }
+                },
+                {
+                  "id": "BWFIL",
+                  "type": "ref",
+                  "ref": "c5GCVE",
+                  "name": "Filter 실내",
+                  "descendants": {
+                    "W8UxCw": {
+                      "content": "실내"
+                    }
+                  }
+                },
+                {
+                  "id": "mlPG8",
+                  "type": "ref",
+                  "ref": "c5GCVE",
+                  "name": "Filter 카페",
+                  "descendants": {
+                    "W8UxCw": {
+                      "content": "카페"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "qJbWz",
+          "name": "Loading List · 주변 장소를 불러오는 중",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": "$Space/12",
+          "padding": [
+            0,
+            20
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "p8Ae8",
+              "name": "Place Row Skeleton 1",
+              "width": "fill_container",
+              "height": 112,
+              "fill": "$Color/Neutral/Border",
+              "cornerRadius": "$Radius/Card"
+            },
+            {
+              "type": "frame",
+              "id": "mVGtQ",
+              "name": "Place Row Skeleton 2",
+              "width": "fill_container",
+              "height": 112,
+              "fill": "$Color/Neutral/Border",
+              "cornerRadius": "$Radius/Card"
+            },
+            {
+              "type": "frame",
+              "id": "Mchvs",
+              "name": "Place Row Skeleton 3",
+              "width": "fill_container",
+              "height": 112,
+              "fill": "$Color/Neutral/Border",
+              "cornerRadius": "$Radius/Card"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "YnvnK",
+      "x": 6590,
+      "y": 600,
+      "name": "Screen 16d — Nearby Places / 비어있음",
+      "clip": true,
+      "width": 390,
+      "height": 844,
+      "fill": "$Color/Neutral/Background",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "u2dnm",
+          "type": "ref",
+          "ref": "uD3vY",
+          "name": "Status Bar",
+          "width": 390
+        },
+        {
+          "type": "frame",
+          "id": "W7CBf",
+          "name": "Navigation Header",
+          "width": "fill_container",
+          "height": 56,
+          "gap": "$Space/12",
+          "padding": [
+            6,
+            20
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "RR1na",
+              "name": "Back Button · 뒤로",
+              "width": 44,
+              "height": 44,
+              "fill": "$Color/Neutral/Surface",
+              "cornerRadius": "$Radius/Chip",
+              "stroke": "$Color/Neutral/Border",
+              "strokeWidth": 1,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "f0gQY4",
+                  "name": "Back Icon",
+                  "width": 20,
+                  "height": 20,
+                  "icon": "chevron-left",
+                  "library": "lucide",
+                  "fill": "$Color/Text/Primary"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "TIQli",
+              "name": "Screen Title",
+              "fill": "$Color/Text/Primary",
+              "content": "주변 장소",
+              "fontFamily": "$Font/Family",
+              "fontSize": "$Font/Size/Title",
+              "fontWeight": "600"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "WsiOh",
+          "name": "State Content",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "gap": "$Space/16",
+          "padding": "$Space/32",
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "a0oA8",
+              "name": "State Icon",
+              "width": 64,
+              "height": 64,
+              "fill": "$Color/Brand/HoneyLight",
+              "cornerRadius": "$Radius/Chip",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "tFA21",
+                  "name": "State Icon Glyph",
+                  "width": 28,
+                  "height": 28,
+                  "icon": "map-pin-off",
+                  "library": "lucide",
+                  "fill": "$Color/Brand/HoneyDark"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "BzVOG",
+              "name": "State Title",
+              "fill": "$Color/Text/Primary",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "주변에서 추천할 장소를 찾지 못했어요",
+              "textAlign": "center",
+              "fontFamily": "$Font/Family",
+              "fontSize": "$Font/Size/H2",
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "f76qX",
+              "name": "State Body",
+              "fill": "$Color/Text/Secondary",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "지역을 바꾸거나 잠시 후 다시 확인해 주세요.",
+              "textAlign": "center",
+              "fontFamily": "$Font/Family",
+              "fontSize": "$Font/Size/BodySmall",
+              "fontWeight": "normal"
+            },
+            {
+              "id": "ATav6",
+              "type": "ref",
+              "ref": "wYvla",
+              "name": "Previous Screen Button",
+              "width": 240,
+              "descendants": {
+                "qoMJa": {
+                  "content": "이전 화면으로"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "D2YedY",
+      "x": 7060,
+      "y": 600,
+      "name": "Screen 16e — Nearby Places / 오류",
+      "clip": true,
+      "width": 390,
+      "height": 844,
+      "fill": "$Color/Neutral/Background",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "eREo5",
+          "type": "ref",
+          "ref": "uD3vY",
+          "name": "Status Bar",
+          "width": 390
+        },
+        {
+          "type": "frame",
+          "id": "bOrI1",
+          "name": "Navigation Header",
+          "width": "fill_container",
+          "height": 56,
+          "gap": "$Space/12",
+          "padding": [
+            6,
+            20
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "EYKfB",
+              "name": "Back Button · 뒤로",
+              "width": 44,
+              "height": 44,
+              "fill": "$Color/Neutral/Surface",
+              "cornerRadius": "$Radius/Chip",
+              "stroke": "$Color/Neutral/Border",
+              "strokeWidth": 1,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "qczPR",
+                  "name": "Back Icon",
+                  "width": 20,
+                  "height": 20,
+                  "icon": "chevron-left",
+                  "library": "lucide",
+                  "fill": "$Color/Text/Primary"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "NreOv",
+              "name": "Screen Title",
+              "fill": "$Color/Text/Primary",
+              "content": "주변 장소",
+              "fontFamily": "$Font/Family",
+              "fontSize": "$Font/Size/Title",
+              "fontWeight": "600"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "vrllh",
+          "name": "State Content",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "gap": "$Space/16",
+          "padding": "$Space/32",
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "k1RUe",
+              "name": "State Icon",
+              "width": 64,
+              "height": 64,
+              "fill": "$Color/Brand/HoneyLight",
+              "cornerRadius": "$Radius/Chip",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "OIakO",
+                  "name": "State Icon Glyph",
+                  "width": 28,
+                  "height": 28,
+                  "icon": "wifi-off",
+                  "library": "lucide",
+                  "fill": "$Color/Semantic/Error"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "a8paSq",
+              "name": "State Title",
+              "fill": "$Color/Text/Primary",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "주변 장소를 불러오지 못했어요",
+              "textAlign": "center",
+              "fontFamily": "$Font/Family",
+              "fontSize": "$Font/Size/H2",
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "F2PFia",
+              "name": "State Body",
+              "fill": "$Color/Text/Secondary",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "연결을 확인하고 다시 시도해 주세요.",
+              "textAlign": "center",
+              "fontFamily": "$Font/Family",
+              "fontSize": "$Font/Size/BodySmall",
+              "fontWeight": "normal"
+            },
+            {
+              "id": "bC6vM",
+              "type": "ref",
+              "ref": "wYvla",
+              "name": "Retry Button",
+              "width": 240,
+              "descendants": {
+                "qoMJa": {
+                  "content": "다시 시도"
+                }
+              }
+            },
+            {
+              "id": "kO0pb",
+              "type": "ref",
+              "ref": "j0SzQ",
+              "name": "Previous Screen Button",
+              "width": 240,
+              "descendants": {
+                "HO4R2": {
+                  "content": "이전 화면으로"
+                }
+              }
             }
           ]
         }

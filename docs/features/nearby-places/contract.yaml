@@ -1,0 +1,39 @@
+openapi: 3.1.0
+info: {title: Planbee 주변 장소 계약, version: 0.1.0}
+paths:
+  /api/v1/places/nearby:
+    get:
+      operationId: getNearbyPlaces
+      summary: 주변 장소 조회
+      x-acceptance-criteria: [AC-NP-1, AC-NP-2, AC-NP-3, AC-NP-4, AC-NP-5, AC-NP-6]
+      parameters:
+        - {name: latitude, in: query, required: true, schema: {type: number, format: double}}
+        - {name: longitude, in: query, required: true, schema: {type: number, format: double}}
+      responses:
+        '200':
+          description: 주변 장소 목록
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/NearbyPlaceList'}
+components:
+  schemas:
+    NearbyPlaceList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/NearbyPlace'}
+    NearbyPlace:
+      type: object
+      required: [place_id, category, status_label, name, distance_label, tags, latitude, longitude]
+      properties:
+        place_id: {type: string}
+        category: {type: string}
+        status_label: {type: string}
+        name: {type: string}
+        image_url: {type: [string, 'null'], format: uri}
+        distance_label: {type: string}
+        tags: {type: array, items: {type: string}}
+        latitude: {type: number, format: double}
+        longitude: {type: number, format: double}

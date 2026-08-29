@@ -4,6 +4,40 @@
  */
 
 export interface paths {
+    "/api/v1/places/nearby": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 주변 장소 조회 */
+        get: operations["getNearbyPlaces"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/places/{place_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 관광지 상세 조회 */
+        get: operations["getPlaceDetail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health": {
         parameters: {
             query?: never;
@@ -25,6 +59,47 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        NearbyPlaceList: {
+            items: components["schemas"]["NearbyPlace"][];
+        };
+        NearbyPlace: {
+            place_id: string;
+            category: string;
+            status_label: string;
+            name: string;
+            /** Format: uri */
+            image_url?: string | null;
+            distance_label: string;
+            tags: string[];
+            /** Format: double */
+            latitude: number;
+            /** Format: double */
+            longitude: number;
+        };
+        PlaceDetail: {
+            /** @example mmca-seoul */
+            place_id: string;
+            /** @example 역사 · 문화 */
+            category: string;
+            /** @example 운영 중 */
+            status_label: string;
+            /** @example 국립현대미술관 서울 */
+            name: string;
+            /** Format: uri */
+            image_url?: string | null;
+            address?: string | null;
+            opening_hours?: string | null;
+            distance_label?: string | null;
+            tags: string[];
+            description?: string | null;
+            recommendation_reason?: string | null;
+            /** Format: double */
+            latitude?: number | null;
+            /** Format: double */
+            longitude?: number | null;
+            /** @example 한국관광공사 제공 */
+            source_label: string;
+        };
         /** @description RFC 9457 Problem Details. 모든 오류 응답의 형식. */
         Problem: {
             /** @default about:blank */
@@ -78,6 +153,52 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    getNearbyPlaces: {
+        parameters: {
+            query: {
+                latitude: number;
+                longitude: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 주변 장소 목록 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NearbyPlaceList"];
+                };
+            };
+        };
+    };
+    getPlaceDetail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                place_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 관광지 상세 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceDetail"];
+                };
+            };
+            404: components["responses"]["Problem"];
+        };
+    };
     getHealth: {
         parameters: {
             query?: never;

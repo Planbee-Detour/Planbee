@@ -1,0 +1,55 @@
+openapi: 3.1.0
+info:
+  title: Planbee 장소 상세 계약
+  version: 0.1.0
+paths:
+  /api/v1/places/{place_id}:
+    get:
+      operationId: getPlaceDetail
+      summary: 관광지 상세 조회
+      x-acceptance-criteria: [AC-PD-1, AC-PD-2, AC-PD-3, AC-PD-4, AC-PD-5]
+      parameters:
+        - name: place_id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        '200':
+          description: 관광지 상세
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PlaceDetail'}
+        '404':
+          description: 관광지를 찾을 수 없음
+          content:
+            application/problem+json:
+              schema: {$ref: '#/components/schemas/Problem'}
+components:
+  schemas:
+    PlaceDetail:
+      type: object
+      required: [place_id, category, status_label, name, tags, source_label]
+      properties:
+        place_id: {type: string, example: mmca-seoul}
+        category: {type: string, example: 역사 · 문화}
+        status_label: {type: string, example: 운영 중}
+        name: {type: string, example: 국립현대미술관 서울}
+        image_url: {type: [string, 'null'], format: uri}
+        address: {type: [string, 'null']}
+        opening_hours: {type: [string, 'null']}
+        distance_label: {type: [string, 'null']}
+        tags: {type: array, items: {type: string}}
+        description: {type: [string, 'null']}
+        recommendation_reason: {type: [string, 'null']}
+        latitude: {type: [number, 'null'], format: double}
+        longitude: {type: [number, 'null'], format: double}
+        source_label: {type: string, example: 한국관광공사 제공}
+    Problem:
+      type: object
+      required: [type, title, status, detail, code]
+      properties:
+        type: {type: string}
+        title: {type: string}
+        status: {type: integer}
+        detail: {type: string}
+        code: {type: string, example: PLACE_NOT_FOUND}
