@@ -43,3 +43,9 @@ Bean Validation 제약 이름을 `UPPER_SNAKE_CASE` 로 변환한 값이다. 예
 
 (TODO — 인증 기능 구현 시 등록. 예상: `AUTH_INVALID_CREDENTIALS`, `AUTH_TOKEN_EXPIRED`,
 `AUTH_REFRESH_TOKEN_REUSED`, `AUTH_EMAIL_ALREADY_REGISTERED`)
+
+### place
+
+| code | status | 의미 | 모바일 처리 |
+|---|---|---|---|
+| `PLACE_NOT_FOUND` | 404 | 관광지가 없거나 공개되지 않음 | 장소 상세 찾을 수 없음 상태 |

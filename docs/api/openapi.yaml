@@ -22,6 +22,42 @@ security:
   - bearerAuth: []
 
 paths:
+  /api/v1/places/nearby:
+    get:
+      summary: 주변 장소 조회
+      operationId: getNearbyPlaces
+      tags: [place]
+      security: []
+      parameters:
+        - {name: latitude, in: query, required: true, schema: {type: number, format: double}}
+        - {name: longitude, in: query, required: true, schema: {type: number, format: double}}
+      responses:
+        '200':
+          description: 주변 장소 목록
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/NearbyPlaceList'}
+  /api/v1/places/{place_id}:
+    get:
+      summary: 관광지 상세 조회
+      operationId: getPlaceDetail
+      tags: [place]
+      security: []
+      parameters:
+        - name: place_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 관광지 상세
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceDetail'
+        '404':
+          $ref: '#/components/responses/Problem'
   /api/v1/health:
     get:
       summary: 서비스 상태 확인
@@ -55,6 +91,44 @@ components:
       bearerFormat: JWT
 
   schemas:
+    NearbyPlaceList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/NearbyPlace'}
+    NearbyPlace:
+      type: object
+      required: [place_id, category, status_label, name, distance_label, tags, latitude, longitude]
+      properties:
+        place_id: {type: string}
+        category: {type: string}
+        status_label: {type: string}
+        name: {type: string}
+        image_url: {type: [string, 'null'], format: uri}
+        distance_label: {type: string}
+        tags: {type: array, items: {type: string}}
+        latitude: {type: number, format: double}
+        longitude: {type: number, format: double}
+    PlaceDetail:
+      type: object
+      required: [place_id, category, status_label, name, tags, source_label]
+      properties:
+        place_id: {type: string, example: mmca-seoul}
+        category: {type: string, example: 역사 · 문화}
+        status_label: {type: string, example: 운영 중}
+        name: {type: string, example: 국립현대미술관 서울}
+        image_url: {type: [string, 'null'], format: uri}
+        address: {type: [string, 'null']}
+        opening_hours: {type: [string, 'null']}
+        distance_label: {type: [string, 'null']}
+        tags: {type: array, items: {type: string}}
+        description: {type: [string, 'null']}
+        recommendation_reason: {type: [string, 'null']}
+        latitude: {type: [number, 'null'], format: double}
+        longitude: {type: [number, 'null'], format: double}
+        source_label: {type: string, example: 한국관광공사 제공}
     Problem:
       type: object
       description: RFC 9457 Problem Details. 모든 오류 응답의 형식.

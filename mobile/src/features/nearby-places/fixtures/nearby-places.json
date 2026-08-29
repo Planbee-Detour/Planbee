@@ -1,0 +1,5 @@
+{"items":[
+  {"place_id":"gyeongbokgung","category":"역사 · 문화","status_label":"운영 중","name":"경복궁","image_url":"https://images.unsplash.com/photo-1786157986916-523f3b64be2a?auto=format&fit=crop&w=600&q=80","distance_label":"850m · 도보 12분","tags":["#역사","#사진명소"],"latitude":37.579617,"longitude":126.977041},
+  {"place_id":"ikseon-dong","category":"거리 · 골목","status_label":"운영 중","name":"익선동 한옥거리","image_url":"https://images.unsplash.com/photo-1707925547023-eeb1eaa1005d?auto=format&fit=crop&w=600&q=80","distance_label":"1.1km · 도보 15분","tags":["#카페","#산책"],"latitude":37.574329,"longitude":126.989683},
+  {"place_id":"seoul-craft-museum","category":"실내 · 전시","status_label":"오늘 휴관","name":"서울공예박물관","image_url":"https://images.unsplash.com/photo-1605822107205-16a8b116ffc7?auto=format&fit=crop&w=600&q=80","distance_label":"600m · 도보 8분","tags":["#실내","#전시"],"latitude":37.576652,"longitude":126.983066}
+]}
