@@ -4,6 +4,40 @@
  */
 
 export interface paths {
+    "/api/v1/places/nearby": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 주변 장소 조회 */
+        get: operations["getNearbyPlaces"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/places/{place_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 관광지 상세 조회 */
+        get: operations["getPlaceDetail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health": {
         parameters: {
             query?: never;
@@ -110,8 +144,25 @@ export interface paths {
          *     그 계정의 **모든** 리프레시 토큰을 폐기한다 (AC-24). 이후 다른 기기의 갱신은
          *     `AUTH_REFRESH_TOKEN_REVOKED` 를 받는다 — 앱은 이 둘 모두에 보안 배너를 띄운다.
          *
+         *     **유예 창은 서버가 직전 응답을 기억하고 있는 동안에만 성립한다 — best-effort 다.**
+         *     (2026-08-27 확정. 근거는 `docs/features/auth/defects.md` D-3 의 "계약에서의 결론")
+         *     서버는 회전된 토큰의 **후속 평문**을 보관하지 않으므로, 직전 응답이 사라지면
+         *     "같은 쌍" 을 다시 만들어 낼 수단이 없다 — 재기동, 캐시 정리, 요청이 다른 인스턴스로
+         *     가는 경우가 그렇다. 이때는 **닫히는 쪽으로 실패한다**: 유예 창 안이라도 유예 창 밖과
+         *     **똑같이** 처리해 401 `AUTH_REFRESH_TOKEN_REUSED` 로 거부하고 그 계정의 모든 리프레시
+         *     토큰을 폐기한다 (AC-23·24).
+         *     **이 경우 새 토큰 쌍을 발급하지 않는다.** 발급하면 ① 이미 살아 있는 후속 토큰과 함께
+         *     유효 리프레시가 늘어 병렬 세션이 되고, ② 직전 토큰에 로그아웃 폐기가 찍혀 이후의
+         *     진짜 재사용이 `REUSED` 가 아니라 `INVALID` 로 걸러져 AC-24 의 전 기기 폐기가
+         *     발동하지 않는다.
+         *     앱이 이 경우를 구분할 방법도 이유도 없으므로 **전용 오류 코드를 만들지 않는다** —
+         *     사용자에게는 유예 창 밖 재사용과 똑같이 보안 배너가 보인다.
+         *     **AC-49 는 직전 응답이 남아 있는 경우를 규정하고, 이 예외는 AC-23·24 를 따른다.**
+         *
          *     계정이 갱신 시점에 더 이상 `APPROVED` 가 아니면 403 + `account_status` 를 낸다.
          *     정지·거절은 **액세스 토큰 수명(30분) 안에** 이 경로로 반영된다.
+         *     단 **재사용 판정이 계정 상태 확인보다 먼저 선다** — 재사용으로 걸린 요청은 계정
+         *     상태와 무관하게 401 `AUTH_REFRESH_TOKEN_REUSED` 를 받는다.
          */
         post: operations["refreshToken"];
         delete?: never;
@@ -198,6 +249,47 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        NearbyPlaceList: {
+            items: components["schemas"]["NearbyPlace"][];
+        };
+        NearbyPlace: {
+            place_id: string;
+            category: string;
+            status_label: string;
+            name: string;
+            /** Format: uri */
+            image_url?: string | null;
+            distance_label: string;
+            tags: string[];
+            /** Format: double */
+            latitude: number;
+            /** Format: double */
+            longitude: number;
+        };
+        PlaceDetail: {
+            /** @example mmca-seoul */
+            place_id: string;
+            /** @example 역사 · 문화 */
+            category: string;
+            /** @example 운영 중 */
+            status_label: string;
+            /** @example 국립현대미술관 서울 */
+            name: string;
+            /** Format: uri */
+            image_url?: string | null;
+            address?: string | null;
+            opening_hours?: string | null;
+            distance_label?: string | null;
+            tags: string[];
+            description?: string | null;
+            recommendation_reason?: string | null;
+            /** Format: double */
+            latitude?: number | null;
+            /** Format: double */
+            longitude?: number | null;
+            /** @example 한국관광공사 제공 */
+            source_label: string;
+        };
         /** @description RFC 9457 Problem Details. 모든 오류 응답의 형식. (C-1) */
         Problem: {
             /** @default about:blank */
@@ -642,6 +734,52 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    getNearbyPlaces: {
+        parameters: {
+            query: {
+                latitude: number;
+                longitude: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 주변 장소 목록 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NearbyPlaceList"];
+                };
+            };
+        };
+    };
+    getPlaceDetail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                place_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 관광지 상세 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceDetail"];
+                };
+            };
+            404: components["responses"]["Problem"];
+        };
+    };
     getHealth: {
         parameters: {
             query?: never;
@@ -822,6 +960,7 @@ export interface operations {
             /**
              * @description 갱신 성공. 새 토큰 쌍을 반환한다 (AC-22).
              *     유예 창(10초) 안의 직전 토큰 재사용이면 **직전과 동일한 쌍**을 반환한다 (AC-49).
+             *     서버가 직전 응답을 기억하지 못하면 200 이 아니라 401 `AUTH_REFRESH_TOKEN_REUSED` 다.
              */
             200: {
                 headers: {
@@ -847,7 +986,7 @@ export interface operations {
              *     |---|---|---|
              *     | `AUTH_REFRESH_TOKEN_EXPIRED` | 마지막 사용 후 14일 경과 | 만료 배너 (AC-25) |
              *     | `AUTH_REFRESH_TOKEN_INVALID` | 알 수 없는 토큰 · 서명 오류 · 로그아웃으로 폐기된 토큰 | 만료 배너 |
-             *     | `AUTH_REFRESH_TOKEN_REUSED` | 유예 창 밖 재사용 감지 — **이 요청이 전 기기 폐기의 방아쇠다** | 보안 배너 (AC-23·24) |
+             *     | `AUTH_REFRESH_TOKEN_REUSED` | 유예 창 밖 재사용 감지, **또는** 유예 창 안이지만 서버가 직전 응답을 기억하지 못함 — **이 요청이 전 기기 폐기의 방아쇠다** | 보안 배너 (AC-23·24) |
              *     | `AUTH_REFRESH_TOKEN_REVOKED` | 재사용 감지로 이미 폐기된 계정의 토큰 (다른 기기) | 보안 배너 (AC-24) |
              *
              *     어느 경우든 앱은 저장된 토큰을 지우고 로그인 화면으로 간다.

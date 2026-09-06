@@ -42,9 +42,8 @@ export type AuthRouteParams = {
   LegalDocument: LegalDocumentRouteParams;
 };
 
-/** 세션이 있을 때의 스택. `auth` 가 소유한 화면만 적는다 — 홈은 다른 기능이 채운다 */
+/** 세션이 있을 때의 스택. `auth` 가 소유한 화면만 적는다 — 홈과 장소 화면은 다른 기능이 채운다 */
 export type MainRouteParams = {
-  Home: undefined;
   Settings: undefined;
   AccountDelete: AccountDeleteRouteParams;
   LegalDocument: LegalDocumentRouteParams;

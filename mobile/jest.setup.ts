@@ -1,3 +1,5 @@
+jest.mock('@react-native-community/geolocation');
+jest.mock('react-native-mmkv');
 /**
  * 모바일 테스트 공통 설정.
  *

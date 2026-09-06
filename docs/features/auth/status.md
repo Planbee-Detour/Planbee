@@ -2,7 +2,7 @@
 
 - 기능 슬러그: `auth`
 - 시작일: 2026-08-23
-- 현재 단계: `2026-09-02 6단계까지 완료(make verify-mobile exit 0). 7단계 통합은 환경을 갖추고 실제로 실행했다 — auth-01 PASS, 나머지 3개는 미완. 홈이 자리표시자라 여기서 중단(사람 판단)`
+- 현재 단계: `2026-09-06 develop 머지 진행 중. 6단계까지 완료(make verify-mobile exit 0). 원격 develop 에 실제 홈 화면이 생겨 7단계 재개 조건이 갖춰졌다 — 남은 것은 Docker 게이트(test-server-db · contract-check)와 E2E 재실행`
   - 모바일 재작업 루프는 **1회로 종료**됐다 (`D-M1`~`D-M5` 전건 해소, 신규 `[MUST]` 0건).
     상한 2회 안이라 `ESCALATE` 대상이 아니다.
   - 서버 재작업 루프도 **1회로 종료**됐다 (`D-3`~`D-6` 전건 해소, 신규 `[MUST]` 0건).
@@ -226,6 +226,84 @@ Metro(`npm start`)와 `make e2e-up` 이 떠 있어야 한다. Maestro 는 PATH �
 
 ---
 
+## 이어받기 (2026-09-06) — develop 머지
+
+`auth` 작업 전체를 커밋해 `feat/ariel/auth` 에 올리고, 그 위에서 원격 `develop` 을 흡수했다.
+develop 쪽에서 다른 갈래 둘(`feat/main-screen` · `feat/detail-screen`)이 먼저 머지돼 6커밋 앞서 있었다.
+
+| | 내용 |
+|---|---|
+| 커밋 | `f5466be feat: auth 기능 구현 — 계약·서버·모바일·E2E 플로우` (126 files, +15735/-217) |
+| push | `9840824..f5466be feat/ariel/auth` (fast-forward) |
+| 백업 | 낡은 `57a4cad`(내용이 이미 대체됨)는 `backup/ariel-auth-57a4cad` 에 남겨 뒀다 |
+| 머지 | `git merge origin/develop` — 충돌 5개 파일 |
+
+### 충돌 해결
+
+| 파일 | 해결 |
+|---|---|
+| `docs/api/error-codes.md` | 양쪽 다 살렸다. auth 코드 12개 + develop 의 `### place`. develop 쪽 auth `TODO` 줄은 버렸다(이미 등록됨) |
+| `docs/api/openapi.yaml` | 양쪽 다 살렸다. `schemas:` 아래에 장소 스키마 3개 + 기존 공통 오류 |
+| `mobile/src/shared/api/schema.ts` | 생성물이라 `make contract-types` 로 재생성했다 |
+| `mobile/tailwind.config.js` | auth 쪽 구조(값은 `tailwind.tokens.js`, D-M2) 채택. develop 이 쓰던 `ink-inverse`(화면 4곳)·`shadow-card`(탭바)·`fontFamily`·`brand.ink` 를 값 파일에 보강했다. `fontSize` 는 pen 기준인 auth 값을 유지했다 (M-16) |
+| `mobile/App.tsx` | 아래 내비게이터 통합 참조 |
+| `docs/design/planbee.pen` | **자동 머지됐다(충돌 없음).** 암호화 파일이 라인 단위로 합쳐진 것이라 **pencil 로 열어 확인이 필요하다** — 아래 남은 일 참조 |
+
+### 내비게이터 통합 (사람 결정, 2026-09-06)
+
+두 내비게이터가 정면으로 만났다 — auth 의 `RootNavigator`(세션 분기)와 develop 의
+`AppNavigator`(하단 탭 4개 + 장소 스택). **세션 분기를 바깥에 두고 그 안쪽을 실제 탭 구조로 채웠다.**
+
+```
+App.tsx
+ └ AppProviders
+    └ RootNavigator              (auth 소유 — 세션 분기)
+       ├ AuthNavigator           스플래시·로그인·가입·상태·삭제·약관
+       └ MainNavigator           ← develop 의 AppNavigator 를 흡수
+          ├ MainTabs (홈·탐색·저장·마이)
+          ├ NearbyPlaces / PlaceDetail
+          └ Settings / AccountDelete / LegalDocument   (auth 소유)
+```
+
+- `app/AppNavigator.tsx` → `app/navigation/MainNavigator.tsx` 로 옮기고 `NavigationContainer` 를 벗겼다.
+  컨테이너는 `RootNavigator` 하나뿐이다.
+- **자리표시자였던 `features/auth/screens/HomeScreen.tsx` 를 지웠다.** 실제 홈은
+  `features/home/screens/HomeScreen.tsx` 다. `MainRouteParams` 에서도 `Home` 을 뺐다.
+- **계정 설정 진입점은 마이 탭 안의 항목**으로 정했다 (사람 결정). `MyScreen` 에 `계정 설정`
+  행을 더하고 `home-settings` testID 를 그 행이 물려받았다 — AC-28·AC-35 의 전제가 유지된다.
+- 장소 화면들의 라우트 파라미터는 아직 `app/navigation/types.ts` 에 직접 있다.
+  그 기능들이 `navigation.ts` 를 두면 auth 와 같은 방식으로 옮긴다 (M-2).
+- E2E 두 플로우를 새 경로에 맞췄다 — 홈 도착 판정은 탭바(`tab-My`, 탭 버튼에 testID 신설),
+  설정으로 갈 때 마이 탭을 먼저 누른다. `auth-02` · `auth-03` 둘 다 해당된다.
+
+### 통과한 게이트
+
+| 게이트 | 결과 |
+|---|---|
+| `make verify-mobile` | **exit 0** — 13 스위트 147건 전건 통과 (lint · typecheck · test) |
+| `make lint-server` | BUILD SUCCESSFUL |
+| `make test-server` | exit 0 |
+| `make test-server-db` | **미실행 — Docker 필요** |
+| `make contract-check` | **미실행 — Docker 필요** |
+
+### 남은 일
+
+1. **Docker 를 켜고 `make verify` 를 끝까지 돌린다.** `contract-check` 는 특히 확인이 필요하다 —
+   develop 이 `/api/v1/places/nearby` 와 `/api/v1/places/{place_id}` 를 계약에 올렸는데
+   서버 구현은 없다(모바일이 fixtures 로 그린다). 스크립트 주석은 "계약에만 있고 미구현" 을
+   실패로 보지 않는다고 하지만, `oasdiff breaking` 이 경로 부재를 ERR 로 볼 수 있다.
+   실패하면 그것은 이번 머지가 만든 문제가 아니라 **develop 이 이미 갖고 있던 상태**다.
+2. ~~`docs/design/planbee.pen` 확인~~ — **해소 (2026-09-06).** 자동 머지 결과가 온전하다.
+   JSON 파싱이 통과하고(version 2.17) 최상위 프레임 70개에 auth 아트보드(`Screen 06a`~`15a`)와
+   develop 의 홈·상세·Nearby(`Screen 02`·`03`·`04a`~`04d`·`05`·`16a`~`16e`)가 **둘 다 살아 있다.**
+   줄 수도 정확히 양쪽 추가분의 합이다(18702 + 30 + 1663 = 20395).
+   **참고**: `.pen` 은 지금 암호화 파일이 아니라 pretty-printed JSON 이다 — 그래서 3-way 머지가
+   깨끗하게 됐다. `AGENTS.md` 의 "암호화 파일이라 `Read`/`Grep` 으로 열리지 않는다" 는 서술과
+   실제가 다르다. 편집은 계속 pencil MCP 로만 하되, 이 서술은 사람이 확인할 필요가 있다.
+3. E2E 재실행 — 홈이 실제로 생겼으므로 `auth-02` · `auth-03` 이 막혀 있던 이유가 사라졌다.
+   Metro(`npm start`) + `make e2e-up` + `export PATH="$PATH:$HOME/.maestro/bin"` 가 전제다.
+4. 머지 커밋 → push → `develop` 으로 PR.
+
 ## 파이프라인
 
 - [x] product-manager — PRD.md
@@ -397,3 +475,4 @@ PRD 열린 질문 **2(초기 관리자 계정 생성 경로)는 여전히 열려
 | 2026-08-27 | server-tester | **PASS.** auth 통합 테스트 **61건** 신설(Testcontainers + 실제 HTTP): `AuthSignupApiTest` 14 · `AuthLoginApiTest` 16 · `AuthRefreshApiTest` 14 · `AuthAccountApiTest` 14(+`AuthSupportContactUnavailableApiTest` 3, 문의 주소가 빈 별도 컨텍스트). 지원 클래스는 `support/MutableClock` · `support/TestClockConfig`(시각 주입 — 잠금 10분·유예 창 10초·유휴 14일·삭제 토큰 10분을 기다리지 않고 검증). **server-reviewer 가 지목한 필수 2건 통과** — ① 유예 창 안 + 캐시 없음 → 401 `AUTH_REFRESH_TOKEN_REUSED` 이고 **폐기가 DB 에 남아**(전 행 `revoke_reason=REUSE_DETECTED`) 후속 토큰 B 가 401 `AUTH_REFRESH_TOKEN_REVOKED`, ② 그 401 경로에서 행이 늘지 않고 유효 리프레시가 **0개**. `ReuseDetectionRevoker` 의 `REQUIRES_NEW` 가 실제로 커밋된다는 뜻이다. 서버 담당 AC **34건 통과 / 0건 실패**, 나머지 16건은 앱 담당이거나 미커버로 명시(아래 결함 리포트). 결함: 차단 **0건**, 비차단 `D-S1`(앞뒤 공백 이메일이 가입에서 400 — 계약 문장과 어긋남, 구현/계약 중 어느 쪽을 고칠지 요청). **`D-1` 판단: `@WebMvcTest(controllers = ...)` 범위 지정은 의도와 맞다 — 되돌리지 않고 `server.md` **S-30 `[MUST]`**(슬라이스 테스트는 대상을 명시한다)로 승격했다.** 게이트: `make verify-server` 통과(Spotless · `test` 11건 · `integrationTest` 63건), `make test-server-db` 통과. **다음 역할: integration-tester** (모바일 갈래의 mobile-tester 와 독립) |
 | 2026-08-27 | integration-tester | **플로우 작성 완료 · 실행 보류(사람 결정).** `e2e/flows/` — `app-launch.yaml`(옛 `health.yaml`. 앱에서 사라진 셀렉터 `다시 확인`·`서버 연결됨` 을 쓰고 있어 반드시 실패하던 상태였다), `auth-01-signup-pending.yaml`(가입 → 서버가 완성한 안내 문구 그대로 렌더 · AC-1·46), `auth-02-login-home.yaml`(승인 계정 로그인 → 홈 → 설정의 `GET /auth/me` · AC-11·35), `auth-03-session-persistence.yaml`(**재시작 후 세션 유지** → 로그아웃 → 재시작해도 유지 안 됨 · AC-20·22·26·27). 시드 `V901__e2e_seed_auth.sql` 신설 — APPROVED 계정 1개(해시는 실제 서버의 `/auth/signup` 이 만든 값) + 동의 이력 3종. V900 은 체크섬 때문에 손대지 않았다. **앱 실행은 못 했지만 서버 왕복은 기계로 확인했다** — `make e2e-up` 후 `curl` 로 시드 적용(Flyway V901 성공)·로그인 200·`/auth/me` 200·`/token/refresh` 200(회전 확인)·`/logout` 204·폐기 후 갱신 401 `AUTH_REFRESH_TOKEN_INVALID`·가입 201(PENDING 문구가 플로우 단언과 일치)까지 확인 후 `make e2e-down` 으로 정리. 결함 `D-E1`(비차단, 로그인 입력란 `testID` 요청). `make test-e2e` 미실행이라 **PASS 를 적지 않았다**(절대 규칙 6) — `ASK` 9 |
 | 2026-08-27 | mobile-tester | **FAIL — 차단 결함 1건.** AC 검증 테스트 **136건** 신설(파일 9개). 로그인 27 · 가입 25 · 상태 안내 24 · 계정 삭제 12 · 설정 11 · 약관 뷰어 11 · 스플래시 13 · 무음 갱신 4 · 낭독 8. `D-M4` 요청대로 **양방향 낭독을 검증**했다 — `a11yAnnounceIos`/`a11yAnnounceAndroid` 두 파일로 나눠(`shared/lib/a11y` 가 로드 시점에 경로를 고정하므로 한 파일로는 불가) iOS 는 `announceForAccessibility` 호출, 안드로이드는 **호출 없음 + 라이브 리전** 확인. 잠금은 `Retry-After` 헤더와 본문을 어긋나게 목킹해 **앱이 본문 `lock_remaining_minutes` 만 쓰는 것**을 고정했다. **결함 `D-T1` [High · 차단]** — 갱신 요청 자체가 401 을 받으면 `authFetch` 가 그 응답에 또 갱신을 걸어 `refreshInFlight` 가 자기를 기다리며 **영원히 끝나지 않는다.** 토큰이 지워지지 않고 세션도 끝나지 않아 AC-23·24·25 가 운영 빌드에서 깨진다(스플래시 단독 테스트는 `configureSession()` 을 부르지 않아 통과했다 — 실제 앱은 `App.tsx` 가 부른다). 증거는 `sessionRefresh.test.tsx` 의 `test.failing` 3건이며 고치면 실패로 바뀐다. `D-T2` [Low · 비차단] 잠금 429 에서도 비밀번호를 지우는 동작은 §4.6 이 침묵해 판정 불가 → ux-designer 요청. **못 덮은 AC**: AC-8(저장된 이력) · AC-18 의 Android Keystore 실기기 · AC-23·AC-49 의 유예 창 · AC-31·AC-32 의 실제 재가입 — 전부 server-tester / integration-tester 담당이다. `mobile.md` 테스트 메모 3줄 추가(`fireEvent` 도 비동기 · 한 테스트에서 `render` 2회 금지 · Keychain 초기화는 `clearTokens`). 게이트: `make verify-mobile` 통과(린트 0 · `tsc` 0 · 테스트 **148건**) |
+| 2026-09-06 | (머지) | `auth` 전체를 `f5466be` 로 커밋해 `feat/ariel/auth` 에 push. 원격 `develop`(6커밋 앞섬) 흡수 — 충돌 5개 해결, 내비게이터 통합(세션 분기 바깥 / 실제 탭 구조 안쪽), 자리표시자 홈 제거, 계정 설정 진입점을 마이 탭으로 확정(사람 결정). `make verify-mobile` exit 0 · `lint-server` · `test-server` 통과. Docker 게이트 2종과 pen 확인은 미완 |

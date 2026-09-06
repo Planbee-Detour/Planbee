@@ -18,13 +18,13 @@
  *
  * @type {import('tailwindcss').Config}
  */
-const {colors, fontSize, borderRadius} = require('./tailwind.tokens');
+const {colors, fontSize, fontFamily, borderRadius, boxShadow} = require('./tailwind.tokens');
 
 module.exports = {
   content: ['./App.tsx', './src/**/*.{ts,tsx}'],
   presets: [require('nativewind/preset')],
   theme: {
-    extend: {colors, fontSize, borderRadius},
+    extend: {colors, fontSize, fontFamily, borderRadius, boxShadow},
   },
   plugins: [],
 };

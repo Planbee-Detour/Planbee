@@ -14,6 +14,9 @@
 # Maestro 2.x 문법: `assertVisible` 에서 `timeout` 이 제거됐다 (2.10.0 에서 파싱 실패).
 # 그래서 "뜰 때까지 기다리는" 단언은 `extendedWaitUntil` + `visible:` 로 쓴다 (2026-09-02).
 # `assertNotVisible` 과 timeout 없는 `assertVisible` 은 "지금 그러해야 한다" 는 단언이라 그대로 둔다.
+# 2026-09-06 develop 머지 — 로그인 후 도착지가 자리표시자 홈에서 실제 홈(하단 탭 4개)으로 바뀌었다.
+# 계정 설정은 마이 탭 안의 항목이 됐다: 홈 도착 판정은 탭바(`tab-My`)로 하고,
+# 설정으로 갈 때 마이 탭을 먼저 누른다. `home-settings` testID 자체는 그 항목이 물려받았다.
 appId: org.reactjs.native.example.Planbee
 name: 로그인 → 홈
 ---
@@ -42,9 +45,10 @@ name: 로그인 → 홈
     id: 'login-submit'
 
 # 홈 도착 = 200 + 토큰 저장 + 스택 교체까지 성립했다는 뜻이다 (AC-11).
+# 하단 탭바는 세션이 있을 때만 마운트된다 — 그것이 보이면 Main 스택으로 교체된 것이다.
 - extendedWaitUntil:
     visible:
-      id: 'home-settings'
+      id: 'tab-My'
     timeout: 15000
 # 로그인 화면으로 되돌아가 있지 않다.
 - assertNotVisible:
@@ -52,6 +56,12 @@ name: 로그인 → 홈
 
 # 설정 화면은 GET /auth/me 로 계정 카드를 그린다 (C-8 — 화면 하나가 한 번의 호출로 완성된다).
 # 여기 보이는 이메일은 앱이 기억한 입력값이 아니라 **서버가 DB 에서 읽어 내려준 값**이다.
+- tapOn:
+    id: 'tab-My'
+- extendedWaitUntil:
+    visible:
+      id: 'home-settings'
+    timeout: 15000
 - tapOn:
     id: 'home-settings'
 - extendedWaitUntil:

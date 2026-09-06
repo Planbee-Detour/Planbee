@@ -13,6 +13,9 @@
 # Maestro 2.x 문법: `assertVisible` 에서 `timeout` 이 제거됐다 (2.10.0 에서 파싱 실패).
 # 그래서 "뜰 때까지 기다리는" 단언은 `extendedWaitUntil` + `visible:` 로 쓴다 (2026-09-02).
 # `assertNotVisible` 과 timeout 없는 `assertVisible` 은 "지금 그러해야 한다" 는 단언이라 그대로 둔다.
+# 2026-09-06 develop 머지 — 로그인 후 도착지가 자리표시자 홈에서 실제 홈(하단 탭 4개)으로 바뀌었다.
+# 계정 설정은 마이 탭 안의 항목이 됐다: 홈 도착 판정은 탭바(`tab-My`)로 하고,
+# 설정으로 갈 때 마이 탭을 먼저 누른다. `home-settings` testID 자체는 그 항목이 물려받았다.
 appId: org.reactjs.native.example.Planbee
 name: 인증 지속 (재시작) → 로그아웃
 ---
@@ -38,7 +41,7 @@ name: 인증 지속 (재시작) → 로그아웃
     id: 'login-submit'
 - extendedWaitUntil:
     visible:
-      id: 'home-settings'
+      id: 'tab-My'
     timeout: 15000
 
 # ── 재시작 ──────────────────────────────────────────────────────────
@@ -50,13 +53,19 @@ name: 인증 지속 (재시작) → 로그아웃
 
 - extendedWaitUntil:
     visible:
-      id: 'home-settings'
+      id: 'tab-My'
     timeout: 20000
 # 중간에 로그인 화면이 남아 있으면 세션 복원이 아니라 재로그인이다.
 - assertNotVisible:
     id: 'login-submit'
 
 # ── 로그아웃 (AC-26 · AC-27) ────────────────────────────────────────
+- tapOn:
+    id: 'tab-My'
+- extendedWaitUntil:
+    visible:
+      id: 'home-settings'
+    timeout: 15000
 - tapOn:
     id: 'home-settings'
 - extendedWaitUntil:
@@ -90,4 +99,4 @@ name: 인증 지속 (재시작) → 로그아웃
       id: 'login-submit'
     timeout: 20000
 - assertNotVisible:
-    id: 'home-settings'
+    id: 'tab-My'

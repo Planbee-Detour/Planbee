@@ -22,12 +22,16 @@ const colors = {
     DEFAULT: '#FFB020', // Color/Brand/Honey
     dark: '#E89100', // Color/Brand/HoneyDark
     light: '#FFF1CC', // Color/Brand/HoneyLight
+    ink: '#171717', // 브랜드 면 위의 글자색. Color/Brand/BeeBlack 과 같은 값
   },
   // Color/Text — ink 는 Color/Brand/BeeBlack 과 같은 값이다
   ink: {
     DEFAULT: '#171717', // Color/Text/Primary
     body: '#333333', // Color/Text/Body
     muted: '#737373', // Color/Text/Secondary
+    // Color/Text/OnDark 와 같은 값. `text-on-dark` 와 `text-ink-inverse` 두 이름이
+    // 함께 쓰인다 — auth 는 앞을, nearby-places·place-detail 은 뒤를 쓴다 (2026-09-06 머지)
+    inverse: '#FFFFFF',
   },
   'on-dark': '#FFFFFF', // Color/Text/OnDark
   // Color/Neutral
@@ -51,6 +55,11 @@ const fontSize = {
   caption: ['12px', {lineHeight: '18px', fontWeight: '500'}],
 };
 
+/** 본문 서체. `font-sans` 로 쓴다. */
+const fontFamily = {
+  sans: ['Noto Sans KR'],
+};
+
 const borderRadius = {
   card: '16px',
   button: '14px',
@@ -58,4 +67,9 @@ const borderRadius = {
   chip: '999px',
 };
 
-module.exports = {colors, fontSize, borderRadius};
+/** 카드·탭바가 쓰는 그림자. `shadow-card` 로 쓴다. */
+const boxShadow = {
+  card: '0 2px 12px rgba(0, 0, 0, 0.06)',
+};
+
+module.exports = {colors, fontSize, fontFamily, borderRadius, boxShadow};

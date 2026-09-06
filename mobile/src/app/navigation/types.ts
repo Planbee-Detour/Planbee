@@ -13,4 +13,12 @@ import type {AuthRouteParams, MainRouteParams} from '../../features/auth/navigat
 
 export type AuthStackParamList = AuthRouteParams;
 
-export type MainStackParamList = MainRouteParams;
+/**
+ * 홈·주변장소·장소상세는 아직 자기 `navigation.ts` 를 두지 않아 여기 직접 적는다.
+ * 그 기능들이 파라미터를 선언하면 auth 와 같은 방식으로 옮긴다 (2026-09-06 머지).
+ */
+export type MainStackParamList = MainRouteParams & {
+  MainTabs: undefined;
+  NearbyPlaces: undefined;
+  PlaceDetail: {placeId: string};
+};

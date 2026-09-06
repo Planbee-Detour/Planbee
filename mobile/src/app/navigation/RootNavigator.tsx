@@ -11,17 +11,15 @@ import {createNativeStackNavigator} from '@react-navigation/native-stack';
 
 import {AccountDeleteScreen} from '../../features/auth/screens/AccountDeleteScreen';
 import {AccountStatusScreen} from '../../features/auth/screens/AccountStatusScreen';
-import {HomeScreen} from '../../features/auth/screens/HomeScreen';
 import {LegalDocumentScreen} from '../../features/auth/screens/LegalDocumentScreen';
 import {LoginScreen} from '../../features/auth/screens/LoginScreen';
-import {SettingsScreen} from '../../features/auth/screens/SettingsScreen';
 import {SignUpScreen} from '../../features/auth/screens/SignUpScreen';
 import {SplashScreen} from '../../features/auth/screens/SplashScreen';
 import {useSession} from '../../features/auth/hooks/useSession';
-import type {AuthStackParamList, MainStackParamList} from './types';
+import {MainNavigator} from './MainNavigator';
+import type {AuthStackParamList} from './types';
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
-const MainStack = createNativeStackNavigator<MainStackParamList>();
 
 function AuthNavigator() {
   return (
@@ -42,21 +40,6 @@ function AuthNavigator() {
         options={{presentation: 'modal'}}
       />
     </AuthStack.Navigator>
-  );
-}
-
-function MainNavigator() {
-  return (
-    <MainStack.Navigator screenOptions={{headerShown: false}}>
-      <MainStack.Screen name="Home" component={HomeScreen} />
-      <MainStack.Screen name="Settings" component={SettingsScreen} />
-      <MainStack.Screen name="AccountDelete" component={AccountDeleteScreen} />
-      <MainStack.Screen
-        name="LegalDocument"
-        component={LegalDocumentScreen}
-        options={{presentation: 'modal'}}
-      />
-    </MainStack.Navigator>
   );
 }
 

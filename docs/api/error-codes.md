@@ -95,3 +95,9 @@ Bean Validation 제약 이름을 `UPPER_SNAKE_CASE` 로 변환한 값이다. 예
 
 > `AUTH_PASSWORD_MISMATCH` 는 401 이지만 세션 문제가 아니다. 401 을 상태 코드로 일괄
 > 가로채는 인터셉터가 있으면 이 코드를 **먼저 예외 처리**해야 한다 (C-1: 분기는 `code` 로 한다).
+
+### place
+
+| code | status | 의미 | 모바일 처리 |
+|---|---|---|---|
+| `PLACE_NOT_FOUND` | 404 | 관광지가 없거나 공개되지 않음 | 장소 상세 찾을 수 없음 상태 |
