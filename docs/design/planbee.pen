@@ -8829,7 +8829,7 @@
                           "fill": "$Color/Text/Body",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
-                          "content": "비밀번호를 여러 번 잘못 입력해서 약 10분 동안 로그인을 막아 뒀어요. 잠시 뒤에 다시 시도해 주세요.",
+                          "content": "비밀번호를 여러 번 잘못 입력해서 잠시 동안 로그인을 막아 뒀어요. 남은 시간이 지나면 다시 시도할 수 있어요.",
                           "lineHeight": 1.6,
                           "fontFamily": "$Font/Family",
                           "fontSize": "$Font/Size/Caption",
@@ -13988,14 +13988,44 @@
                   }
                 },
                 {
-                  "type": "text",
-                  "id": "e0H4P",
-                  "name": "Link",
-                  "fill": "$Color/Text/Secondary",
-                  "content": "개인정보 처리방침 보기",
-                  "fontFamily": "$Font/Family",
-                  "fontSize": "$Font/Size/BodySmall",
-                  "fontWeight": "500"
+                  "type": "frame",
+                  "id": "AMNlH",
+                  "name": "Secondary Links",
+                  "fill": "#00000000",
+                  "gap": "$Space/12",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "e0H4P",
+                      "name": "Link",
+                      "fill": "$Color/Text/Secondary",
+                      "content": "개인정보 처리방침 보기",
+                      "fontFamily": "$Font/Family",
+                      "fontSize": "$Font/Size/BodySmall",
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "lzcxz",
+                      "name": "Link Divider",
+                      "fill": "$Color/Neutral/Border",
+                      "content": "·",
+                      "fontFamily": "$Font/Family",
+                      "fontSize": "$Font/Size/BodySmall",
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "SuOdQ",
+                      "name": "Delete Account Link",
+                      "fill": "$Color/Semantic/Error",
+                      "content": "계정 삭제",
+                      "fontFamily": "$Font/Family",
+                      "fontSize": "$Font/Size/BodySmall",
+                      "fontWeight": "500"
+                    }
+                  ]
                 }
               ]
             }

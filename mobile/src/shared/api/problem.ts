@@ -35,6 +35,15 @@ export class ApiError extends Error {
   readonly code: string;
   readonly fieldErrors: FieldErrorDetail[];
   readonly instance?: string;
+  /**
+   * 파싱하지 않은 원본 본문.
+   *
+   * RFC 9457 은 표준 필드 외의 멤버를 허용하고, 어떤 오류는 화면을 그리는 데 필요한 값을
+   * 그 자리에 싣는다 (예: auth 의 `account_status`, `lock_remaining_minutes`).
+   * 그 필드들은 도메인 계약에만 있는 것이라 이 공용 모델이 이름을 알아서는 안 된다 —
+   * 대신 원본을 그대로 남겨 두고, 꺼내는 일은 각 기능의 api 계층이 한다.
+   */
+  readonly raw?: unknown;
 
   constructor(params: {
     status: number;
@@ -42,6 +51,7 @@ export class ApiError extends Error {
     message: string;
     fieldErrors?: FieldErrorDetail[];
     instance?: string;
+    raw?: unknown;
   }) {
     super(params.message);
     this.name = 'ApiError';
@@ -49,6 +59,7 @@ export class ApiError extends Error {
     this.code = params.code;
     this.fieldErrors = params.fieldErrors ?? [];
     this.instance = params.instance;
+    this.raw = params.raw;
   }
 
   /** 특정 필드의 검증 실패 문구. 폼 오류 표시에 사용한다. */
@@ -82,6 +93,7 @@ export function toApiError(response: Pick<Response, 'status'>, body: unknown): A
     message: problem?.detail?.trim() || FALLBACK_MESSAGE,
     fieldErrors: asFieldErrors(problem?.errors),
     instance: problem?.instance,
+    raw: body,
   });
 }
 

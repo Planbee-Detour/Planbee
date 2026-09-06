@@ -2,12 +2,27 @@
 
 - 기능 슬러그: `admin-user-approval`
 - 시작일: 2026-08-23
-- 현재 단계: `PRD 작성 완료 — auth 진행 후 착수`
+- 현재 단계: `PRD 작성 완료 — 선행 조건 충족(2026-08-26). ux-designer 착수 가능`
 
 ## 선행 조건
 
 `auth` 가 정의하는 계정 상태(`PENDING`/`APPROVED`/`REJECTED`/`SUSPENDED`)와
 역할(`USER`/`ADMIN`) 위에서 동작한다. `auth` 의 contract.yaml 이 확정된 뒤 시작한다.
+
+**충족됨 (2026-08-26).** `auth` 계약이 확정되어 상태·역할 enum 과 오류 형식이 고정되었다
+(`docs/features/auth/contract.yaml` — `AccountStatusView.status`, `UserSummary.role`).
+
+계약 확정으로 이 기능에 함께 정해진 것:
+
+- **PRD 열린 질문 4(정지의 세션 반영 시점)** — `POST /api/v1/auth/token/refresh` 가 갱신 시점에
+  계정 상태를 다시 확인해 `APPROVED` 가 아니면 403 + `account_status` 를 낸다. 따라서 정지는
+  **액세스 토큰 수명(30분) 안에** 반영된다. "최대 30분 지연 허용" 이 계약으로 확정된 셈이다.
+- **PRD 열린 질문 5(오류 코드)** — 관리자 엔드포인트의 코드는 이 기능의 계약에서 등록한다.
+  `docs/api/error-codes.md` 의 auth 섹션과 같은 형식을 따른다.
+- **`SUSPENDED` 정지 사유 표시** — 내리기로 정하면 `auth` 계약 변경 없이 서버가
+  `AccountStatusView.body` 문구만 바꾸면 된다. 앱은 문구를 조합하지 않기 때문이다 (C-8).
+- **`SUSPENDED` 는 앱 안 계정 삭제 경로가 없다** — `auth` 는 `REJECTED` 에만 삭제 토큰을 내린다.
+  ASK 2 의 "관리자가 앱 안에서 계정을 지울 수단" 은 여전히 이 기능의 몫이다.
 
 ## 파이프라인
 

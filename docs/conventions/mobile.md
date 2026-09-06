@@ -31,7 +31,12 @@ mobile/src/
 ### M-2. 기능 간 직접 import 금지 `[MUST]` → 도입 후 `[LINT]`
 
 - `features/a` 가 `features/b` 를 import 하지 않는다. 조합이 필요하면 `app/` 레이어에서 한다.
-- 의존 방향: `app/` → `features/` → `shared/`. 역방향 금지.
+- 의존 방향: `app/` → `features/` → `shared/`. 역방향 금지. **타입 전용 import 도 예외가 아니다.**
+- **내비게이션 파라미터 목록은 기능이 선언하고 `app/` 이 조합한다.** (2026-08-27 확정, `auth` 재작업)
+  화면 파라미터를 `app/navigation/types.ts` 에 두면 그 파라미터를 쓰는 화면 전부가 거꾸로 `app/` 을
+  import 하게 된다. 기능은 `features/<feature>/navigation.ts` 에 자기 화면의 파라미터를 선언하고,
+  `app/navigation/types.ts` 는 그것들을 모아 스택 목록(`AuthStackParamList` 등)을 만든다.
+  화면은 자기 기능의 `navigation.ts` 만 본다. (defects.md D-M3)
 - TODO: `eslint-plugin-boundaries` 도입 후 `[LINT]` 로 전환한다.
 
 ### M-3. shared 승격 기준 `[MUST]`
@@ -100,9 +105,17 @@ mobile/src/
   `properties: 'never'` 로 두어 객체 프로퍼티를 검사 대상에서 뺀다.
 - 화면 내부에서만 쓰는 값(로컬 상태, props, 훅 반환)은 TypeScript 관례대로 `camelCase` 다.
   `shared/api/session.ts` 의 `Tokens { accessToken, refreshToken }` 은 Keychain 저장용 내부
-  모델이므로 이대로 둔다. — TODO: 토큰 갱신 엔드포인트가 계약에 추가되면 **응답 본문은
-  `access_token` / `refresh_token`** 이어야 한다. `client.ts` 의 `RefreshFn` 이 응답을 그대로
-  `Tokens` 로 받고 있으므로, 그 시점에 경계와 내부 모델을 분리한다.
+  모델이므로 이대로 둔다.
+- **경계와 내부 모델의 변환은 한 곳에서만 한다.** (2026-08-26 확정 / 2026-08-27 위치 정정, `auth` 구현)
+  서버는 `access_token` / `refresh_token` 으로 주고 Keychain 은 `Tokens` 로 저장한다.
+  그 변환은 `shared/api/session.ts` 의 `toTokens` **하나**에 있고, 저장은 그것을 감싼
+  `saveTokenPair(pair)` 로 한다. 화면·기능·`app/` 어디서도 같은 변환을 다시 하지 않는다 —
+  이건 M-17 이 금지하는 "매퍼 레이어" 가 아니라, 저장소 모델과 API 모델이
+  서로 다른 두 계약이라서 생기는 <b>배선</b>이다. 새 저장 항목이 생기면 여기에 함께 둔다.
+  - 처음에는 이 자리를 `app/configureSession.ts` 로 적었는데, 그러면 토큰을 저장하는 화면이
+    `features/` → `app/` 을 import 하게 되어 **M-2(역방향 금지)와 충돌한다.** 저장 모델(`Tokens`)을
+    정의한 모듈이 그 변환도 갖는 것이 두 규칙을 모두 만족한다.
+    (2026-08-27, defects.md D-M1·D-M3)
 
 ## 스타일
 
@@ -115,9 +128,18 @@ mobile/src/
 
 - 화면 코드에 `#RRGGBB` 를 직접 쓰지 않는다. `tailwind.config.js` 의 토큰 이름을 쓴다
   (`bg-cream`, `text-ink-muted`, `bg-brand`).
-- **코드에서 토큰의 단일 원본은 `tailwind.config.js`** 다. ux-designer 는 `design.md` 에서 같은 이름으로 지칭한다.
+- **코드에서 토큰의 단일 원본은 `mobile/tailwind.tokens.js`** 다. `tailwind.config.js` 는 이 파일을
+  `require` 해 Tailwind 테마로 배선하기만 한다. ux-designer 는 `design.md` 에서 같은 이름으로 지칭한다.
+  - 값을 config 에서 분리한 이유: `tailwind.config.js` 는 최상단에서 `nativewind/preset` 을
+    `require` 하는 **빌드 도구용** 모듈이라 앱 번들에서 import 할 수 없다(tailwindcss 의 Node 전용
+    의존성이 딸려 온다). 값만 담은 의존성 없는 모듈을 두어 config 와 앱이 같은 파일을 읽게 한다.
+    (2026-08-27 확정, `auth` 재작업 / defects.md D-M2)
 - 토큰 **값**의 시각적 원본은 `docs/design/planbee.pen` 의 `Screen 01 — Design System` 이다 (common.md C-9).
-  `tailwind.config.js` 는 그 값을 코드로 옮긴 사본이다. 둘이 어긋나면 pen 을 기준으로 코드를 고친다.
+  `tailwind.tokens.js` 는 그 값을 코드로 옮긴 사본이다. 둘이 어긋나면 pen 을 기준으로 코드를 고친다.
+- **`className` 을 받지 못하는 RN prop 도 리터럴을 쓰지 않는다.** `ActivityIndicator` 의 `color`,
+  `TextInput` 의 `placeholderTextColor`, `StatusBar` 의 `backgroundColor` 등은 색 값을 직접 받는데,
+  그럴 때는 `src/shared/ui/tokens.ts` 의 `COLOR` 를 통해 **토큰 값을 읽어 온다.**
+  "이 prop 은 클래스를 못 받으니 어쩔 수 없다" 는 리터럴의 사유가 되지 않는다.
 - 새 색이 필요하면 pen 의 Design System 에 있는지 먼저 확인하고, 있으면 그 값으로 토큰을 추가해 쓴다.
   pen 에 없는 값은 임의로 만들지 말고 `defects.md` 로 ux-designer 에게 요청한다.
 
@@ -151,6 +173,12 @@ mobile/src/
   안드로이드에서 `undefined` 가 그대로 흘러간다.
 - 자주 갈리는 지점: 그림자(iOS `shadow*` ↔ 안드로이드 `elevation`), `KeyboardAvoidingView` 의
   `behavior`, 상태바·safe area, 햅틱, 권한 요청 흐름, 안드로이드 하드웨어 뒤로가기.
+- **스크린리더 낭독은 `shared/lib/a11y` 를 쓴다.** (2026-08-27 확정, `auth` 재작업)
+  iOS 는 `AccessibilityInfo.announceForAccessibility` 를 직접 불러야 읽고, 안드로이드는
+  `accessibilityLiveRegion="polite"` 가 붙은 뷰를 시스템이 스스로 읽는다 — 한쪽만 쓰면 반대쪽에서
+  아무것도 읽히지 않는다. 뷰에 `LIVE_REGION_POLITE` 를 펼치고 같은 문장으로
+  `useAnnounceForAccessibility` 를 부른다. 보이는 요소 없이 읽기만 할 때는 `A11yAnnouncement`.
+  화면 코드에 `accessibilityLiveRegion` 을 직접 적지 않는다. (defects.md D-M4)
 - 분기를 넣었으면 **양쪽 분기를 테스트한다.** `Platform.OS` 를 목킹해 안드로이드 경로도 검증한다(M-11).
 - 근거: iOS 에서만 확인한 코드는 안드로이드 대응 시점에 다시 쓰게 된다. (2026-08)
 
@@ -182,6 +210,36 @@ mobile/src/
 - `FORBIDDEN` 은 갱신 대상이 아니다. 재시도하지 않는다.
 - 토큰을 로그에 남기지 않는다.
 
+### M-21. 디자인 시스템 컴포넌트는 `shared/ui` 에 둔다 `[MUST]`
+
+M-3(2개 이상 기능이 쓸 때만 `shared/` 로 올린다)의 **명시적 예외**다. (2026-08-26 확정, `auth` 구현)
+
+- `docs/design/planbee.pen` 의 `Screen 01 — Design System` 프레임에 있는 컴포넌트는
+  기능이 하나뿐일 때도 `shared/ui/` 에 둔다.
+- **기능 전용 조합은 올리지 않는다.** 예: `auth` 의 동의 블록·문의 블록은
+  `features/auth/components/` 에 있고, 그 안에서 쓰는 `Input/Checkbox`·`Layout/ContactRow` 만
+  `shared/ui` 다. 판단 기준은 "pen 의 Design System 프레임에 있는가" 하나다.
+- **근거**: 디자인 시스템은 정의상 기능에 속하지 않는다 — pen 의 그 프레임이 앱 전체의 공용
+  어휘다. 첫 사용 기능 안에 두면 두 번째 기능이 생기는 순간 "기능 A 에서 기능 B 로 import" 라는
+  M-2 위반이 강제되고, 그때 옮기는 비용이 지금 올려 두는 비용보다 크다.
+  M-3 이 막으려는 것은 "나중에 쓸 것 같아서" 올리는 추측인데, 여기서는 pen 이 근거다.
+
+### M-22. 생성물은 원본에서 만들고 손으로 고치지 않는다 `[MUST]`
+
+(2026-08-26 확정, `auth` 구현)
+
+| 생성물 | 원본 | 명령 |
+|---|---|---|
+| `src/shared/api/schema.ts` | `docs/api/openapi.yaml` | `make contract-types` |
+| `src/features/auth/legal/documents.generated.ts` | `docs/legal/*.md` | `make legal-bundle` |
+
+- 약관 본문은 **앱 번들에 있어야 한다** — AC-37 이 오프라인 열람을 요구하기 때문이다.
+  그렇다고 md 를 손으로 옮기면 원본과 사본이 갈라지고, 그 순간 화면에 뜨는 약관과
+  실제로 동의를 받은 약관이 달라진다. 복사는 사람이 아니라 생성기가 한다.
+- 버전·시행일도 같은 생성물에서 읽는다. 화면 표시(AC-36)·동의 이력 저장(AC-8)·문서가
+  **한 값**을 공유해야 한다. 화면 코드에 `'v1.0'` 을 적지 않는다.
+- `documents.generated.ts` 는 커밋하지 않는다(`.gitignore`). `make verify-mobile` 이 먼저 생성한다.
+
 ## 테스트 (mobile-tester)
 
 ### M-11. API 는 msw 로 목킹한다 `[MUST]`
@@ -197,6 +255,26 @@ mobile/src/
 
 ## 테스트 환경 메모
 
+- **RNTL 14 의 `render` 는 비동기다.** React 19 의 `act` 정렬로 `Promise<RenderResult>` 를
+  돌려주므로 반드시 `await` 한다. 잊으면 `getByText is not a function` 또는
+  `` `render` function has not been called `` 로 나타나는데, 두 메시지 모두 원인을 가리키지 않는다.
+  ```tsx
+  const {getByText} = await render(<Screen />);
+  ```
+- **`fireEvent` 도 비동기다.** 같은 이유로 `fireEvent.press` / `fireEvent.changeText` /
+  `fireEvent(el, 'blur')` 가 전부 `Promise` 를 돌려준다. `await` 하지 않으면 상태 갱신이
+  반영되기 <b>전에</b> 다음 줄이 실행되어 "버튼이 계속 비활성" 같은 엉뚱한 실패로 나타난다.
+  콘솔에는 원인과 무관해 보이는 `overlapping act() calls` 만 찍힌다. (2026-08-27, `auth` 테스트)
+  ```tsx
+  await fireEvent.changeText(getByLabelText('이메일'), 'name@example.com');
+  await fireEvent.press(getByRole('button', {name: '로그인'}));
+  ```
+- **한 테스트 안에서 `render` 를 두 번 부르지 않는다.** `unmount()` 를 끼워도 `screen` 이
+  두 번째 트리를 가리키지 못해 그 테스트와 <b>뒤따르는 테스트까지</b> 깨진다.
+  변형이 여러 개면 `test.each` 로 테스트를 나눈다. (2026-08-27, `auth` 테스트)
+- **Keychain 상태 초기화는 `shared/api/session` 의 `clearTokens()` 로 한다.**
+  `jest.requireMock('react-native-keychain')` 으로 얻은 목의 리셋 함수는 앱이 쓰는 모듈
+  인스턴스에 닿지 않아 <b>조용히 아무것도 지우지 않는다.</b> (2026-08-27, `auth` 테스트)
 - msw 는 RN 에서 `msw/node` 가 export 조건에 막힌다. **`msw/native` 를 쓴다.**
   (`src/shared/test/mswServer.ts` 참조)
 - 핸들러에 없는 요청은 오류로 처리한다(`onUnhandledRequest: 'error'`). 테스트가 실제 네트워크를 타면 안 된다.

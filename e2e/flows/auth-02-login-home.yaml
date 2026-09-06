@@ -1,0 +1,64 @@
+# 승인된 계정 로그인 해피패스 — 로그인 → 홈 → 설정에서 내 계정 조회.
+# 계약: POST /api/v1/auth/login 200 (LoginResponse) · GET /api/v1/auth/me 200 (UserSummary)
+#       AC-11 · AC-18 · AC-35
+#
+# 이 플로우가 통과한다는 것은 앱 번들 → 네이티브 → 네트워크 → 실제 API → 실제 PostgreSQL 까지
+# 전 구간이 살아있다는 뜻이다. 예전 health 플로우가 하던 역할을 실제 기능으로 대체한 것이다.
+#
+# 계정은 시드에서 온다 — server/src/main/resources/db/seed/V901__e2e_seed_auth.sql
+# 그 파일의 이메일·비밀번호를 바꾸면 여기도 같이 고친다 (e2e/README.md 시드 규약).
+#
+# 다루지 않는 것: 틀린 비밀번호(401) · 잠금(429) · PENDING/REJECTED/SUSPENDED 차단(403).
+# 전부 server-tester / mobile-tester 의 층이다 (절대규칙 5).
+#
+# Maestro 2.x 문법: `assertVisible` 에서 `timeout` 이 제거됐다 (2.10.0 에서 파싱 실패).
+# 그래서 "뜰 때까지 기다리는" 단언은 `extendedWaitUntil` + `visible:` 로 쓴다 (2026-09-02).
+# `assertNotVisible` 과 timeout 없는 `assertVisible` 은 "지금 그러해야 한다" 는 단언이라 그대로 둔다.
+appId: org.reactjs.native.example.Planbee
+name: 로그인 → 홈
+---
+- clearKeychain
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible:
+      id: 'login-submit'
+    timeout: 15000
+
+# 로그인 화면의 입력란에는 아직 testID 가 없다 (가입 화면에는 있다) — defects.md D-E1 참고.
+# 이메일은 플레이스홀더로 잡는다. 라벨 "이메일" 은 Text 라서 눌러도 포커스가 가지 않는다.
+- tapOn: 'name@example.com'
+- inputText: 'approved@e2e.planbee.test'
+
+# 비밀번호는 라벨 Text 와 입력란의 accessibilityLabel 이 같은 문자열이라 index 로 가른다.
+# 0 = 라벨, 1 = 입력란(계층 순서). 첫 실행에서 순서가 다르면 여기를 뒤집는다.
+- tapOn:
+    text: '비밀번호'
+    index: 1
+- inputText: 'planbee2026'
+- hideKeyboard
+
+- tapOn:
+    id: 'login-submit'
+
+# 홈 도착 = 200 + 토큰 저장 + 스택 교체까지 성립했다는 뜻이다 (AC-11).
+- extendedWaitUntil:
+    visible:
+      id: 'home-settings'
+    timeout: 15000
+# 로그인 화면으로 되돌아가 있지 않다.
+- assertNotVisible:
+    id: 'login-submit'
+
+# 설정 화면은 GET /auth/me 로 계정 카드를 그린다 (C-8 — 화면 하나가 한 번의 호출로 완성된다).
+# 여기 보이는 이메일은 앱이 기억한 입력값이 아니라 **서버가 DB 에서 읽어 내려준 값**이다.
+- tapOn:
+    id: 'home-settings'
+- extendedWaitUntil:
+    visible:
+      id: 'settings-logout'
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      text: 'approved@e2e.planbee.test'
+    timeout: 15000

@@ -21,47 +21,611 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/signup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 가입 신청
+         * @description 계정을 `PENDING` 상태로 생성한다. 승인 처리는 `admin-user-approval` 이 맡는다.
+         *
+         *     - 201 응답은 **검토 중 화면을 그대로 그릴 수 있는 값 전부**를 담는다 (AC-46, C-8).
+         *       로그인 차단 응답과 **같은 `AccountStatusView` 스키마**를 쓴다 — 상태 확인만을 위한
+         *       별도 왕복을 만들지 않는다.
+         *     - 이메일 중복은 숨기지 않는다 (AC-2). 메일 발송 인프라가 없어 숨길 수단이 없고,
+         *       이는 **인수된 위험**이다 (PRD 제약). 대량 자동 열거는 IP 레이트 리밋으로 막는다.
+         *     - 만 14세 확인은 동의가 아니라 자기 확인(attestation)이다 — 동의 이력이 아니라
+         *       사용자 레코드의 확인 시각으로 남긴다 (PRD 제약 / design.md §5.4).
+         */
+        post: operations["signup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 로그인
+         * @description **`APPROVED` 계정에만 토큰을 발급한다.** 그 외 상태는 토큰 없이 403 + `account_status` 로
+         *     상태 안내 화면을 그린다 (AC-14·15·16).
+         *
+         *     처리 순서 — 이 순서를 지켜야 AC-13·47·48 이 동시에 성립한다.
+         *
+         *     1. 이메일을 정규화(소문자·앞뒤 공백 제거)한다. 이 문자열이 실패 카운터의 **키**다.
+         *        계정이 아니라 이메일 문자열로 세야 잠금 응답으로 계정 존재가 새지 않는다 (AC-47, PRD 제약).
+         *     2. **잠금 여부를 비밀번호 검증보다 먼저 확인한다.** 잠겨 있으면 즉시 429 로 반환하고
+         *        비밀번호를 검증하지 않으며 **카운터를 올리지 않는다** (AC-48).
+         *     3. 계정을 조회한다. 없으면 **더미 bcrypt 해시로 검증을 한 번 돌린 뒤** 401 을 낸다.
+         *        (design.md §14 항목 4 — 미등록 이메일만 bcrypt 를 건너뛰면 응답 시간으로
+         *        계정 존재가 드러나 AC-13 이 무력해진다. 2026-08-26 tech-lead 확정)
+         *     4. 비밀번호를 검증한다. 틀리면 카운터를 올리고 401. 맞으면 카운터를 초기화한다.
+         *     5. 계정 상태로 분기한다. `APPROVED` → 200, 그 외 → 403.
+         *
+         *     `REJECTED` 403 에는 **`deletion_token` 이 함께 실린다** (AC-50). 비밀번호가 이미 맞은
+         *     상태이므로 계정 삭제를 개시할 자격이 증명되었다. 이 토큰은 `DELETE /api/v1/auth/me`
+         *     **하나만** 호출할 수 있고 (`scope: account:delete`), 리프레시 토큰이 없어 세션이 되지 않는다.
+         */
+        post: operations["login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/token/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 액세스 토큰 갱신 (리프레시 회전)
+         * @description 리프레시 토큰은 **해시해서 저장하고 사용할 때마다 회전**한다 (S-17).
+         *
+         *     **수명은 유휴 만료(sliding)다** — 회전할 때마다 새 토큰에 새 14일이 부여되고
+         *     절대 만료 상한은 없다. AC-25 가 말하는 14일의 기준점은 마지막 **사용**(로그인 또는 갱신)이다.
+         *
+         *     **회전에는 10초의 유예 창이 있다** (AC-49). 회전 직후 10초 안에 직전 토큰이 다시 오면
+         *     재사용으로 보지 않고 **그때 발급한 것과 같은 토큰 쌍을 그대로 다시 돌려준다.**
+         *     (직전 응답을 캐시해 두는 방식이 된다. 매번 새 쌍을 발급하면 안 된다 — 그러면
+         *     재시도할 때마다 유효 토큰이 늘어난다.)
+         *     유예 창을 **넘긴** 재사용만 `AUTH_REFRESH_TOKEN_REUSED` 로 거부하고,
+         *     그 계정의 **모든** 리프레시 토큰을 폐기한다 (AC-24). 이후 다른 기기의 갱신은
+         *     `AUTH_REFRESH_TOKEN_REVOKED` 를 받는다 — 앱은 이 둘 모두에 보안 배너를 띄운다.
+         *
+         *     계정이 갱신 시점에 더 이상 `APPROVED` 가 아니면 403 + `account_status` 를 낸다.
+         *     정지·거절은 **액세스 토큰 수명(30분) 안에** 이 경로로 반영된다.
+         */
+        post: operations["refreshToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 로그아웃 (이 기기의 리프레시 토큰 폐기)
+         * @description 본문의 리프레시 토큰 **하나만** 폐기한다. 다른 기기의 세션은 건드리지 않는다 (AC-26).
+         *
+         *     앱은 이 응답을 **기다리지 않고** 기기 저장소의 토큰을 즉시 지운다 (design.md §8.4, AC-27).
+         *     따라서 이 엔드포인트가 실패해도 사용자 경험은 달라지지 않는다 — 서버 측 토큰은
+         *     늦어도 14일 뒤 유휴 만료된다.
+         *
+         *     **멱등이다.** 이미 폐기됐거나 알 수 없는 토큰이 와도 204 를 반환한다 —
+         *     토큰의 유효 여부를 응답으로 알려줄 이유가 없다.
+         */
+        post: operations["logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 내 계정 정보 조회
+         * @description 설정 화면(design.md §8.2)의 "계정" 카드를 그린다. 화면의 나머지(약관 버전·앱 버전)는
+         *     전부 앱 로컬 값이므로 이 호출 하나로 화면이 완성된다 (C-8).
+         */
+        get: operations["getMe"];
+        put?: never;
+        post?: never;
+        /**
+         * 계정 삭제 (즉시 파기)
+         * @description **되돌릴 수 없다.** 이메일·비밀번호 해시·가입 사유·동의 이력·이용 기록을 유예 없이 파기한다
+         *     (PRD 제약 / 개인정보보호법 제21조). 같은 이메일로 다시 가입 신청할 수 있다 (AC-32).
+         *
+         *     **두 종류의 Bearer 토큰이 이 엔드포인트에 도달한다.** 인증 방식은 하나로 통일되어 있고
+         *     (항상 `Authorization: Bearer`), 갈리는 것은 토큰의 스코프뿐이다.
+         *
+         *     | 진입 | 토큰 | 출처 | AC |
+         *     |---|---|---|---|
+         *     | 설정 → 계정 삭제 | 일반 액세스 토큰 (`scope: full`) | 로그인 200 | AC-28 |
+         *     | `REJECTED` 상태 화면 → 계정 삭제 | 삭제 전용 토큰 (`scope: account:delete`, 10분) | 로그인 403 | AC-50 |
+         *
+         *     `scope: account:delete` 토큰은 **이 엔드포인트 외에는 모두 403** 이다 (`FORBIDDEN`).
+         *
+         *     **비밀번호 재확인 없이는 삭제되지 않는다** (AC-29). 앱이 비밀번호를 비운 채 보내는 일이
+         *     없어야 하고, 서버도 같은 조건을 독립적으로 강제한다 — 이것과 AC-30 의 경고 문구가
+         *     유일한 안전장치다.
+         *
+         *     `SUSPENDED` 에는 이 경로를 열지 않는다 — 즉시 파기 + AC-32 와 겹치면 정지된 사용자가
+         *     지우고 곧바로 재가입해 정지를 무력화한다 (PRD 제약). `SUSPENDED` 403 에는
+         *     `deletion_token` 이 실리지 않는다.
+         *
+         *     > 이 요청은 `DELETE` 에 본문을 싣는다. 본문이 중간 경로에서 유실되면 400 이 되어
+         *     > **삭제가 일어나지 않는다** — 안전한 방향으로 실패한다.
+         */
+        delete: operations["deleteMe"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /** @description RFC 9457 Problem Details. 모든 오류 응답의 형식. */
+        /** @description RFC 9457 Problem Details. 모든 오류 응답의 형식. (C-1) */
         Problem: {
             /** @default about:blank */
             type: string;
             /**
              * @description HTTP 상태 문구(영문). 사용자에게 표시하지 않는다.
-             * @example Not Found
+             * @example Unauthorized
              */
             title?: string;
-            /** @example 404 */
+            /** @example 401 */
             status: number;
             /**
              * @description 사용자에게 표시할 한국어 문구.
-             * @example 일정을 찾을 수 없습니다.
+             * @example 이메일 또는 비밀번호를 확인해 주세요.
              */
             detail?: string;
-            /** @example /api/v1/schedules/42 */
+            /** @example /api/v1/auth/login */
             instance?: string;
             /**
              * @description 모바일이 분기하는 기계용 식별자. docs/api/error-codes.md 참조.
-             * @example SCHEDULE_NOT_FOUND
+             * @example AUTH_INVALID_CREDENTIALS
              */
             code: string;
             /** @description 검증 실패 시에만 포함된다. */
             errors?: components["schemas"]["FieldError"][];
         };
         FieldError: {
-            /** @example title */
+            /** @example password */
             field: string;
-            /** @example NOT_BLANK */
+            /** @example PATTERN */
             code: string;
-            /** @example 제목을 입력하세요. */
+            /** @example 영문과 숫자를 포함해 8자 이상 */
             message: string;
+        };
+        /**
+         * @description **`PENDING` / `REJECTED` / `SUSPENDED` 안내 화면 하나를 통째로 그리는 값이다** (AC-46).
+         *
+         *     가입 신청 201 응답과 로그인 차단 403 응답이 **이 스키마 하나를 함께 참조한다.**
+         *     가입 직후(AC-1)와 로그인 차단(AC-14·15·16)은 같은 화면이므로 스키마가 갈리면
+         *     "앱이 문구를 조합하지 않는다"(C-8)가 두 곳에서 따로 관리된다.
+         *
+         *     **문구는 서버가 완성해서 내린다.** 앱은 `status` 로 `switch` 해서 제목·본문을 만들지 않는다.
+         *     앱이 `status` 로 결정하는 것은 표현 계층뿐이다 — 아이콘 모양·색·버튼 구성
+         *     (design.md §7.1). 확정 문구는 design.md §11.3 에 있다.
+         *
+         *     **상태 확인만을 위한 별도 왕복을 만들지 않는다.** 이 값을 되돌려주는 GET 엔드포인트는 없다.
+         */
+        AccountStatusView: {
+            /**
+             * @description 앱이 아이콘·색·버튼 구성을 결정하는 데만 쓴다. 문구를 만드는 데는 쓰지 않는다.
+             *     `REJECTED` 일 때만 "계정 삭제" 보조 링크를 렌더한다 (AC-50 / design.md §7.3.2).
+             * @example PENDING
+             * @enum {string}
+             */
+            status: "PENDING" | "REJECTED" | "SUSPENDED";
+            /**
+             * @description 화면 제목. 그대로 렌더한다. (design.md §11.3)
+             * @example 가입 신청을 검토하고 있어요
+             */
+            title: string;
+            /**
+             * @description 화면 본문. 그대로 렌더한다. **문의 주소를 문장 안에 넣지 않는다** (design.md §11.3).
+             * @example 관리자가 신청 내용을 확인하고 있어요. 확인에는 시간이 조금 걸릴 수 있어요.
+             */
+            body: string;
+            /**
+             * @description 강조 카드. **세 상태 모두 존재한다** — `PENDING` 은 행동 지시(AC-14 필수 요건),
+             *     `REJECTED`·`SUSPENDED` 는 문의/이의 제기 카드다.
+             *     비어 있는 경우가 없으므로 required 이고 nullable 이 아니다.
+             */
+            highlight: components["schemas"]["AccountStatusHighlight"];
+            /**
+             * Format: email
+             * @description 신청한 이메일. `PENDING` 화면의 정보 행에 "신청한 이메일" 로 표시된다 (design.md §7.2).
+             *     다른 상태에서는 렌더되지 않지만 값은 항상 담는다.
+             * @example name@example.com
+             */
+            email: string;
+            /**
+             * Format: date-time
+             * @description 가입 신청 시각 (ISO 8601 UTC, C-2). `PENDING` 화면의 "신청일" 로 표시된다.
+             *     앱이 표시 직전에만 로컬 시간대로 바꿔 `YYYY. M. D.` 로 그린다.
+             * @example 2026-08-26T02:14:05Z
+             */
+            applied_at?: string | null;
+            /**
+             * Format: email
+             * @description 앱 안에서 보여줄 문의 이메일 주소 (AC-38 · AC-39 · AC-40 · AC-42).
+             *
+             *     - 출처는 **서버 설정값 `SUPPORT_CONTACT_EMAIL`** 이다. `ADMIN` 계정 이메일을
+             *       조회하지 않는다 (PRD 제약 2026-08-25). 문의 창구가 관리자 계정 존재 여부에
+             *       묶이지 않아야 하고, 잠금 응답은 인증되지 않은 사용자에게도 가기 때문이다.
+             *     - **단수 문자열 하나다.** 배열이 아니다 — 배열이면 앱이 "하나만 고르는" 규칙을
+             *       갖게 되고 그건 AC-45 를 앱으로 떠넘기는 것이다.
+             *     - **`null` 일 수 있다** (AC-43). 설정값이 비어 있어도 이 응답 자체는 **정상 응답**이다.
+             *       앱은 주소 행과 "문의하기" 를 렌더하지 않고 대체 안내 한 줄로 바꾸며,
+             *       화면의 나머지는 그대로 동작한다 (AC-44). **오류로 처리하지 않는다.**
+             * @example support@planbee.app
+             */
+            support_contact_email: string | null;
+        };
+        /** @description 상태 화면의 강조 카드. 문구는 design.md §11.3 이 확정했다. */
+        AccountStatusHighlight: {
+            /** @example 승인되면 다시 로그인해 주세요 */
+            title: string;
+            /** @example 따로 알림을 보내드리지 않아요. 나중에 앱을 열어 다시 로그인하면 승인 여부를 확인할 수 있어요. */
+            body: string;
+        };
+        AccountBlockedProblem: components["schemas"]["Problem"] & {
+            account_status: components["schemas"]["AccountStatusView"];
+            /**
+             * @description **`code` 가 `AUTH_ACCOUNT_REJECTED` 일 때만 존재한다** (AC-50).
+             *
+             *     `scope: account:delete` 하나만 가진 단기 액세스 토큰이다.
+             *     `DELETE /api/v1/auth/me` 외의 엔드포인트에서는 403 (`FORBIDDEN`) 이고,
+             *     리프레시 토큰이 동봉되지 않으므로 세션이 되지 않는다.
+             *
+             *     이 사용자는 비밀번호를 이미 맞힌 상태다 — 자격 증명이 아니라 계정 상태 때문에
+             *     막혔을 뿐이므로 삭제를 개시할 자격은 증명되어 있다.
+             *     삭제 실행에는 비밀번호 재확인이 **또 한 번** 필요하다 (AC-29).
+             *
+             *     `SUSPENDED` 에는 실리지 않는다 — 정지 회피 차단 (PRD 제약).
+             * @example eyJhbGciOiJIUzI1NiJ9.PLACEHOLDER.SIGNATURE
+             */
+            deletion_token?: string | null;
+            /**
+             * @description `deletion_token` 의 남은 수명(초). 600(10분).
+             * @example 600
+             */
+            deletion_token_expires_in?: number | null;
+        };
+        LoginLockedProblem: components["schemas"]["Problem"] & {
+            /**
+             * @description 남은 잠금 시간(분). **서버가 올림하고 최소 1분을 보장한다** (PRD 제약).
+             *     30초가 남았을 때 "약 0분" 은 "지금 되는데 안 되네" 가 되므로
+             *     실제보다 짧게 말하지 않는다. 앱은 이 값을 그대로 렌더한다 — "남은 시간 약 N분".
+             * @example 9
+             */
+            lock_remaining_minutes: number;
+            /**
+             * Format: email
+             * @description 잠금 배너의 문의 줄에 표시할 주소 (AC-41 · AC-42).
+             *     `AccountStatusView.support_contact_email` 과 **같은 설정값**이며 같은 규칙이다 —
+             *     단수 문자열, nullable, 없어도 정상 응답 (AC-43 · AC-44).
+             *
+             *     이 응답은 **비밀번호를 틀린 누구에게나** 간다. 그래서 직원 개인 이메일이 아니라
+             *     문의 전용 별칭이어야 한다 (PRD 제약 2026-08-25).
+             * @example support@planbee.app
+             */
+            support_contact_email: string | null;
+        };
+        SignupRequest: {
+            /**
+             * Format: email
+             * @description 서버가 **소문자화하고 앞뒤 공백을 제거해** 저장·비교한다.
+             *     같은 정규화가 로그인 실패 카운터의 키에도 쓰인다 (AC-47).
+             * @example name@example.com
+             */
+            email: string;
+            /**
+             * @description **영문과 숫자를 포함해 8자 이상** (AC-3). 서버는 앱 검증을 신뢰하지 않고
+             *     같은 정책을 독립적으로 강제한다 (AC-4) — 위반 시 `errors[].field = "password"`.
+             *
+             *     상한 72 는 bcrypt 가 73바이트째부터 무시하기 때문이다. 상한이 없으면
+             *     "72자까지만 실제로 검사되는" 비밀번호가 생긴다. 저장은 `PasswordEncoder` 로만 한다 (S-17).
+             * @example planbee2026
+             */
+            password: string;
+            /**
+             * @description 가입 사유. **선택 항목이며 비어 있어도 접수된다** (PRD 제약 2026-08-23).
+             *     제출 조건은 이메일·비밀번호·필수 동의 3건뿐이다 (AC-1 · AC-6).
+             *     100자를 넘으면 검증 실패다 (AC-9 는 앱에서 입력 자체를 막지만 서버도 강제한다).
+             *     소비하는 쪽(`admin-user-approval` 대기 목록)은 값이 없는 신청을 정상 케이스로 다룬다.
+             * @example 주간 계획을 자주 바꾸는 편이라 대안을 추천받고 싶어요.
+             */
+            signup_reason?: string | null;
+            /**
+             * @description 동의 이력 (AC-8). **`TERMS` · `PRIVACY` · `MARKETING` 세 항목을 모두 보낸다** —
+             *     체크하지 않은 항목도 `agreed: false` 로 함께 보낸다. 나중에 "동의를 받은 적이 없다" 와
+             *     "거부했다" 를 구분할 수 있어야 하고, 특히 `MARKETING` 은 정보통신망법상 광고성 정보를
+             *     보낼 때 동의 여부와 시각을 증빙해야 하므로 거부 이력도 남아야 한다.
+             *
+             *     **만 14세 확인은 여기 들어가지 않는다** — 동의가 아니라 자기 확인이다.
+             *     대응 문서가 없어 "동의한 약관의 버전" 이라는 값이 성립하지 않는다.
+             *     아래 `age_over_14_confirmed` 로 분리했다 (PRD 제약 / design.md §5.4).
+             *
+             *     `TERMS` 와 `PRIVACY` 는 `agreed: true` 여야 한다 (AC-6). 아니면 검증 실패다.
+             *     동의 **시각**은 요청에 담지 않는다 — 서버가 `Clock` 으로 찍는다 (S-8).
+             */
+            consents: components["schemas"]["ConsentInput"][];
+            /**
+             * @description 만 14세 이상 자기 확인 (AC-6). 법정대리인 동의 절차(개인정보 보호법 제22조의2)를
+             *     만들지 않는 대신 만 14세 미만의 가입 자체를 막는다 (PRD 제약).
+             *     서버는 **확인 시각**을 사용자 레코드에 남긴다 — 동의 이력이 아니다.
+             *     **값은 반드시 `true` 여야 한다** — `false` 나 누락이면 400 검증 실패다.
+             *     (`const: true` 를 쓰지 않는 이유는 파일 말미의 '계약 표현 제약' 참조)
+             * @example true
+             */
+            age_over_14_confirmed: boolean;
+        };
+        ConsentInput: {
+            /**
+             * @example TERMS
+             * @enum {string}
+             */
+            type: "TERMS" | "PRIVACY" | "MARKETING";
+            /**
+             * @description `TERMS` · `PRIVACY` 는 `true` 여야 한다 (AC-6). `MARKETING` 은 어느 쪽이든 접수된다 (AC-7).
+             * @example true
+             */
+            agreed: boolean;
+            /**
+             * @description 동의한 문서의 버전. 앱이 **번들된 `docs/legal/` 원본에서 읽은 값**을 보낸다.
+             *     하드코딩하지 않는다 — AC-36 이 화면에 표시하는 버전과 같은 출처여야 한다.
+             *
+             *     **nullable 이다.** `MARKETING` 은 대응 문서가 저장소에 없어 값이 비어 있다
+             *     (design.md §14 항목 5 — 실제 발송을 시작하는 시점에 문서와 함께 채운다).
+             *     `TERMS` · `PRIVACY` 는 값이 있어야 한다.
+             * @example v1.0
+             */
+            version?: string | null;
+        };
+        /**
+         * @description 가입 신청 접수 (AC-1). **토큰은 발급되지 않는다** — 계정이 `PENDING` 이므로 세션이 성립하지 않는다.
+         *     앱은 이 응답만으로 검토 중 화면을 완성한다 (AC-46, C-8). 별도 조회를 하지 않는다.
+         */
+        SignupResponse: {
+            account_status: components["schemas"]["AccountStatusView"];
+        };
+        LoginRequest: {
+            /**
+             * @description **`format: email` 을 붙이지 않았다.** 로그인에서는 형식 검증을 하지 않는다 —
+             *     형식이 틀린 이메일도 그대로 받아 401 `AUTH_INVALID_CREDENTIALS` 를 낸다.
+             *     형식 오류를 400 으로 갈라내면 "형식이 맞는 이메일" 과 "틀린 이메일" 의 응답이
+             *     달라지고, 그건 AC-13 이 막으려는 정보 누출과 같은 종류다 (design.md §4.4).
+             * @example name@example.com
+             */
+            email: string;
+            /**
+             * @description 비어 있지 않을 것. **정책 검증을 하지 않는다** (기존 비밀번호이므로).
+             * @example planbee2026
+             */
+            password: string;
+        };
+        /** @description 계정 상태가 `APPROVED` 인 경우에만 반환된다 (AC-11). */
+        LoginResponse: {
+            token: components["schemas"]["TokenPair"];
+            user: components["schemas"]["UserSummary"];
+        };
+        TokenPair: {
+            /**
+             * @description HS256 자체 발급 JWT (S-17). 수명 30분.
+             *     `scope` 클레임은 일반 세션에서 `full` 이다 (`account:delete` 는 삭제 전용 토큰).
+             * @example eyJhbGciOiJIUzI1NiJ9.PLACEHOLDER.SIGNATURE
+             */
+            access_token: string;
+            /**
+             * @description 서버는 이 값을 **해시해서 저장**하고 사용할 때마다 회전한다 (S-17).
+             *     수명 14일이며 **유휴 만료(sliding)** 다 — 회전할 때마다 새 14일이 부여되고
+             *     절대 만료 상한은 없다 (PRD 제약 2026-08-25).
+             *
+             *     앱은 이 값을 Keychain(iOS) / Keystore(Android) 에**만** 저장한다.
+             *     MMKV·AsyncStorage 에 두지 않는다 (AC-18). 로그·화면·에러 메시지에 노출하지 않는다.
+             * @example 8f2c1d9e-PLACEHOLDER-REFRESH-TOKEN
+             */
+            refresh_token: string;
+            /** @example Bearer */
+            token_type: string;
+            /**
+             * @description `access_token` 의 수명(초). 1800(30분).
+             * @example 1800
+             */
+            expires_in: number;
+        };
+        RefreshRequest: {
+            /** @example 8f2c1d9e-PLACEHOLDER-REFRESH-TOKEN */
+            refresh_token: string;
+        };
+        /** @description 설정 화면의 "계정" 카드를 그리는 값 (design.md §8.2). */
+        UserSummary: {
+            /**
+             * Format: email
+             * @example name@example.com
+             */
+            email: string;
+            /**
+             * @description 앱에서 역할을 바꾸는 경로는 없다 (PRD 제약).
+             * @example USER
+             * @enum {string}
+             */
+            role: "USER" | "ADMIN";
+            /**
+             * @description 이 엔드포인트가 200 을 내는 시점에는 사실상 항상 `APPROVED` 다.
+             * @example APPROVED
+             * @enum {string}
+             */
+            status: "PENDING" | "APPROVED" | "REJECTED" | "SUSPENDED";
+        };
+        AccountDeleteRequest: {
+            /**
+             * @description **본인 확인용 재입력** (AC-29). 비어 있으면 400 이고 삭제는 실행되지 않는다.
+             *     정책 검증은 하지 않는다 — 기존 비밀번호이므로 형식을 따지지 않고 대조만 한다.
+             *     틀리면 401 `AUTH_PASSWORD_MISMATCH` 이고, 앱은 이를 비밀번호 필드 오류로 표시한다.
+             * @example planbee2026
+             */
+            password: string;
         };
     };
     responses: {
-        /** @description 오류 */
+        /** @description 인증 필요 또는 토큰 무효·만료 (`UNAUTHORIZED`) */
+        Unauthorized: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /**
+         * @description 권한 없음 (`FORBIDDEN`). `scope: account:delete` 토큰으로
+         *     `DELETE /api/v1/auth/me` 외의 엔드포인트를 호출한 경우가 여기 해당한다.
+         *     앱은 이 코드에서 **토큰 갱신을 재시도하지 않는다** (error-codes.md).
+         */
+        ForbiddenScope: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /** @description 서버 내부 오류 (`INTERNAL_ERROR`). 앱은 "잠시 후 다시 시도해 주세요" + 재시도 버튼 (AC-19) */
+        InternalError: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /**
+         * @description 비밀번호는 맞았으나 **계정 상태 때문에** 로그인이 성립하지 않는다 (AC-14 · AC-15 · AC-16).
+         *     토큰은 발급되지 않는다.
+         *
+         *     세 상태는 **서로 구분 가능한 `code`** 를 갖는다 — 앱이 아이콘·색·버튼 구성을 상태로 결정하기 때문이다.
+         *     반면 **화면에 표시되는 문구는 앱이 만들지 않는다** — `account_status` 에 담겨 온 문자열을
+         *     그대로 렌더한다 (C-8 / design.md §7.1).
+         *
+         *     | `code` | 상태 | 화면 |
+         *     |---|---|---|
+         *     | `AUTH_ACCOUNT_PENDING` | `PENDING` | 검토 중 (AC-14) |
+         *     | `AUTH_ACCOUNT_REJECTED` | `REJECTED` | 승인 안 됨 (AC-15) — `deletion_token` 동봉 (AC-50) |
+         *     | `AUTH_ACCOUNT_SUSPENDED` | `SUSPENDED` | 이용 정지 (AC-16) |
+         *
+         *     카탈로그에 없는 `code` 가 오면 앱은 "계정 상태를 확인해 주세요" 일반 화면으로 처리한다
+         *     (M-13 / design.md §7.5) — 앱이 죽지 않는다.
+         */
+        AccountBlocked: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["AccountBlockedProblem"];
+            };
+        };
+        /**
+         * @description 로그인 시도 초과로 잠김 (AC-17). **10분 창 안에 5회 연속 실패하면 10분간 잠근다.**
+         *
+         *     - 카운터의 키는 계정이 아니라 **정규화한 이메일 문자열**이다. 따라서 이 응답은
+         *       **미등록 이메일에도 똑같이 온다** (AC-47) — 잠금 여부로 계정 존재를 알 수 없다.
+         *     - 잠금 확인이 비밀번호 검증보다 먼저이므로 잠금 중의 재시도는 **잠금을 연장하지 않는다** (AC-48).
+         *     - `lock_remaining_minutes` 는 **서버가 올림하고 최소 1분을 보장한다.**
+         *       앱은 이 값을 그대로 렌더하고 카운트다운을 계산하지 않는다 (M-18 / design.md §4.7).
+         *     - `Retry-After`(초)는 RFC 9110 표준 헤더다. `lock_remaining_minutes` 와 같은 잠금을
+         *       가리키지만 **올림하지 않은 실제 초**다 — 앱은 이 헤더를 쓰지 않는다.
+         */
+        LoginLocked: {
+            headers: {
+                /** @description 잠금이 풀릴 때까지 남은 **초**. 올림하지 않은 실제 값. */
+                "Retry-After": number;
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "type": "about:blank",
+                 *       "title": "Too Many Requests",
+                 *       "status": 429,
+                 *       "detail": "로그인을 잠시 제한했어요.",
+                 *       "instance": "/api/v1/auth/login",
+                 *       "code": "AUTH_LOGIN_LOCKED",
+                 *       "lock_remaining_minutes": 9,
+                 *       "support_contact_email": "support@planbee.app"
+                 *     }
+                 */
+                "application/problem+json": components["schemas"]["LoginLockedProblem"];
+            };
+        };
+        /**
+         * @description 가입 신청 IP 레이트 리밋 초과. **동일 IP 기준 시간당 10회** (2026-08-26 tech-lead 확정).
+         *
+         *     AC-2 가 이메일 중복을 그대로 알려주므로 가입 화면은 계정 열거에 쓰일 수 있다.
+         *     노출 자체는 인수했고(PRD 제약), 이 리밋은 **대량 자동 열거**만 막는다.
+         *     사람이 손으로 가입하는 흐름에는 닿지 않는 값이다.
+         *
+         *     앱에는 이 코드에 대응하는 전용 화면이 없다 — 일반 오류 문구로 처리한다 (M-13).
+         */
+        SignupRateLimited: {
+            headers: {
+                /** @description 다시 시도할 수 있을 때까지 남은 **초**. */
+                "Retry-After": number;
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "type": "about:blank",
+                 *       "title": "Too Many Requests",
+                 *       "status": 429,
+                 *       "detail": "잠시 후 다시 시도해 주세요.",
+                 *       "instance": "/api/v1/auth/signup",
+                 *       "code": "AUTH_SIGNUP_RATE_LIMITED"
+                 *     }
+                 */
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /** @description 오류 (일반). 전용 응답이 정의되지 않은 곳에서 재사용한다. */
         Problem: {
             headers: {
                 [name: string]: unknown;
@@ -103,6 +667,325 @@ export interface operations {
                     };
                 };
             };
+        };
+    };
+    signup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SignupRequest"];
+            };
+        };
+        responses: {
+            /** @description 접수됨. 계정은 `PENDING` 상태다. (AC-1, AC-46) */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignupResponse"];
+                };
+            };
+            /**
+             * @description 입력 검증 실패 (AC-4). `code` 는 `VALIDATION_FAILED`,
+             *     `errors[].field` 는 `email` / `password` / `signup_reason` / `consents`
+             *     / `age_over_14_confirmed` 중 하나를 지목한다.
+             */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "about:blank",
+                     *       "title": "Bad Request",
+                     *       "status": 400,
+                     *       "detail": "입력값을 확인해 주세요.",
+                     *       "instance": "/api/v1/auth/signup",
+                     *       "code": "VALIDATION_FAILED",
+                     *       "errors": [
+                     *         {
+                     *           "field": "password",
+                     *           "code": "PATTERN",
+                     *           "message": "영문과 숫자를 포함해 8자 이상"
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description 이미 가입 신청된 이메일 (AC-2) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "about:blank",
+                     *       "title": "Conflict",
+                     *       "status": 409,
+                     *       "detail": "이미 가입 신청된 이메일입니다.",
+                     *       "instance": "/api/v1/auth/signup",
+                     *       "code": "AUTH_EMAIL_ALREADY_REGISTERED"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["SignupRateLimited"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    login: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginRequest"];
+            };
+        };
+        responses: {
+            /** @description 로그인 성공. 계정 상태가 `APPROVED` 인 경우에만 도달한다. (AC-11) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoginResponse"];
+                };
+            };
+            /**
+             * @description `email` 또는 `password` 가 비었다. **형식 검증은 하지 않는다** — 형식이 틀린
+             *     이메일은 401 로 처리해 미등록 계정과 구분되지 않게 한다 (AC-13 / design.md §4.4).
+             */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /**
+             * @description 자격 증명 불일치. **다음 셋은 완전히 같은 응답이다** — `code` · `detail` · 필드 구성이
+             *     글자 하나 다르지 않아야 한다 (AC-12 · AC-13 · AC-31).
+             *     ① 등록된 이메일 + 틀린 비밀번호 ② 미등록 이메일 ③ 삭제된 계정의 이메일
+             */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "about:blank",
+                     *       "title": "Unauthorized",
+                     *       "status": 401,
+                     *       "detail": "이메일 또는 비밀번호를 확인해 주세요.",
+                     *       "instance": "/api/v1/auth/login",
+                     *       "code": "AUTH_INVALID_CREDENTIALS"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            403: components["responses"]["AccountBlocked"];
+            429: components["responses"]["LoginLocked"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    refreshToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefreshRequest"];
+            };
+        };
+        responses: {
+            /**
+             * @description 갱신 성공. 새 토큰 쌍을 반환한다 (AC-22).
+             *     유예 창(10초) 안의 직전 토큰 재사용이면 **직전과 동일한 쌍**을 반환한다 (AC-49).
+             */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenPair"];
+                };
+            };
+            /** @description `refresh_token` 이 비었다. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /**
+             * @description 갱신 거부. `code` 네 가지가 서로 구분 가능해야 한다 — 앱이 띄우는 배너가 다르다.
+             *
+             *     | `code` | 상황 | 앱 |
+             *     |---|---|---|
+             *     | `AUTH_REFRESH_TOKEN_EXPIRED` | 마지막 사용 후 14일 경과 | 만료 배너 (AC-25) |
+             *     | `AUTH_REFRESH_TOKEN_INVALID` | 알 수 없는 토큰 · 서명 오류 · 로그아웃으로 폐기된 토큰 | 만료 배너 |
+             *     | `AUTH_REFRESH_TOKEN_REUSED` | 유예 창 밖 재사용 감지 — **이 요청이 전 기기 폐기의 방아쇠다** | 보안 배너 (AC-23·24) |
+             *     | `AUTH_REFRESH_TOKEN_REVOKED` | 재사용 감지로 이미 폐기된 계정의 토큰 (다른 기기) | 보안 배너 (AC-24) |
+             *
+             *     어느 경우든 앱은 저장된 토큰을 지우고 로그인 화면으로 간다.
+             */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "about:blank",
+                     *       "title": "Unauthorized",
+                     *       "status": 401,
+                     *       "detail": "보안을 위해 모든 기기에서 로그아웃했어요. 다시 로그인해 주세요.",
+                     *       "instance": "/api/v1/auth/token/refresh",
+                     *       "code": "AUTH_REFRESH_TOKEN_REUSED"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            403: components["responses"]["AccountBlocked"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    logout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefreshRequest"];
+            };
+        };
+        responses: {
+            /** @description 폐기됨 (또는 이미 폐기되어 있었다). 본문 없음. (AC-26) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `refresh_token` 이 비었다. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    getMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 조회 성공 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserSummary"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["ForbiddenScope"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    deleteMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccountDeleteRequest"];
+            };
+        };
+        responses: {
+            /** @description 삭제 완료. 본문 없음. 이 계정의 모든 리프레시 토큰도 함께 폐기된다. (AC-31) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `password` 가 비었다 (AC-29 의 서버 측 보장). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /**
+             * @description 토큰이 없거나 무효(`UNAUTHORIZED`), 또는 **비밀번호 불일치**(`AUTH_PASSWORD_MISMATCH`).
+             *
+             *     `AUTH_PASSWORD_MISMATCH` 는 401 이지만 **토큰 갱신을 시도하지 않는다.**
+             *     앱은 이 코드를 비밀번호 필드 오류("비밀번호를 확인해 주세요")로 표시한다
+             *     (design.md §9.4). 상태 코드가 아니라 `code` 로 분기한다 (C-1).
+             */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "about:blank",
+                     *       "title": "Unauthorized",
+                     *       "status": 401,
+                     *       "detail": "비밀번호를 확인해 주세요.",
+                     *       "instance": "/api/v1/auth/me",
+                     *       "code": "AUTH_PASSWORD_MISMATCH"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            403: components["responses"]["ForbiddenScope"];
+            500: components["responses"]["InternalError"];
         };
     };
 }

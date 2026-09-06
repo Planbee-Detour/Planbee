@@ -3,6 +3,7 @@ package com.planbee.api.common.security;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -32,15 +33,26 @@ import com.nimbusds.jose.jwk.source.ImmutableSecret;
 @EnableConfigurationProperties(JwtProperties.class)
 public class SecurityConfig {
 
+	/**
+	 * 인증 없이 열어야 하는 경로.
+	 *
+	 * <p>auth 를 {@code /api/v1/auth/**} 로 통째로 열지 않는다 — 그러면 로그아웃·계정 조회·
+	 * <b>계정 삭제</b>까지 무인증으로 열린다. 세션이 없어야만 부를 수 있는 셋만 공개한다.
+	 */
 	private static final String[] PUBLIC_PATHS = {
 			"/api/v1/health",
-			"/api/v1/auth/**",
+			"/api/v1/auth/signup",
+			"/api/v1/auth/login",
+			"/api/v1/auth/token/refresh",
 			"/actuator/health",
 			"/actuator/info",
 			"/v3/api-docs/**",
 			"/swagger-ui/**",
 			"/swagger-ui.html"
 	};
+
+	/** 계정 삭제만 이 경로를 삭제 전용 토큰으로도 부를 수 있다 (auth AC-50). */
+	private static final String ACCOUNT_PATH = "/api/v1/auth/me";
 
 	@Bean
 	SecurityFilterChain securityFilterChain(HttpSecurity http, SecurityProblemResponder problemResponder)
@@ -51,7 +63,11 @@ public class SecurityConfig {
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(requests -> requests
 						.requestMatchers(PUBLIC_PATHS).permitAll()
-						.anyRequest().authenticated())
+						// 삭제 전용 토큰이 통하는 <b>유일한</b> 지점.
+						.requestMatchers(HttpMethod.DELETE, ACCOUNT_PATH)
+						.hasAnyAuthority(TokenScope.FULL.authority(), TokenScope.ACCOUNT_DELETE.authority())
+						// 그 밖의 모든 인증 경로는 일반 세션만 허용한다. 삭제 전용 토큰으로 여기 오면 403 이다.
+						.anyRequest().hasAuthority(TokenScope.FULL.authority()))
 				.oauth2ResourceServer(resourceServer -> resourceServer
 						.jwt(Customizer.withDefaults())
 						.authenticationEntryPoint(problemResponder))
