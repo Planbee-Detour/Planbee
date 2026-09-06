@@ -67,10 +67,56 @@ run_oasdiff() {
 	docker run --rm -v "$ROOT":/work -w /work "$OASDIFF_IMAGE" "$@"
 }
 
+# 계약에만 있고 아직 구현되지 않은 경로를 뺀 사본을 만든다.
+#
+# oasdiff 는 계약에 있고 구현에 없는 경로를 api-path-removed-without-deprecation(ERR) 로 본다.
+# 그건 "운영 중인 API 를 없앴다" 는 뜻이고 여기서 보려는 것과 다르다 — 이 게이트에서 계약은
+# 원본이고 구현이 따라가는 쪽이라, 아직 안 따라온 경로는 실패가 아니라 정보다 (파일 상단 참조).
+# 그래서 그 경로를 지운 사본으로 1단계를 검사하고, 지운 목록은 따로 출력한다.
+# 구현이 계약을 어긴 진짜 파괴적 변경(필드 삭제·타입 축소·응답 제거)은 그대로 걸린다.
+UNIMPLEMENTED=$(python3 - "$WORK/contract.yaml" "$IMPLEMENTED" "$WORK/contract-implemented.yaml" <<'DROP'
+import json, pathlib, re, sys
+
+contract_path, implemented_path, out_path = sys.argv[1], sys.argv[2], sys.argv[3]
+
+implemented = set((json.loads(pathlib.Path(implemented_path).read_text(encoding='utf-8'))
+                   .get('paths') or {}).keys())
+
+lines = pathlib.Path(contract_path).read_text(encoding='utf-8').splitlines(True)
+out, dropped = [], []
+in_paths = False   # 최상위 paths: 블록 안인가
+skipping = False   # 지금 지우는 중인 경로가 있는가
+
+for line in lines:
+    if re.match(r'^paths:\s*$', line):
+        in_paths, skipping = True, False
+        out.append(line)
+        continue
+    if in_paths and re.match(r'^\S', line):   # 다음 최상위 키 (components: 등)
+        in_paths, skipping = False, False
+    if in_paths:
+        m = re.match(r'^  (/\S*):\s*$', line)
+        if m:
+            path = m.group(1)
+            skipping = path not in implemented
+            if skipping:
+                dropped.append(path)
+                continue
+        elif skipping and not re.match(r'^  \S', line):
+            continue          # 지우는 경로에 딸린 하위 줄
+        elif skipping:
+            skipping = False  # 같은 깊이의 다른 키를 만나면 끝
+    out.append(line)
+
+pathlib.Path(out_path).write_text(''.join(out), encoding='utf-8')
+print('\n'.join(dropped))
+DROP
+)
+
 echo "── 1. 구현이 계약을 어겼는가 (파괴적 변경) ──"
 # --fail-on ERR 이 없으면 oasdiff 는 파괴적 변경을 찾아도 exit 0 을 반환한다.
 # 이게 빠지면 통과만 하는 무의미한 게이트가 된다.
-if ! run_oasdiff breaking "$REL_WORK/contract.yaml" "$REL_WORK/implemented.json" --fail-on ERR; then
+if ! run_oasdiff breaking "$REL_WORK/contract-implemented.yaml" "$REL_WORK/implemented.json" --fail-on ERR; then
 	echo
 	echo "✗ 구현이 계약을 어겼습니다. 계약이 아니라 구현을 고치세요."
 	echo "  계약 변경이 정말 필요하면 tech-lead 에게 요청하세요 (defects.md)."
@@ -78,7 +124,16 @@ if ! run_oasdiff breaking "$REL_WORK/contract.yaml" "$REL_WORK/implemented.json"
 fi
 
 echo
-echo "── 2. 계약에 없는 엔드포인트를 노출하는가 ──"
+echo "── 2. 계약에만 있고 아직 구현되지 않은 경로 (정보) ──"
+if [ -n "$UNIMPLEMENTED" ]; then
+	echo "$UNIMPLEMENTED" | sed 's/^/    i /'
+	echo "  진행 중일 수 있으므로 실패로 보지 않는다. 1단계 검사에서는 제외했다."
+else
+	echo "없음"
+fi
+
+echo
+echo "── 3. 계약에 없는 엔드포인트를 노출하는가 ──"
 run_oasdiff diff "$REL_WORK/contract.yaml" "$REL_WORK/implemented.json" --format json \
 	>"$WORK/diff.json"
 
@@ -99,7 +154,7 @@ fi
 echo "없음"
 
 echo
-echo "── 3. 참고: 계약과 구현의 나머지 차이 ──"
+echo "── 4. 참고: 계약과 구현의 나머지 차이 ──"
 run_oasdiff changelog "$REL_WORK/contract.yaml" "$REL_WORK/implemented.json" || true
 
 echo

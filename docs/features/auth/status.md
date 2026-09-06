@@ -2,7 +2,7 @@
 
 - 기능 슬러그: `auth`
 - 시작일: 2026-08-23
-- 현재 단계: `2026-09-06 develop 머지 진행 중. 6단계까지 완료(make verify-mobile exit 0). 원격 develop 에 실제 홈 화면이 생겨 7단계 재개 조건이 갖춰졌다 — 남은 것은 Docker 게이트(test-server-db · contract-check)와 E2E 재실행`
+- 현재 단계: `2026-09-06 develop 머지 완료, make verify exit 0. 남은 것은 push → PR 과 7단계 E2E 재실행 (원격 develop 에 실제 홈이 생겨 auth-02·03 이 막혀 있던 이유가 사라졌다)`
   - 모바일 재작업 루프는 **1회로 종료**됐다 (`D-M1`~`D-M5` 전건 해소, 신규 `[MUST]` 0건).
     상한 2회 안이라 `ESCALATE` 대상이 아니다.
   - 서버 재작업 루프도 **1회로 종료**됐다 (`D-3`~`D-6` 전건 해소, 신규 `[MUST]` 0건).
@@ -283,16 +283,27 @@ App.tsx
 | `make verify-mobile` | **exit 0** — 13 스위트 147건 전건 통과 (lint · typecheck · test) |
 | `make lint-server` | BUILD SUCCESSFUL |
 | `make test-server` | exit 0 |
-| `make test-server-db` | **미실행 — Docker 필요** |
-| `make contract-check` | **미실행 — Docker 필요** |
+| `make test-server-db` | BUILD SUCCESSFUL (Testcontainers 실제 PostgreSQL) |
+| `make contract-check` | 통과 — 단, **스크립트를 먼저 고쳐야 했다.** 아래 참조 |
+| `make verify` | **exit 0** (2026-09-06, 종료 코드 직접 확인) |
 
 ### 남은 일
 
-1. **Docker 를 켜고 `make verify` 를 끝까지 돌린다.** `contract-check` 는 특히 확인이 필요하다 —
-   develop 이 `/api/v1/places/nearby` 와 `/api/v1/places/{place_id}` 를 계약에 올렸는데
-   서버 구현은 없다(모바일이 fixtures 로 그린다). 스크립트 주석은 "계약에만 있고 미구현" 을
-   실패로 보지 않는다고 하지만, `oasdiff breaking` 이 경로 부재를 ERR 로 볼 수 있다.
-   실패하면 그것은 이번 머지가 만든 문제가 아니라 **develop 이 이미 갖고 있던 상태**다.
+1. ~~Docker 를 켜고 `make verify`~~ — **해소 (2026-09-06). `make verify` exit 0.**
+   예상대로 `contract-check` 가 먼저 실패했다. `oasdiff` 가 `/api/v1/places/nearby` 와
+   `/api/v1/places/{place_id}` 를 `api-path-removed-without-deprecation`(ERR) 로 잡았다.
+
+   **원인은 이번 머지가 아니다.** develop 은 `server/` 를 한 줄도 바꾸지 않은 채 그 두 경로를
+   계약에만 올렸다(모바일이 fixtures 로 그린다) — develop 자체가 갖고 있던 상태다.
+   그 2건만 뺀 계약으로 다시 돌려 **auth 6개 엔드포인트는 계약과 완전히 일치**하고 실패 원인이
+   places 뿐임을 확인했다.
+
+   **조치 (사람 결정):** `scripts/contract-check.sh` 를 주석의 원래 의도대로 고쳤다.
+   스크립트 상단은 처음부터 "계약에만 있고 아직 구현되지 않은 것 → 정보로만 보고" 라고
+   적혀 있었으나 실제 동작이 달랐다. oasdiff 플래그에 기대지 않고, 계약에서 미구현 경로를 뺀
+   사본으로 1단계를 검사하고 뺀 목록을 2단계에서 출력한다. 반대 방향(계약에 없는 엔드포인트
+   노출)과 진짜 파괴적 변경(필드 삭제·타입 축소·응답 제거)은 그대로 실패한다.
+   게이트 정책이 바뀌었으므로 `docs/conventions/common.md` **C-5 에 규칙으로 남겼다.**
 2. ~~`docs/design/planbee.pen` 확인~~ — **해소 (2026-09-06).** 자동 머지 결과가 온전하다.
    JSON 파싱이 통과하고(version 2.17) 최상위 프레임 70개에 auth 아트보드(`Screen 06a`~`15a`)와
    develop 의 홈·상세·Nearby(`Screen 02`·`03`·`04a`~`04d`·`05`·`16a`~`16e`)가 **둘 다 살아 있다.**
@@ -476,3 +487,4 @@ PRD 열린 질문 **2(초기 관리자 계정 생성 경로)는 여전히 열려
 | 2026-08-27 | integration-tester | **플로우 작성 완료 · 실행 보류(사람 결정).** `e2e/flows/` — `app-launch.yaml`(옛 `health.yaml`. 앱에서 사라진 셀렉터 `다시 확인`·`서버 연결됨` 을 쓰고 있어 반드시 실패하던 상태였다), `auth-01-signup-pending.yaml`(가입 → 서버가 완성한 안내 문구 그대로 렌더 · AC-1·46), `auth-02-login-home.yaml`(승인 계정 로그인 → 홈 → 설정의 `GET /auth/me` · AC-11·35), `auth-03-session-persistence.yaml`(**재시작 후 세션 유지** → 로그아웃 → 재시작해도 유지 안 됨 · AC-20·22·26·27). 시드 `V901__e2e_seed_auth.sql` 신설 — APPROVED 계정 1개(해시는 실제 서버의 `/auth/signup` 이 만든 값) + 동의 이력 3종. V900 은 체크섬 때문에 손대지 않았다. **앱 실행은 못 했지만 서버 왕복은 기계로 확인했다** — `make e2e-up` 후 `curl` 로 시드 적용(Flyway V901 성공)·로그인 200·`/auth/me` 200·`/token/refresh` 200(회전 확인)·`/logout` 204·폐기 후 갱신 401 `AUTH_REFRESH_TOKEN_INVALID`·가입 201(PENDING 문구가 플로우 단언과 일치)까지 확인 후 `make e2e-down` 으로 정리. 결함 `D-E1`(비차단, 로그인 입력란 `testID` 요청). `make test-e2e` 미실행이라 **PASS 를 적지 않았다**(절대 규칙 6) — `ASK` 9 |
 | 2026-08-27 | mobile-tester | **FAIL — 차단 결함 1건.** AC 검증 테스트 **136건** 신설(파일 9개). 로그인 27 · 가입 25 · 상태 안내 24 · 계정 삭제 12 · 설정 11 · 약관 뷰어 11 · 스플래시 13 · 무음 갱신 4 · 낭독 8. `D-M4` 요청대로 **양방향 낭독을 검증**했다 — `a11yAnnounceIos`/`a11yAnnounceAndroid` 두 파일로 나눠(`shared/lib/a11y` 가 로드 시점에 경로를 고정하므로 한 파일로는 불가) iOS 는 `announceForAccessibility` 호출, 안드로이드는 **호출 없음 + 라이브 리전** 확인. 잠금은 `Retry-After` 헤더와 본문을 어긋나게 목킹해 **앱이 본문 `lock_remaining_minutes` 만 쓰는 것**을 고정했다. **결함 `D-T1` [High · 차단]** — 갱신 요청 자체가 401 을 받으면 `authFetch` 가 그 응답에 또 갱신을 걸어 `refreshInFlight` 가 자기를 기다리며 **영원히 끝나지 않는다.** 토큰이 지워지지 않고 세션도 끝나지 않아 AC-23·24·25 가 운영 빌드에서 깨진다(스플래시 단독 테스트는 `configureSession()` 을 부르지 않아 통과했다 — 실제 앱은 `App.tsx` 가 부른다). 증거는 `sessionRefresh.test.tsx` 의 `test.failing` 3건이며 고치면 실패로 바뀐다. `D-T2` [Low · 비차단] 잠금 429 에서도 비밀번호를 지우는 동작은 §4.6 이 침묵해 판정 불가 → ux-designer 요청. **못 덮은 AC**: AC-8(저장된 이력) · AC-18 의 Android Keystore 실기기 · AC-23·AC-49 의 유예 창 · AC-31·AC-32 의 실제 재가입 — 전부 server-tester / integration-tester 담당이다. `mobile.md` 테스트 메모 3줄 추가(`fireEvent` 도 비동기 · 한 테스트에서 `render` 2회 금지 · Keychain 초기화는 `clearTokens`). 게이트: `make verify-mobile` 통과(린트 0 · `tsc` 0 · 테스트 **148건**) |
 | 2026-09-06 | (머지) | `auth` 전체를 `f5466be` 로 커밋해 `feat/ariel/auth` 에 push. 원격 `develop`(6커밋 앞섬) 흡수 — 충돌 5개 해결, 내비게이터 통합(세션 분기 바깥 / 실제 탭 구조 안쪽), 자리표시자 홈 제거, 계정 설정 진입점을 마이 탭으로 확정(사람 결정). `make verify-mobile` exit 0 · `lint-server` · `test-server` 통과. Docker 게이트 2종과 pen 확인은 미완 |
+| 2026-09-06 | (게이트) | `make verify` **exit 0**. `contract-check` 가 develop 이 계약에만 올린 `/api/v1/places/*` 2건 때문에 먼저 실패했고, 원인이 이번 머지와 무관함을 확인한 뒤 `scripts/contract-check.sh` 를 주석의 원래 의도대로 고쳤다(미구현 경로는 정보, 계약에 없는 노출은 실패). 근거를 `common.md` C-5 에 규칙으로 추가 |
