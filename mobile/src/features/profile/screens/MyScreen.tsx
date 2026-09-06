@@ -1,6 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {ActivityIndicator, Pressable, ScrollView, Text, TextInput, View} from 'react-native';
 
+import {ListCard, ListRow} from '../../../shared/ui/ListRow';
 import {
   clearPreferredRegion,
   savePreferredRegion,
@@ -8,10 +9,12 @@ import {
 
 type MyScreenProps = {
   onRegionChange: (region: string | null) => void;
+  /** 계정 설정(auth)으로 가는 유일한 진입점. AC-28·AC-35 의 전제다 */
+  onAccountSettingsPress: () => void;
   region: string | null;
 };
 
-export function MyScreen({region, onRegionChange}: MyScreenProps) {
+export function MyScreen({region, onRegionChange, onAccountSettingsPress}: MyScreenProps) {
   const [draftRegion, setDraftRegion] = useState(region ?? '');
 
   useEffect(() => {
@@ -72,6 +75,17 @@ export function MyScreen({region, onRegionChange}: MyScreenProps) {
         </Text>
         <ActivityIndicator className="mt-3 self-start" />
       </View>
+
+      <Text className="mb-2 mt-8 text-body-sm font-semibold text-ink">계정</Text>
+      <ListCard>
+        <ListRow
+          label="계정 설정"
+          chevron
+          onPress={onAccountSettingsPress}
+          accessibilityHint="계정 정보, 약관, 로그아웃, 계정 삭제"
+          testID="home-settings"
+        />
+      </ListCard>
     </ScrollView>
   );
 }

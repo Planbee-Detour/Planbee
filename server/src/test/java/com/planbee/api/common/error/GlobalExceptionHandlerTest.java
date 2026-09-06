@@ -26,8 +26,13 @@ import org.springframework.web.bind.annotation.RestController;
  * 모바일이 {@code code} 로 분기하므로, 이 형식이 깨지면 앱의 오류 처리가 통째로 무너진다.
  *
  * <p>보안 필터는 끄고 응답 형식만 본다. 401/403 형식은 HealthControllerTest 가 검증한다.
+ *
+ * <p>슬라이스를 이 파일의 {@link TestController} 하나로 좁힌다. 대상을 지정하지 않으면
+ * {@code @WebMvcTest} 가 애플리케이션의 모든 컨트롤러를 올리려 하고, 그 의존성까지
+ * 목으로 채워야 해서 <b>도메인이 늘 때마다 이 테스트가 깨진다</b>.
+ * 여기서 보려는 것은 오류 응답의 형식뿐이므로 컨트롤러가 무엇이든 상관없다.
  */
-@WebMvcTest
+@WebMvcTest(controllers = GlobalExceptionHandlerTest.TestController.class)
 @Import({ GlobalExceptionHandler.class, GlobalExceptionHandlerTest.TestController.class })
 @AutoConfigureMockMvc(addFilters = false)
 class GlobalExceptionHandlerTest {

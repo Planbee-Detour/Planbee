@@ -1,0 +1,34 @@
+# 앱 기동 확인 — 번들 → 네이티브 링크 → 첫 화면까지가 살아있는지만 본다.
+#
+# 이 파일은 원래 `health.yaml` 이었고 홈 화면의 "다시 확인" 버튼으로 `/api/v1/health` 를
+# 눌러 보는 플로우였다. 그 화면은 auth 구현(2026-08-26)으로 사라졌다 — 지금 앱의 첫 화면은
+# 스플래시이고 그 다음이 로그인이다. 셀렉터가 화면에 없으니 그대로 두면 반드시 실패한다.
+#
+# **서버 왕복 확인은 없어진 것이 아니라 auth 플로우로 옮겨졌다.**
+# `auth-02-login-home.yaml` 이 실제 로그인으로 앱→API→PostgreSQL 전 구간을 지난다.
+# 여기 남은 몫은 "앱이 뜨고 첫 화면이 그려진다" 하나다 — 네이티브 모듈 링크가 깨지면
+# 여기서 먼저 드러나고, auth 플로우 3개가 한꺼번에 실패하는 것보다 원인 판별이 빠르다.
+#
+# 엣지케이스는 여기 넣지 않는다. 느리고 잘 깨지는 테스트가 쌓이면 하네스 전체가 신뢰를 잃는다.
+# (AGENTS.md 절대규칙 5 / integration-tester 역할 정의)
+#
+# Maestro 2.x 문법: `assertVisible` 에서 `timeout` 이 제거됐다 (2.10.0 에서 파싱 실패).
+# 그래서 "뜰 때까지 기다리는" 단언은 `extendedWaitUntil` + `visible:` 로 쓴다 (2026-09-02).
+# `assertNotVisible` 과 timeout 없는 `assertVisible` 은 "지금 그러해야 한다" 는 단언이라 그대로 둔다.
+appId: org.reactjs.native.example.Planbee
+name: 앱 기동 확인
+---
+# 토큰은 Keychain 에 있어 clearState 로는 지워지지 않는다 (mobile/src/shared/api/session.ts).
+# 앞선 플로우가 남긴 세션을 물고 시작하지 않도록 둘 다 지운다.
+- clearKeychain
+- launchApp:
+    clearState: true
+
+# 스플래시. 저장된 토큰이 없으므로 곧바로 로그인 화면으로 교체된다 (AC-21).
+- assertVisible: 'Planbee'
+
+# 로그인 화면 도착. 스플래시에도 'Planbee' 가 있어 화면 구분은 이 버튼으로 한다.
+- extendedWaitUntil:
+    visible:
+      id: 'login-submit'
+    timeout: 15000

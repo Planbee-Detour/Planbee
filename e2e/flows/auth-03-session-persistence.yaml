@@ -1,0 +1,102 @@
+# 인증 지속 — 앱을 껐다 켜도 로그인 상태가 유지되는가. **이 계층의 고유 항목이다.**
+# 계약: POST /api/v1/auth/token/refresh 200 (TokenPair) · POST /api/v1/auth/logout 204
+#       AC-18 · AC-20 · AC-22 · AC-26 · AC-27
+#
+# 아래 두 층에서는 이걸 증명할 수 없다:
+#   - mobile-tester 는 API 를 msw 로 목킹하고 Keychain 도 목이라, "재시작 후에도 남는가" 는
+#     목이 남기기로 한 값을 다시 읽는 것이 된다.
+#   - server-tester 는 앱 프로세스를 모른다.
+# 실제 프로세스 재시작 + 실제 Keychain + 실제 회전이 한꺼번에 걸리는 곳은 여기뿐이다.
+#
+# 뒷부분(로그아웃)은 그 반대 방향의 왕복이다 — 지운 세션이 재시작 뒤에도 지워진 채인가.
+#
+# Maestro 2.x 문법: `assertVisible` 에서 `timeout` 이 제거됐다 (2.10.0 에서 파싱 실패).
+# 그래서 "뜰 때까지 기다리는" 단언은 `extendedWaitUntil` + `visible:` 로 쓴다 (2026-09-02).
+# `assertNotVisible` 과 timeout 없는 `assertVisible` 은 "지금 그러해야 한다" 는 단언이라 그대로 둔다.
+# 2026-09-06 develop 머지 — 로그인 후 도착지가 자리표시자 홈에서 실제 홈(하단 탭 4개)으로 바뀌었다.
+# 계정 설정은 마이 탭 안의 항목이 됐다: 홈 도착 판정은 탭바(`tab-My`)로 하고,
+# 설정으로 갈 때 마이 탭을 먼저 누른다. `home-settings` testID 자체는 그 항목이 물려받았다.
+appId: org.reactjs.native.example.Planbee
+name: 인증 지속 (재시작) → 로그아웃
+---
+- clearKeychain
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible:
+      id: 'login-submit'
+    timeout: 15000
+
+# 로그인 — 셀렉터의 근거는 auth-02-login-home.yaml 의 주석에 있다 (defects.md D-E1).
+# 하위 플로우로 빼지 않고 그대로 두었다. `maestro test e2e/flows` 가 디렉토리의 yaml 을
+# 전부 실행하므로, 공유용 조각을 같은 폴더에 두면 그것까지 독립 플로우로 돌아간다.
+- tapOn: 'name@example.com'
+- inputText: 'approved@e2e.planbee.test'
+- tapOn:
+    text: '비밀번호'
+    index: 1
+- inputText: 'planbee2026'
+- hideKeyboard
+- tapOn:
+    id: 'login-submit'
+- extendedWaitUntil:
+    visible:
+      id: 'tab-My'
+    timeout: 15000
+
+# ── 재시작 ──────────────────────────────────────────────────────────
+# clearState 를 주지 않는다. 토큰은 Keychain 에 있으므로 앱 데이터를 지우지 않는 한 남는다 (AC-18).
+# 재시작하면 스플래시가 저장된 리프레시 토큰으로 POST /auth/token/refresh 를 부르고,
+# 성공하면 **로그인 화면을 거치지 않고** 홈으로 간다 (AC-20).
+# 이때 서버는 토큰을 회전시킨다 — 앱은 새 쌍을 받아 다시 저장한다 (AC-22).
+- launchApp
+
+- extendedWaitUntil:
+    visible:
+      id: 'tab-My'
+    timeout: 20000
+# 중간에 로그인 화면이 남아 있으면 세션 복원이 아니라 재로그인이다.
+- assertNotVisible:
+    id: 'login-submit'
+
+# ── 로그아웃 (AC-26 · AC-27) ────────────────────────────────────────
+- tapOn:
+    id: 'tab-My'
+- extendedWaitUntil:
+    visible:
+      id: 'home-settings'
+    timeout: 15000
+- tapOn:
+    id: 'home-settings'
+- extendedWaitUntil:
+    visible:
+      id: 'settings-logout'
+    timeout: 15000
+- tapOn:
+    id: 'settings-logout'
+
+# 네이티브 경고창. 확인 버튼의 라벨("로그아웃")이 방금 누른 목록 행과 같은 문자열이라
+# index 로 가른다 — 0 = 설정 화면의 행, 1 = 경고창 버튼(계층 순서).
+# 첫 실행에서 순서가 다르면 여기를 뒤집는다.
+- assertVisible: '로그아웃할까요?'
+- tapOn:
+    text: '로그아웃'
+    index: 1
+
+# 로그인 화면으로 돌아온다. 완료 토스트("로그아웃했어요")는 2초 뒤 사라지는 표시라
+# 단언하지 않는다 — 타이밍에 걸리는 단언은 이 계층에 두지 않는다.
+- extendedWaitUntil:
+    visible:
+      id: 'login-submit'
+    timeout: 15000
+
+# ── 다시 재시작 ────────────────────────────────────────────────────
+# 로그아웃은 기기의 토큰을 지우고(AC-27) 서버의 그 토큰도 폐기한다(AC-26).
+# 그러므로 재시작해도 복원될 세션이 없어야 한다. 여기서 홈이 뜨면 둘 중 하나가 안 된 것이다.
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: 'login-submit'
+    timeout: 20000
+- assertNotVisible:
+    id: 'tab-My'

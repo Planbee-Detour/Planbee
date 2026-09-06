@@ -84,7 +84,10 @@ db-reset: ## 로컬 PostgreSQL 정지 + 데이터 삭제
 	docker compose down -v
 
 # ── 모바일 ───────────────────────────────────────────────────────────
-.PHONY: lint-mobile typecheck-mobile test-mobile verify-mobile
+.PHONY: lint-mobile typecheck-mobile test-mobile verify-mobile legal-bundle
+legal-bundle: ## 약관 원본(docs/legal)을 앱 번들용 모듈로 생성
+	node mobile/scripts/bundle-legal.mjs
+
 lint-mobile: ## 모바일 린트
 	npm run mobile:lint
 
@@ -94,7 +97,9 @@ typecheck-mobile: ## 모바일 타입 검사 (ESLint 는 타입을 보지 않는
 test-mobile: ## 모바일 단위/컴포넌트 테스트 (API는 msw 목킹)
 	npm run mobile:test
 
-verify-mobile: lint-mobile typecheck-mobile test-mobile ## 모바일 전체 게이트
+# 약관 본문은 생성물이라 커밋되지 않는다 — 검증 전에 항상 다시 만든다.
+# 이게 없으면 clone 직후 타입 검사가 "모듈을 찾을 수 없음" 으로 실패한다.
+verify-mobile: legal-bundle lint-mobile typecheck-mobile test-mobile ## 모바일 전체 게이트
 
 # ── 서버 ─────────────────────────────────────────────────────────────
 .PHONY: lint-server format-server test-server test-server-db verify-server
