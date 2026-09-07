@@ -139,9 +139,16 @@ name: 가입 신청 → 검토 중 안내
 - tapOn:
     id: 'signup-submit'
 
-# 제출 직후 iOS 가 "암호를 저장하겠습니까?" 시스템 다이얼로그를 띄운다. 이것도 앱 hierarchy 에
-# 없어서, 열려 있는 동안에는 그 아래 앱 화면의 어떤 요소도 Maestro 에 보이지 않는다.
+# 제출 직후 iOS 가 "암호를 저장하겠습니까?" 시스템 다이얼로그를 띄운다. 열려 있는 동안에는
+# 그 아래 앱 화면의 어떤 요소도 Maestro 에 보이지 않는다.
 # ("지금 안 함" 을 좌표로 누른다. 저장을 누르면 다음 실행의 자동완성에 영향을 준다.)
+#
+# 정정 (2026-09-07): 이 다이얼로그는 위쪽 "강력한 암호를 사용하겠습니까?" 시트와 달리
+# **접근성 트리에 올라온다** — `지금 안 함` [57,513][197,561] / `저장` [205,513][345,561].
+# 그래서 `auth-02-login-home.yaml` 은 좌표 대신 `tapOn: text: '지금 안 함'` 로 누른다.
+# 여기 좌표를 그대로 두는 것은 이 위치에서 실제로 통과하는 것이 확인됐기 때문이고
+# (2026-09-07 실행에서 이 단계는 통과했다), 통과하는 단계를 함께 갈아엎지 않기 위해서다.
+# 이 줄이 흔들리기 시작하면 auth-02 와 같은 요소 셀렉터로 바꾼다.
 - waitForAnimationToEnd:
     timeout: 5000
 - tapOn:
@@ -177,8 +184,49 @@ name: 가입 신청 → 검토 중 안내
       text: '.*${output.email}.*'
     timeout: 10000
 
+# ── RN LogBox 알림 배너가 이 버튼을 덮는다 (2026-09-07 실측) ─────────────────
+# 개발 빌드(Metro 연결)에서 JS 경고가 한 건이라도 나면 RN 이 화면 맨 아래에 LogBox 알림
+# 배너를 띄운다. 접근성 트리에는 `!, Open debugger to view warnings.` 라는 요소 하나로
+# 올라오고, 실측 bounds 는 흰 알약이 [10,787][392,835] 였다.
+# `status-go-login` 은 [17,767][384,819] 이라 **버튼의 중심 (200,793) 이 배너 안쪽**이다.
+# Maestro 는 요소의 중심을 누르므로 탭이 배너에 먹히고 화면은 그대로 남는다 —
+# 2026-09-07 실행에서 이 플로우가 죽은 진짜 원인이 이것이다. 로그에도 그대로 남아 있다:
+#   `Try tapping at (200, 793)` → 이어지는 `id: login-submit is visible` 이 17초 뒤 실패.
+#
+# **앱의 Toast 가 아니다.** 실패 스크린샷 하단의 흰 띠를 LoginScreen 의 Toast
+# (`mobile/src/shared/ui/Toast.tsx`)로 오해하기 쉬운데, 접근성 트리를 뜨면 위 LogBox
+# 문자열이다. 로그인 화면은 아예 마운트되지 않았다. 앱/서버 결함이 아니라 개발 빌드에서만
+# 뜨는 RN 개발 도구다 (릴리스 빌드에는 LogBox 자체가 없다).
+#
+# 배너의 닫기(X)에는 testID 도 accessibilityLabel 도 없다. RN 이 `id` prop(=nativeID)만
+# 주는데 iOS 에서는 그게 accessibilityIdentifier 로 매핑되지 않는다
+# (`node_modules/react-native/Libraries/LogBox/UI/LogBoxNotificationDismissButton.js`).
+# 그래서 X 만 비율 좌표로 누른다. 실패 스크린샷의 픽셀을 직접 읽어 X 글리프의 중심을
+# **(387.7, 811.3)pt = (96.4%, 92.8%)** 로 재었다 (배너 우측 끝 392pt 에서 4pt 안쪽).
+# 닫기 버튼은 20x20 이라 (96%,93%) = (385.9, 812.8)pt 는 hitSlop 없이도 버튼 안이다.
+# 설령 X 를 빗나가 배너 본문을 눌러도 결과는 같다 — RN 0.86 은 본문 탭에 DevTools 를
+# 띄우면서 배너를 내리고, 그 아래 앱 화면은 그대로 남는다 (2026-09-07 실측).
+#
+# 배너가 없으면 이 블록은 통째로 건너뛴다. 경고가 나느냐 마느냐는 실행마다 달라서
+# 무조건 좌표를 누르면 빈 화면을 눌러 부작용을 낼 수 있다.
+- runFlow:
+    when:
+      visible:
+        text: '.*Open debugger to view warnings.*'
+    commands:
+      - tapOn:
+          point: '96%,93%'
+      - waitForAnimationToEnd:
+          timeout: 3000
+
 # 뒤로가기로 폼에 돌아가지 않고 스택이 교체됐는지 (AC-1 / design.md §1.3).
+# 화면 교체 + 로그인 화면 첫 렌더가 끝날 때까지 기다린다. timeout 없는 `assertVisible` 도
+# 암묵적으로 기다리기는 하지만(실측 17초), 얼마나 기다리는지가 파일에 안 보이면
+# 실패했을 때 "레이스인가 진짜 실패인가" 를 판별할 수 없다. 이 파일의 규약대로
+# 기다리는 단언은 전부 `extendedWaitUntil` + `visible:` 로 쓴다.
 - tapOn:
     id: 'status-go-login'
-- assertVisible:
-    id: 'login-submit'
+- extendedWaitUntil:
+    visible:
+      id: 'login-submit'
+    timeout: 15000
