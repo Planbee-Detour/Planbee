@@ -96,6 +96,50 @@ Bean Validation 제약 이름을 `UPPER_SNAKE_CASE` 로 변환한 값이다. 예
 > `AUTH_PASSWORD_MISMATCH` 는 401 이지만 세션 문제가 아니다. 401 을 상태 코드로 일괄
 > 가로채는 인터셉터가 있으면 이 코드를 **먼저 예외 처리**해야 한다 (C-1: 분기는 `code` 로 한다).
 
+### admin
+
+2026-09-07 등록 (tech-lead). 계약은 `docs/features/admin-user-approval/contract.yaml` /
+`docs/api/openapi.yaml`. 구현: `com.planbee.api.admin.AdminErrorCode` (예정).
+
+대상 경로는 `/api/v1/admin/**` 전부다.
+
+#### 권한
+
+| code | status | 의미 | 모바일 처리 |
+|---|---|---|---|
+| `ADMIN_FORBIDDEN` | 403 | 역할이 `ADMIN` 이 아님 (AC-3) | 목록 화면의 **권한 없음 블록** — "관리자만 볼 수 있어요" + "이 화면을 볼 수 있는 권한이 없어요." + `설정으로 돌아가기`(pop). **"다시 시도" 를 두지 않는다.** 이 상태에 들어가면 `GET /auth/me` 를 다시 조회해 설정 화면의 관리자 섹션 렌더 조건을 갱신한다 (design.md §5.10) |
+| `ADMIN_SELF_SUSPEND_FORBIDDEN` | 403 | 관리자가 자기 계정을 정지하려 함 (AC-25) | 시트 안 배너 — "내 계정은 정지할 수 없어요" + "스스로를 정지할 수는 없어요." + `닫기`. 정상 경로에서는 도달하지 않는다(앱이 `is_me` 로 버튼을 렌더하지 않는다). **차단의 주체는 서버다** (design.md §7.6) |
+
+**두 코드는 서로 구분 가능해야 한다** — 앱이 그리는 것이 화면 전체와 시트 안 배너로 다르다.
+
+공통 `FORBIDDEN` 과도 갈라 쓴다. `FORBIDDEN` 은 `scope: account:delete` 토큰이
+다른 엔드포인트를 호출한 경우이고(`auth` 계약) 일반 오류 문구로 처리한다.
+호출한 엔드포인트가 무엇이었는지로 분기하면 분기 근거가 `code` 밖으로 나간다 (C-1).
+
+> **서버 유의**: 역할 미달 403 은 필터 체인에서 나가 `@RestControllerAdvice` 를 타지 않는다.
+> `common.security.SecurityProblemResponder`(S-7)가 `/api/v1/admin/**` 에 한해
+> `ADMIN_FORBIDDEN` 을 내도록 갈라야 한다. 아무것도 하지 않으면 공통 `FORBIDDEN` 이 나간다.
+
+#### 상태 전이
+
+| code | status | 의미 | 모바일 처리 |
+|---|---|---|---|
+| `ADMIN_USER_ALREADY_PROCESSED` | 409 | 다른 기기가 먼저 상태를 바꿈 (AC-12) | **시트를 닫지 않는다.** 시트 안 배너 "이미 처리된 신청이에요" + "다른 기기에서 먼저 처리됐어요. 목록을 새로 고쳤어요." 로 바꾸고 액션 버튼을 제거한 뒤 `닫기` 만 남긴다. 배너가 뜨는 즉시 목록을 다시 불러온다 (design.md §6.8). **토스트로 하지 않는다** — 2초 뒤 사라지면 왜 무효였는지 되짚을 수단이 없어진다 |
+
+상태 전이 다섯 엔드포인트(`approve` · `reject` · `reject/cancel` · `suspend` ·
+`suspend/cancel`)가 **같은 코드 하나**를 쓴다. 각 엔드포인트의 전제 상태가 하나씩
+정해져 있고, 그것과 다르면 원인이 무엇이든 "다른 기기가 먼저 바꿨다" 이기 때문이다.
+
+#### 이 도메인이 **만들지 않은** 코드
+
+| 상황 | 쓰는 코드 | 이유 |
+|---|---|---|
+| 미인증 호출 (AC-4) | 공통 `UNAUTHORIZED` | 이 기능에 전용 화면이 없다. `auth` 의 전역 세션 처리가 로그인 화면으로 보낸다 |
+| 거절 사유 200자 초과 (AC-16) | 공통 `VALIDATION_FAILED` + `errors[].field = "rejection_reason"` | 일반적인 입력 검증이다. 도메인 코드를 만들 이유가 없다 |
+| 대상 사용자 없음 | 공통 `NOT_FOUND` | 처리 중에 계정이 삭제된 경우다. **design.md 에 이 상황의 화면이 없어** 보강 전까지 일반 오류로 둔다 |
+| 커서·페이지 크기 오류 | 공통 `MALFORMED_REQUEST` / `VALIDATION_FAILED` | 앱의 버그 신호다. 전용 화면을 두지 않는다 |
+| **가입 사유가 비어 있음 (AC-33)** | **없음 — 오류가 아니다** | 정상 응답 200 이다. 서버가 `signup_reason_text` 에 "입력하지 않음" 을 채워 내린다 (C-8). 코드를 만들면 정상 흐름이 오류 경로로 샌다 |
+
 ### place
 
 | code | status | 의미 | 모바일 처리 |

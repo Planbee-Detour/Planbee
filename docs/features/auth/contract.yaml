@@ -331,10 +331,15 @@ paths:
   # ───────────────────────────────────────────────────────────────────
   /api/v1/auth/me:
     get:
-      summary: 내 계정 정보 조회
+      summary: 내 계정 정보 조회 (관리자 진입점 판정 포함)
       description: |
         설정 화면(design.md §8.2)의 "계정" 카드를 그린다. 화면의 나머지(약관 버전·앱 버전)는
         전부 앱 로컬 값이므로 이 호출 하나로 화면이 완성된다 (C-8).
+
+        **2026-09-07 `admin-user-approval` 확장 (non-breaking).**
+        같은 화면의 `관리자` 섹션도 이 응답 하나로 그린다 — 역할은 `role`,
+        대기 건수는 `pending_approval_count` 다. 호출을 더 만들면 한 화면의 한 영역에
+        2회 이상 호출이 되어 C-8 위반이다.
       operationId: getMe
       tags: [auth]
       security:
@@ -975,7 +980,14 @@ components:
     # ── 계정 ───────────────────────────────────────────────────────
     UserSummary:
       type: object
-      description: 설정 화면의 "계정" 카드를 그리는 값 (design.md §8.2).
+      description: |
+        설정 화면의 "계정" 카드를 그리는 값 (design.md §8.2).
+
+        **2026-09-07 `admin-user-approval` 이 `pending_approval_count` 를 추가했다
+        (non-breaking).** 같은 화면의 `관리자` 섹션을 이 응답 하나로 그리기 위한 필드이며,
+        정의의 원본은 `docs/features/admin-user-approval/contract.yaml` 이다.
+        `auth` 는 이 필드를 만들지도 소비하지도 않지만, `UserSummary` 스키마의
+        소유자가 `auth` 이므로 여기에도 같은 내용이 있어야 한다 (두 파일은 항상 같다).
       required: [email, role, status]
       properties:
         email:
@@ -985,13 +997,26 @@ components:
         role:
           type: string
           enum: [USER, ADMIN]
-          description: 앱에서 역할을 바꾸는 경로는 없다 (PRD 제약).
+          description: |
+            앱에서 역할을 바꾸는 경로는 없다 (PRD 제약).
+            `admin-user-approval` 의 관리자 섹션 렌더 조건이 이 값이다 (그 기능 AC-1 · AC-2).
           example: USER
         status:
           type: string
           enum: [PENDING, APPROVED, REJECTED, SUSPENDED]
           description: 이 엔드포인트가 200 을 내는 시점에는 사실상 항상 `APPROVED` 다.
           example: APPROVED
+        pending_approval_count:
+          description: |
+            **검토 대기(`PENDING`) 신청 건수.** `admin-user-approval` 소유 필드다
+            (그 기능 AC-1 · AC-32 / 그 기능 design.md §13-1).
+
+            `role` 이 `ADMIN` 일 때만 정수이고 **`USER` 에게는 `null`** 이다 —
+            앱이 섹션을 숨기는 것과 별개로 값 자체가 가지 않아야 한다.
+            자세한 규칙은 `docs/features/admin-user-approval/contract.yaml` 을 본다.
+          type: [integer, 'null']
+          minimum: 0
+          example: 3
 
     AccountDeleteRequest:
       type: object
