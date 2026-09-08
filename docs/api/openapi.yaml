@@ -12,6 +12,8 @@ openapi: 3.1.0
 # 두 파일의 해당 부분은 항상 같아야 한다.
 #   - auth                : docs/features/auth/contract.yaml (2026-08-26 병합)
 #   - admin-user-approval : docs/features/admin-user-approval/contract.yaml (2026-09-07 병합)
+#   - nearby-places       : docs/features/nearby-places/contract.yaml (2026-09-08 개정 병합)
+#   - place-detail        : docs/features/place-detail/contract.yaml (2026-09-08 개정 병합)
 #
 # 목록 응답의 페이지네이션 규약(커서 · `has_next` · `next_cursor` · `page_size`)은
 # admin-user-approval 이 처음 정했다. 이후 기능은 그 형태를 따른다.
@@ -19,7 +21,7 @@ openapi: 3.1.0
 
 info:
   title: Planbee API
-  version: 0.3.0
+  version: 0.4.0
   description: Planbee 서비스 API
 
 servers:
@@ -36,26 +38,48 @@ tags:
     description: 가입 신청 · 로그인 · 세션 유지 · 계정 삭제
   - name: admin
     description: 관리자 전용 — 가입 신청 검토 · 승인 · 거절 · 이용 정지
+  - name: place
+    description: 주변 장소 조회 · 장소 상세 (카카오 로컬 + 한국관광공사 TourAPI)
 
 paths:
   /api/v1/places/nearby:
     get:
       summary: 주변 장소 조회
+      description: |
+        카카오 로컬 API 로 주변을 검색하고, 이름·좌표로 한국관광공사 TourAPI 를 매칭해
+        이미지·운영상태·태그를 보강한다. 카카오 단독 결과는 `status_label`·`tags`·`image_url` 이 `null` 이다.
       operationId: getNearbyPlaces
       tags: [place]
       security: []
       parameters:
-        - {name: latitude, in: query, required: true, schema: {type: number, format: double}}
-        - {name: longitude, in: query, required: true, schema: {type: number, format: double}}
+        - {name: latitude, in: query, required: true, schema: {type: number, format: double, minimum: -90, maximum: 90}}
+        - {name: longitude, in: query, required: true, schema: {type: number, format: double, minimum: -180, maximum: 180}}
+        - name: category
+          in: query
+          required: false
+          description: '카카오 카테고리 그룹. 생략 시 `attraction,culture`. 복수는 `?category=attraction&category=cafe`.'
+          schema:
+            type: array
+            items: {type: string, enum: [attraction, culture, cafe, restaurant, accommodation]}
+        - {name: radius, in: query, required: false, description: 검색 반경(m). 카카오 상한 20000., schema: {type: integer, minimum: 100, maximum: 20000, default: 2000}}
+        - {name: size, in: query, required: false, description: 반환할 최대 장소 수. 앱은 기본값을 쓴다., schema: {type: integer, minimum: 1, maximum: 45, default: 15}}
+        - {name: sort, in: query, required: false, description: 정렬. 현재 distance 만., schema: {type: string, enum: [distance], default: distance}}
       responses:
         '200':
-          description: 주변 장소 목록
+          description: 주변 장소 목록. 반경 안에 결과가 없으면 `items` 가 빈 배열이다.
           content:
             application/json:
               schema: {$ref: '#/components/schemas/NearbyPlaceList'}
+        '400':
+          $ref: '#/components/responses/PlaceParamInvalid'
+        '500':
+          $ref: '#/components/responses/PlaceUpstreamUnavailable'
   /api/v1/places/{place_id}:
     get:
-      summary: 관광지 상세 조회
+      summary: 장소 상세 조회
+      description: |
+        `place_id` 는 `<source>:<id>` 다. `kakao:*` 는 카카오 상세 + TourAPI 매칭 보강,
+        `tour:*` 는 TourAPI 직접 조회. `source_label` 에 실제 사용한 소스를 밝힌다.
       operationId: getPlaceDetail
       tags: [place]
       security: []
@@ -63,17 +87,35 @@ paths:
         - name: place_id
           in: path
           required: true
+          description: '`<source>:<id>`. 주변 목록 응답의 `place_id` 를 그대로 되돌려 보낸다.'
           schema:
             type: string
       responses:
         '200':
-          description: 관광지 상세
+          description: 장소 상세. 없는 선택 필드는 `null` 이고 앱은 그 영역을 숨긴다.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/PlaceDetail'
+        '400':
+          description: '`place_id` 형식 오류 (`MALFORMED_REQUEST`).'
+          content:
+            application/problem+json:
+              schema: {$ref: '#/components/schemas/Problem'}
         '404':
-          $ref: '#/components/responses/Problem'
+          description: 해당 장소가 없거나 공개 상태가 아니다 (`PLACE_NOT_FOUND`).
+          content:
+            application/problem+json:
+              schema: {$ref: '#/components/schemas/Problem'}
+              example:
+                type: about:blank
+                title: Not Found
+                status: 404
+                detail: 장소가 삭제되었거나 현재 공개되지 않았어요.
+                instance: /api/v1/places/kakao:0
+                code: PLACE_NOT_FOUND
+        '500':
+          $ref: '#/components/responses/PlaceUpstreamUnavailable'
   /api/v1/health:
     get:
       summary: 서비스 상태 확인
@@ -1123,6 +1165,32 @@ components:
           schema:
             $ref: '#/components/schemas/Problem'
 
+    # ── 장소 (nearby-places · place-detail, 2026-09-08) ─────────────
+    PlaceParamInvalid:
+      description: |
+        좌표·`radius`·`size` 가 범위를 벗어났거나 `category` 값이 enum 밖이다 (`VALIDATION_FAILED`).
+        조용히 잘라내지 않는다. 앱의 버그 신호이므로 전용 화면을 두지 않는다 (M-13 일반 오류).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    PlaceUpstreamUnavailable:
+      description: |
+        카카오 또는 TourAPI 조회가 실패했다 — 상류 5xx·타임아웃·쿼터 초과 (`PLACE_UPSTREAM_UNAVAILABLE`).
+        C-1 이 502/503 을 허용하지 않으므로 상태는 500 이고 `code` 로 구분한다.
+        앱은 오류 화면 + "다시 시도" 를 보여준다.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: about:blank
+            title: Internal Server Error
+            status: 500
+            detail: 주변 장소를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.
+            instance: /api/v1/places/nearby
+            code: PLACE_UPSTREAM_UNAVAILABLE
+
     # ── admin-user-approval (2026-09-07) ───────────────────────────
     AdminForbidden:
       description: |
@@ -1224,35 +1292,44 @@ components:
           items: {$ref: '#/components/schemas/NearbyPlace'}
     NearbyPlace:
       type: object
-      required: [place_id, category, status_label, name, distance_label, tags, latitude, longitude]
+      required: [place_id, category, name, distance_label, latitude, longitude]
       properties:
-        place_id: {type: string}
-        category: {type: string}
-        status_label: {type: string}
-        name: {type: string}
-        image_url: {type: [string, 'null'], format: uri}
-        distance_label: {type: string}
-        tags: {type: array, items: {type: string}}
+        place_id: {type: string, example: 'kakao:27285170', description: '`<source>:<id>`. 상세 조회에 그대로 쓴다.'}
+        category: {type: string, example: 관광명소, description: 카카오 카테고리 그룹의 한글 라벨 (서버가 매핑)}
+        status_label:
+          type: [string, 'null']
+          example: 운영 중
+          description: TourAPI 로 매칭된 장소에만. 카카오 단독 결과는 `null` — 앱은 이 줄을 숨긴다.
+        name: {type: string, example: 경복궁}
+        image_url: {type: [string, 'null'], format: uri, description: TourAPI `firstimage` 매칭 시.}
+        distance_label: {type: string, example: '850m · 도보 12분', description: 서버가 카카오 `distance`(m)로 생성 (C-8)}
+        tags:
+          type: [array, 'null']
+          items: {type: string}
+          example: ['#역사', '#사진명소']
+          description: TourAPI 매칭 시 그쪽 분류. 없으면 `null`.
         latitude: {type: number, format: double}
         longitude: {type: number, format: double}
     PlaceDetail:
       type: object
-      required: [place_id, category, status_label, name, tags, source_label]
+      required: [place_id, category, name, source_label]
       properties:
-        place_id: {type: string, example: mmca-seoul}
+        place_id: {type: string, example: 'kakao:27285170'}
         category: {type: string, example: 역사 · 문화}
-        status_label: {type: string, example: 운영 중}
-        name: {type: string, example: 국립현대미술관 서울}
+        status_label: {type: [string, 'null'], example: 운영 중, description: TourAPI 매칭 시에만.}
+        name: {type: string, example: 경복궁}
         image_url: {type: [string, 'null'], format: uri}
         address: {type: [string, 'null']}
         opening_hours: {type: [string, 'null']}
         distance_label: {type: [string, 'null']}
-        tags: {type: array, items: {type: string}}
+        tags:
+          type: [array, 'null']
+          items: {type: string}
         description: {type: [string, 'null']}
         recommendation_reason: {type: [string, 'null']}
         latitude: {type: [number, 'null'], format: double}
         longitude: {type: [number, 'null'], format: double}
-        source_label: {type: string, example: 한국관광공사 제공}
+        source_label: {type: string, example: 한국관광공사 제공, description: 실제로 사용한 데이터 소스}
 
     # ── 공통 오류 (docs/api/openapi.yaml 의 원본과 동일) ───────────────
     Problem:
