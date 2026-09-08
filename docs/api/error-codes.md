@@ -148,8 +148,8 @@ Bean Validation 제약 이름을 `UPPER_SNAKE_CASE` 로 변환한 값이다. 예
 
 | code | status | 의미 | 모바일 처리 |
 |---|---|---|---|
-| `PLACE_NOT_FOUND` | 404 | `place_id` 에 해당하는 장소가 없거나 공개 상태가 아님 | 장소 상세 "찾을 수 없어요" 비어있음 상태 (AC-PD-3) |
-| `PLACE_UPSTREAM_UNAVAILABLE` | 500 | 카카오 로컬 또는 TourAPI 조회 실패 — 상류 5xx · 타임아웃 · 쿼터 초과 | 오류 화면 + "다시 시도" (AC-NP-6 / AC-PD-5) |
+| `PLACE_NOT_FOUND` | 404 | `place_id`(`tour:<contentid>`) 에 해당하는 장소가 없음 | 장소 상세 "찾을 수 없어요" 비어있음 상태 (AC-PD-3) |
+| `PLACE_UPSTREAM_UNAVAILABLE` | 500 | 한국관광공사 TourAPI 조회 실패 — 상류 5xx · 타임아웃 · `resultCode` 오류 · 쿼터 초과 | 오류 화면 + "다시 시도" (AC-NP-6 / AC-PD-5) |
 
 `500` 을 쓰는 이유: C-1 이 허용하는 상태 코드에 `502`/`503` 이 없다. 상류 장애도 결국
 "서버가 지금 응답을 완성하지 못했다" 이므로 `500` + 전용 `code` 로 구분한다.
@@ -158,6 +158,6 @@ Bean Validation 제약 이름을 `UPPER_SNAKE_CASE` 로 변환한 값이다. 예
 
 | 상황 | 쓰는 코드 | 이유 |
 |---|---|---|
-| `place_id` 형식 오류 (`<source>:<id>` 아님) | 공통 `MALFORMED_REQUEST` | 앱의 버그 신호. 앱이 목록 응답의 `place_id` 를 그대로 보내면 일어나지 않는다 |
+| `place_id` 형식 오류 (`tour:<contentid>` 아님) | 공통 `MALFORMED_REQUEST` | 앱의 버그 신호. 앱이 목록 응답의 `place_id` 를 그대로 보내면 일어나지 않는다 |
 | 좌표·`radius`·`size` 범위 위반, `category` enum 밖 | 공통 `VALIDATION_FAILED` | 일반 입력 검증. 조용히 잘라내지 않는다 |
 | 반경 안에 결과가 없음 | **없음 — 오류가 아니다** | 정상 응답 200 + `items: []`. 앱은 비어있음 상태를 그린다 (AC-NP-5) |

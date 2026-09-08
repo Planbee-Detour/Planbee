@@ -1,15 +1,15 @@
 openapi: 3.1.0
 info:
   title: Planbee 장소 상세 계약
-  version: 0.2.0
+  version: 0.3.0
 
-# 2026-09-08 개정 (tech-lead) — nearby-places 서버화와 함께 확정.
+# 2026-09-08 재개정 (tech-lead) — nearby-places 와 함께 데이터 소스를 TourAPI 로 통일.
 #
-# place_id 는 `<source>:<id>` 다 (nearby-places/contract.yaml 참조).
-#   - `kakao:<id>`  → 카카오 로컬 상세 + 이름·좌표로 TourAPI 매칭해 소개·이미지·운영시간 보강
-#   - `tour:<contentid>` → TourAPI detailCommon/detailIntro
-# source_label 은 실제로 쓴 소스를 밝힌다 ("카카오맵 제공" 또는 "한국관광공사 제공").
-# status_label·tags 는 nullable 로 내린다 — 카카오 단독 결과에는 없다 (nearby 와 같은 이유).
+# place_id = `tour:<contentid>` (nearby-places/contract.yaml 참조).
+#   - detailCommon2 : 제목·주소·개요(description)·firstimage·좌표·유형
+#   - detailIntro2  : usetime → opening_hours
+# source_label 은 항상 "한국관광공사 제공".
+# status_label·tags 는 nullable — 실시간 영업상태를 주지 않는다.
 # 인증: 공개(security: []).
 
 paths:
@@ -24,8 +24,8 @@ paths:
         - name: place_id
           in: path
           required: true
-          description: '`<source>:<id>`. 주변 목록 응답의 `place_id` 를 그대로 되돌려 보낸다.'
-          schema: {type: string, example: 'kakao:27285170'}
+          description: '`tour:<contentid>`. 주변 목록 응답의 `place_id` 를 그대로 되돌려 보낸다.'
+          schema: {type: string, example: 'tour:126508'}
       responses:
         '200':
           description: 장소 상세. 없는 선택 필드는 `null` 이고 앱은 그 영역을 숨긴다 (AC-PD-3).
@@ -33,12 +33,12 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/PlaceDetail'}
         '400':
-          description: '`place_id` 형식 오류 — `<source>:<id>` 가 아니다 (`MALFORMED_REQUEST`). 앱의 버그 신호.'
+          description: '`place_id` 형식 오류 — `tour:<contentid>` 가 아니다 (`MALFORMED_REQUEST`). 앱의 버그 신호.'
           content:
             application/problem+json:
               schema: {$ref: '#/components/schemas/Problem'}
         '404':
-          description: 해당 장소가 없거나 공개 상태가 아니다 (`PLACE_NOT_FOUND`). 앱은 "장소 정보를 찾을 수 없어요" (AC-PD-3 비어있음).
+          description: 해당 `contentid` 의 장소가 없다 (`PLACE_NOT_FOUND`). 앱은 "장소 정보를 찾을 수 없어요" (AC-PD-3).
           content:
             application/problem+json:
               schema: {$ref: '#/components/schemas/Problem'}
@@ -47,11 +47,11 @@ paths:
                 title: Not Found
                 status: 404
                 detail: 장소가 삭제되었거나 현재 공개되지 않았어요.
-                instance: /api/v1/places/kakao:0
+                instance: /api/v1/places/tour:0
                 code: PLACE_NOT_FOUND
         '500':
           description: |
-            카카오 또는 TourAPI 조회 실패 — 상류 5xx · 타임아웃 · 쿼터 초과
+            TourAPI 조회 실패 — 상류 5xx · 타임아웃 · `resultCode` 오류 · 쿼터 초과
             (`PLACE_UPSTREAM_UNAVAILABLE`). C-1 이 502/503 을 허용하지 않아 상태는 500 이다.
             (`nearby-places/contract.yaml` 의 `PlaceUpstreamUnavailable` 과 같은 응답)
           content:
@@ -64,22 +64,17 @@ components:
       type: object
       required: [place_id, category, name, source_label]
       properties:
-        place_id: {type: string, example: 'kakao:27285170'}
+        place_id: {type: string, example: 'tour:126508'}
         category: {type: string, example: 역사 · 문화}
-        status_label:
-          type: [string, 'null']
-          example: 운영 중
-          description: TourAPI 매칭 시에만. 카카오 단독 결과는 `null`.
+        status_label: {type: [string, 'null'], example: 운영 중, description: 현재 항상 `null` (실시간 영업상태 없음).}
         name: {type: string, example: 경복궁}
-        image_url: {type: [string, 'null'], format: uri}
-        address: {type: [string, 'null']}
-        opening_hours: {type: [string, 'null']}
-        distance_label: {type: [string, 'null']}
-        tags:
-          type: [array, 'null']
-          items: {type: string}
-        description: {type: [string, 'null']}
-        recommendation_reason: {type: [string, 'null']}
+        image_url: {type: [string, 'null'], format: uri, description: TourAPI `firstimage`.}
+        address: {type: [string, 'null'], description: TourAPI `addr1` (+ `addr2`).}
+        opening_hours: {type: [string, 'null'], description: detailIntro2 `usetime`.}
+        distance_label: {type: [string, 'null'], description: 상세 단독 조회에는 기준 좌표가 없어 보통 `null`.}
+        tags: {type: [array, 'null'], items: {type: string}}
+        description: {type: [string, 'null'], description: detailCommon2 `overview` (HTML 태그 제거).}
+        recommendation_reason: {type: [string, 'null'], description: 현재 `null` — AI 추천 이유는 후속 기능.}
         latitude: {type: [number, 'null'], format: double}
         longitude: {type: [number, 'null'], format: double}
-        source_label: {type: string, example: 한국관광공사 제공, description: 실제로 사용한 데이터 소스}
+        source_label: {type: string, example: 한국관광공사 제공}

@@ -1,15 +1,18 @@
 openapi: 3.1.0
-info: {title: Planbee 주변 장소 계약, version: 0.2.0}
+info: {title: Planbee 주변 장소 계약, version: 0.3.0}
 
-# 2026-09-08 개정 (tech-lead) — 서버 구현 착수를 위한 계약 확정.
+# 2026-09-08 재개정 (tech-lead) — 데이터 소스를 한국관광공사 TourAPI 로 통일.
 #
-# 데이터 소스: 카카오 로컬 API(주변 검색·좌표·거리) + 한국관광공사 TourAPI(상세 보강).
-#   - 카카오 로컬은 이미지·영업시간·평점·큐레이션 태그를 주지 않는다.
-#     그래서 status_label·tags 를 nullable 로 내린다 — TourAPI 로 매칭된 장소에만 채운다.
-#   - place_id 는 `<source>:<id>` 형식이다. 주변 목록은 `kakao:<id>` 를 돌려주고,
-#     상세는 그 id 로 카카오를 조회한 뒤 이름·좌표로 TourAPI 를 매칭해 보강한다.
-# 인증: 공개(security: []). 로그인 전에도 주변 장소를 볼 수 있다.
-# non-breaking: 이 계약에는 아직 구현이 없다 (nearby-places·place-detail 모두 서버 미착수).
+#   1차 개정(0.2.0)은 주변=카카오 로컬 / 상세=TourAPI 였으나, 카카오 로컬 REST 에는
+#   place_id 로 단일 장소를 조회하는 엔드포인트가 없어 상세를 이을 수 없었다.
+#   → 주변·상세 모두 TourAPI 로 간다. place_id = `tour:<contentid>`.
+#
+# 소스: 한국관광공사 국문관광정보(KorService2).
+#   - 주변  : locationBasedList2 (mapX·mapY·radius·contentTypeId·arrange=S)
+#   - 상세  : detailCommon2 (+ detailIntro2 로 운영시간)
+# 인증: 공개(security: []). TourAPI serviceKey 는 서버 환경변수(TOUR_API_KEY).
+# non-breaking: 구현 없음 (server 미착수). status_label 은 계속 nullable — TourAPI 도
+#               실시간 영업상태를 주지 않는다 ("운영 중" 필터는 PRD Out of scope).
 
 paths:
   /api/v1/places/nearby:
@@ -18,7 +21,7 @@ paths:
       summary: 주변 장소 조회
       tags: [place]
       security: []
-      x-acceptance-criteria: [AC-NP-1, AC-NP-2, AC-NP-3, AC-NP-4, AC-NP-5, AC-NP-6]
+      x-acceptance-criteria: [AC-NP-1, AC-NP-2, AC-NP-3, AC-NP-4, AC-NP-5, AC-NP-6, AC-NP-7, AC-NP-8, AC-NP-9, AC-NP-10]
       parameters:
         - {name: latitude, in: query, required: true, schema: {type: number, format: double, minimum: -90, maximum: 90}}
         - {name: longitude, in: query, required: true, schema: {type: number, format: double, minimum: -180, maximum: 180}}
@@ -26,31 +29,20 @@ paths:
           in: query
           required: false
           description: |
-            카카오 카테고리 그룹. 보내지 않으면 `attraction,culture` 를 기본으로 한다.
-            복수 지정은 `?category=attraction&category=cafe` 형식이다.
+            콘텐츠 유형. 생략 시 `attraction,culture`. 복수는 `?category=attraction&category=restaurant`.
+            TourAPI contentTypeId 에 매핑된다 (attraction=12 · culture=14 · leisure=28 ·
+            accommodation=32 · shopping=38 · restaurant=39).
           schema:
             type: array
             items:
               type: string
-              enum: [attraction, culture, cafe, restaurant, accommodation]
-        - name: radius
-          in: query
-          required: false
-          description: 검색 반경(m). 카카오 상한 20000.
-          schema: {type: integer, minimum: 100, maximum: 20000, default: 2000}
-        - name: size
-          in: query
-          required: false
-          description: 반환할 최대 장소 수. 앱은 기본값을 쓴다.
-          schema: {type: integer, minimum: 1, maximum: 45, default: 15}
-        - name: sort
-          in: query
-          required: false
-          description: 정렬. 현재 `distance` 만 지원한다 (design.md 의 "거리순").
-          schema: {type: string, enum: [distance], default: distance}
+              enum: [attraction, culture, leisure, accommodation, shopping, restaurant]
+        - {name: radius, in: query, required: false, description: 검색 반경(m). TourAPI 상한 20000., schema: {type: integer, minimum: 100, maximum: 20000, default: 2000}}
+        - {name: size, in: query, required: false, description: 반환할 최대 장소 수., schema: {type: integer, minimum: 1, maximum: 45, default: 15}}
+        - {name: sort, in: query, required: false, description: 정렬. 현재 distance 만 (TourAPI arrange=S)., schema: {type: string, enum: [distance], default: distance}}
       responses:
         '200':
-          description: 주변 장소 목록. 요청 반경 안에 결과가 없으면 `items` 가 빈 배열이다 (AC-NP-5 비어있음).
+          description: 주변 장소 목록. 반경 안에 결과가 없으면 `items` 가 빈 배열이다 (AC-NP-10 비어있음).
           content:
             application/json:
               schema: {$ref: '#/components/schemas/NearbyPlaceList'}
@@ -72,20 +64,20 @@ components:
       type: object
       required: [place_id, category, name, distance_label, latitude, longitude]
       properties:
-        place_id: {type: string, example: 'kakao:27285170', description: '`<source>:<id>`. 상세 조회에 그대로 쓴다.'}
-        category: {type: string, example: 관광명소, description: 카카오 카테고리 그룹의 한글 라벨 (서버가 매핑)}
+        place_id: {type: string, example: 'tour:126508', description: '`tour:<contentid>`. 상세 조회에 그대로 쓴다.'}
+        category: {type: string, example: 관광지, description: 콘텐츠 유형의 한글 라벨 (서버가 매핑)}
         status_label:
           type: [string, 'null']
           example: 운영 중
-          description: TourAPI 로 매칭된 장소에만 채운다. 카카오 단독 결과는 `null` — 앱은 이 줄을 숨긴다.
+          description: 실시간 영업상태는 TourAPI 도 주지 않는다 — 현재 항상 `null`. 앱은 이 줄을 숨긴다.
         name: {type: string, example: 경복궁}
-        image_url: {type: [string, 'null'], format: uri, description: TourAPI `firstimage` 매칭 시. 없으면 `null`.}
-        distance_label: {type: string, example: '850m · 도보 12분', description: 서버가 카카오 `distance`(m)로 생성 (C-8)}
+        image_url: {type: [string, 'null'], format: uri, description: TourAPI `firstimage`. 등록 이미지가 없으면 `null`.}
+        distance_label: {type: string, example: '850m · 도보 12분', description: 서버가 TourAPI `dist`(m)로 생성 (C-8)}
         tags:
           type: [array, 'null']
           items: {type: string}
-          example: ['#역사', '#사진명소']
-          description: TourAPI 매칭 시 그쪽 분류. 없으면 `null`.
+          example: ['#관광지']
+          description: 콘텐츠 유형 태그. 없으면 `null`.
         latitude: {type: number, format: double}
         longitude: {type: number, format: double}
 
@@ -99,9 +91,9 @@ components:
           schema: {$ref: '#/components/schemas/Problem'}
     PlaceUpstreamUnavailable:
       description: |
-        카카오 또는 TourAPI 조회가 실패했다 — 상류 5xx·타임아웃·쿼터 초과 (`PLACE_UPSTREAM_UNAVAILABLE`).
-        C-1 이 502/503 을 허용하지 않으므로 상태는 500 이고 `code` 로 구분한다.
-        앱은 오류 화면 + "다시 시도" 를 보여준다 (AC-NP-6).
+        TourAPI 조회가 실패했다 — 상류 5xx · 타임아웃 · `resultCode` 오류 · 쿼터 초과
+        (`PLACE_UPSTREAM_UNAVAILABLE`). C-1 이 502/503 을 허용하지 않으므로 상태는 500 이고
+        `code` 로 구분한다. 앱은 오류 화면 + "다시 시도" 를 보여준다.
       content:
         application/problem+json:
           schema: {$ref: '#/components/schemas/Problem'}
