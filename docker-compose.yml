@@ -34,6 +34,8 @@ services:
       DB_USERNAME: ${DB_USERNAME:?DB_USERNAME 이 필요합니다. 'make env' 를 실행하세요.}
       DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD 가 필요합니다. 'make env' 를 실행하세요.}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET 이 필요합니다. 'make env' 를 실행하세요.}
+      # E2E 플로우는 place 를 호출하지 않지만 기동에는 필요하다 (RequiredEnvironmentCheck).
+      TOUR_API_KEY: ${TOUR_API_KEY:?TOUR_API_KEY 가 필요합니다. 'make env' 를 실행하세요.}
       TZ: UTC
     ports:
       # 호스트 포트가 이미 쓰이고 있으면 API_PORT 로 바꾼다. (예: API_PORT=18080 make e2e-up)

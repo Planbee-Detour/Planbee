@@ -130,9 +130,11 @@ function PlaceContent({onBack, place}: {onBack: () => void; place: PlaceDetail})
           <View className="gap-2">
             <View className="flex-row items-center gap-2">
               <Text className="text-caption font-semibold text-brand-dark">{place.category}</Text>
-              <Text className={`text-caption font-medium ${place.status_label.includes('휴관') ? 'text-danger' : 'text-success'}`}>
-                {place.status_label}
-              </Text>
+              {place.status_label ? (
+                <Text className={`text-caption font-medium ${place.status_label.includes('휴관') ? 'text-danger' : 'text-success'}`}>
+                  {place.status_label}
+                </Text>
+              ) : null}
             </View>
             <Text className="text-h1 font-bold text-ink">{place.name}</Text>
           </View>
@@ -145,7 +147,7 @@ function PlaceContent({onBack, place}: {onBack: () => void; place: PlaceDetail})
             </View>
           ) : null}
 
-          {place.tags.length ? (
+          {place.tags && place.tags.length ? (
             <View className="flex-row flex-wrap gap-2">
               {place.tags.map(tag => (
                 <View key={tag} className="rounded-chip bg-cream px-3 py-2">
