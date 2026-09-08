@@ -393,6 +393,19 @@ server(DB): contextLoads 1 + OpenApiExport 1 = 2
 contract : ✓ 통과
 ```
 
+### CI
+
+`.github/workflows/verify.yml` 가 PR 마다, 그리고 `develop` push 마다 **같은 make 타깃**을 돈다.
+
+| job | 실행 | 러너 |
+|---|---|---|
+| `verify-mobile` | `npm --prefix mobile ci` → `make verify-mobile` | ubuntu (Docker 불필요) |
+| `verify-server + contract-check` | `make verify-server` → `make contract-check` | ubuntu (Testcontainers·oasdiff 용 Docker 내장) |
+
+CI 는 로컬 게이트의 사본이다 — 별도 스크립트를 두지 않는다. E2E(Maestro)는 macOS 러너와
+시뮬레이터가 필요해 CI 에서 빼고 `make test-e2e` 로 수동 유지한다.
+`develop` 브랜치 보호(두 job 필수 + 리뷰 1)는 저장소 설정에서 사람이 켠다.
+
 ---
 
 ## 7. 코딩 규칙 체계

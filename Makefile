@@ -1,3 +1,6 @@
+# CI(.github/workflows/verify.yml)는 이 파일의 타깃을 그대로 실행한다.
+# 게이트 로직을 여기 두고 CI 는 호출만 한다 — 두 곳에 규칙이 갈라지지 않게.
+
 .DEFAULT_GOAL := help
 SHELL := /bin/bash
 GRADLE := ./server/gradlew -p server
