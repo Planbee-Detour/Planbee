@@ -16,7 +16,9 @@ import static org.hamcrest.Matchers.nullValue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.cache.CacheManager;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
@@ -48,10 +50,15 @@ class PlaceApiTest {
 	@LocalServerPort
 	int port;
 
+	@Autowired
+	CacheManager cacheManager;
+
 	@BeforeEach
 	void setUp() {
 		RestAssured.port = port;
 		TOUR_API.resetAll();
+		// 캐시 키가 좌표·필터라 시나리오가 겹친다 — 응답 캐시를 테스트마다 비운다.
+		cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
 	}
 
 	// ── nearby ───────────────────────────────────────────────────────
