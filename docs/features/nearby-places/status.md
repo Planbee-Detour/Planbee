@@ -2,7 +2,7 @@
 
 - 기능 슬러그: `nearby-places`
 - 시작일: 2026-08-29
-- 현재 단계: `계약 재확정 (2026-09-08) — server-developer 착수 가능`
+- 현재 단계: `서버 완료 (2026-09-08, PR #9) — mobile-developer 재작업 대기 (fixture → 실제 조회)`
 
 ## 파이프라인
 
@@ -12,8 +12,8 @@
 - [x] tech-lead — contract.yaml (**2026-09-08 재개정** — 데이터 소스 TourAPI 통일, `place_id = tour:<contentid>`, 파라미터 추가, `status_label`·`tags` nullable, `place` 오류 섹션. `openapi.yaml` 병합)
 - [x] server-developer — `com.planbee.api.place` 1차 + 리뷰 지적 2건 수정 (PR #9)
 - [x] server-reviewer — **PASS** (`review/server.md`). `[MUST]` 2건(DEF-001 거리순, DEF-002 좌표 없는 항목)은 리뷰 세션 중 수정·재확인. `[SHOULD]` 3건은 제안만
-- [~] server-tester — `PlaceApiTest` 작성 (WireMock TourAPI 스텁, AC-NP-7~10 + PD 실패 케이스 13건). CI 확인 중
-- [x] mobile-developer — 로컬 fixture 구현 완료. **개정 계약으로 실제 조회 훅 교체 필요 (재작업)**
+- [x] server-tester — **PASS.** `PlaceApiTest`(`@IntegrationTest` + WireMock) 13건 — AC-NP-7~10, size/category/sort 400, place-detail 성공/404/형식오류, 공개 접근. `make verify-server` 통과 (CI 그린)
+- [~] mobile-developer — 로컬 fixture 구현 완료 + nullable 필드 처리. **개정 계약(TourAPI) 으로 실제 조회 훅 교체 + 필터 칩 → `category` 파라미터 재작업 남음**
 - [ ] mobile-reviewer — PASS / FAIL
 - [ ] mobile-tester — PASS / FAIL
 - [ ] integration-tester — PASS / FAIL
@@ -54,4 +54,4 @@
 | 2026-09-08 | server-developer | **1차 구현 (PR #9, CI 그린).** `com.planbee.api.place` — `TourApiClient`(RestClient·타임아웃·JsonNode 방어 파싱), `PlaceService`(유형별 조회·병합·거리순), `PlaceController`, DTO record 3종, `PlaceErrorCode`, `TourContentType`, `Distances`. Caffeine 캐시. `SecurityConfig` PUBLIC_PATHS 에 `/api/v1/places/**`. `.env.example`+`RequiredEnvironmentCheck`+compose 에 `TOUR_API_KEY`. `server.md` S-31 추가. `@WebMvcTest` 스모크 3건. `make verify-server` + `make contract-check` 통과 |
 | 2026-09-08 | server-reviewer | **PASS.** `[MUST]` 2건 — DEF-001(다중 카테고리 병합이 거리순 아님), DEF-002(좌표 없는 항목 0.0 포함). 둘 다 리뷰 세션 중 server-developer 가 수정. `[SHOULD]` 3건 제안. `review/server.md` |
 | 2026-09-08 | server-developer | 재작업 1회 — DEF-001·002 수정 (`PlaceService` 정렬·필터). `sort` 를 `nearby()` 인자로 통합 |
-| 2026-09-08 | server-tester | `PlaceApiTest`(`@IntegrationTest` + WireMock) — AC-NP-7~10 · size/category/sort 검증 · place-detail 성공/404/형식오류 · 공개 접근. `wiremock` testImplementation 추가 |
+| 2026-09-08 | server-tester | **PASS.** `PlaceApiTest`(`@IntegrationTest` + `wiremock-standalone`) 13건 — AC-NP-7~10 · size/category/sort 400 · place-detail 성공/404/형식오류 · 공개 접근. `@BeforeEach` 에서 응답 캐시 비움(키 충돌). `make verify-server` + `contract-check` CI 그린 |
