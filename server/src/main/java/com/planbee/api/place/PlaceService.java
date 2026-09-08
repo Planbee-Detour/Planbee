@@ -42,36 +42,42 @@ public class PlaceService {
 		this.tourApiClient = tourApiClient;
 	}
 
-	/** 계약이 정의한 정렬은 {@code distance} 하나다. 다른 값은 400 으로 거절한다. */
-	public void assertSupportedSort(String sort) {
-		if (sort != null && !"distance".equals(sort)) {
-			throw new BusinessException(CommonErrorCode.VALIDATION_FAILED, "지원하지 않는 sort 값입니다: " + sort);
-		}
-	}
-
-	@Cacheable(cacheNames = "places.nearby", key = "{#latitude, #longitude, #radius, #size, #categories}")
-	public NearbyPlaceList nearby(double latitude, double longitude, int radius, int size, List<String> categories) {
+	@Cacheable(cacheNames = "places.nearby", key = "{#latitude, #longitude, #radius, #size, #sort, #categories}")
+	public NearbyPlaceList nearby(double latitude, double longitude, int radius, int size, String sort,
+			List<String> categories) {
 		validateCoordinate(latitude, longitude);
 		validateRadius(radius);
 		validateSize(size);
+		assertSupportedSort(sort);
 		List<TourContentType> types = resolveCategories(categories);
 
-		Map<String, NearbyPlace> byId = new LinkedHashMap<>();
+		// 유형별로 조회한다 (TourAPI 는 contentTypeId 를 한 번에 하나만 받는다). 각 호출은 거리순이지만
+		// 합치면 순서가 깨지므로, contentid 로 중복을 제거한 뒤 거리로 다시 정렬한다.
+		Map<String, TourPlace> byId = new LinkedHashMap<>();
 		for (TourContentType type : types) {
 			for (TourPlace place : tourApiClient.locationBasedList(
 					latitude, longitude, radius, type.contentTypeId(), size)) {
-				if (place.contentId() == null || byId.containsKey(place.contentId())) {
-					continue;
+				if (place.contentId() != null) {
+					byId.putIfAbsent(place.contentId(), place);
 				}
-				byId.put(place.contentId(), toNearbyPlace(place));
 			}
 		}
 
 		List<NearbyPlace> items = byId.values().stream()
-				.sorted(Comparator.comparingInt(PlaceService::sortDistance))
+				// 좌표가 없으면 지도에 찍을 수 없다 — "주변" 목록에 넣지 않는다.
+				.filter(place -> place.latitude() != null && place.longitude() != null)
+				.sorted(Comparator.comparing(TourPlace::distanceMeters, Comparator.nullsLast(Comparator.naturalOrder())))
 				.limit(size)
+				.map(this::toNearbyPlace)
 				.toList();
 		return new NearbyPlaceList(items);
+	}
+
+	/** 계약이 정의한 정렬은 {@code distance} 하나다. 다른 값은 400 으로 거절한다. */
+	private static void assertSupportedSort(String sort) {
+		if (sort != null && !"distance".equals(sort)) {
+			throw new BusinessException(CommonErrorCode.VALIDATION_FAILED, "지원하지 않는 sort 값입니다: " + sort);
+		}
 	}
 
 	@Cacheable(cacheNames = "places.detail", key = "#placeId")
@@ -102,6 +108,7 @@ public class PlaceService {
 
 	// ── 매핑 ─────────────────────────────────────────────────────────
 
+	/** 좌표가 있는 {@link TourPlace} 만 들어온다 (호출부에서 걸러진다). */
 	private NearbyPlace toNearbyPlace(TourPlace place) {
 		return new NearbyPlace(
 				SOURCE_PREFIX + place.contentId(),
@@ -111,8 +118,8 @@ public class PlaceService {
 				place.imageUrl(),
 				place.distanceMeters() == null ? null : Distances.label(place.distanceMeters()),
 				typeTags(place.contentTypeId()),
-				place.latitude() == null ? 0.0 : place.latitude(),
-				place.longitude() == null ? 0.0 : place.longitude());
+				place.latitude(),
+				place.longitude());
 	}
 
 	private static String categoryLabel(int contentTypeId) {
@@ -123,11 +130,6 @@ public class PlaceService {
 		return TourContentType.fromContentTypeId(contentTypeId)
 				.map(type -> List.of("#" + type.label()))
 				.orElse(null);
-	}
-
-	private static int sortDistance(NearbyPlace place) {
-		// distance_label 이 없으면(거리 미상) 뒤로 보낸다.
-		return place.distanceLabel() == null ? Integer.MAX_VALUE : 0;
 	}
 
 	// ── 검증 ─────────────────────────────────────────────────────────

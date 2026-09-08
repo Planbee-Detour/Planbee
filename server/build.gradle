@@ -55,6 +55,8 @@ dependencies {
 	testImplementation 'io.rest-assured:rest-assured'
 	testImplementation 'org.springframework.security:spring-security-test'
 	testImplementation "com.tngtech.archunit:archunit-junit5:${archunitVersion}"
+	// place — 외부 API(TourAPI)를 스텁한다 (server-tester).
+	testImplementation 'org.wiremock:wiremock:3.9.2'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 

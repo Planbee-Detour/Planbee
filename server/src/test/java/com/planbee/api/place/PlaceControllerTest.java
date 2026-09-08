@@ -4,7 +4,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -45,14 +44,25 @@ class PlaceControllerTest {
 
 	@Test
 	void 주변_장소_조회는_인증_없이_200과_목록을_반환한다() throws Exception {
-		when(placeService.nearby(anyDouble(), anyDouble(), anyInt(), anyInt(), any())).thenReturn(new NearbyPlaceList(List.of(
-				new NearbyPlace("tour:126508", "관광지", null, "경복궁", null, "850m · 도보 12분",
+		when(placeService.nearby(anyDouble(), anyDouble(), anyInt(), anyInt(), any(), any()))
+				.thenReturn(new NearbyPlaceList(List.of(new NearbyPlace(
+						"tour:126508", "관광지", null, "경복궁", null, "850m · 도보 12분",
 						List.of("#관광지"), 37.579617, 126.977041))));
 
 		mockMvc.perform(get("/api/v1/places/nearby").param("latitude", "37.58").param("longitude", "126.98"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.items[0].place_id").value("tour:126508"))
 				.andExpect(jsonPath("$.items[0].distance_label").value("850m · 도보 12분"));
+	}
+
+	@Test
+	void 잘못된_파라미터는_400_VALIDATION_FAILED_로_변환된다() throws Exception {
+		when(placeService.nearby(anyDouble(), anyDouble(), anyInt(), anyInt(), any(), any()))
+				.thenThrow(new BusinessException(CommonErrorCode.VALIDATION_FAILED));
+
+		mockMvc.perform(get("/api/v1/places/nearby").param("latitude", "999").param("longitude", "126.98"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
 	}
 
 	@Test
@@ -63,16 +73,5 @@ class PlaceControllerTest {
 				.andExpect(status().isNotFound())
 				.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
 				.andExpect(jsonPath("$.code").value("PLACE_NOT_FOUND"));
-	}
-
-	@Test
-	void 지원하지_않는_sort_는_400_VALIDATION_FAILED_다() throws Exception {
-		doThrow(new BusinessException(CommonErrorCode.VALIDATION_FAILED))
-				.when(placeService).assertSupportedSort("rating");
-
-		mockMvc.perform(get("/api/v1/places/nearby")
-				.param("latitude", "37.58").param("longitude", "126.98").param("sort", "rating"))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
 	}
 }

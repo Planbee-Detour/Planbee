@@ -10,9 +10,9 @@
 - [x] ux-designer — design.md (2026-09-08 필터를 카테고리 그룹으로 개정, "운영 중" 제외)
 - [x] ux-designer — planbee.pen
 - [x] tech-lead — contract.yaml (**2026-09-08 재개정** — 데이터 소스 TourAPI 통일, `place_id = tour:<contentid>`, 파라미터 추가, `status_label`·`tags` nullable, `place` 오류 섹션. `openapi.yaml` 병합)
-- [x] server-developer — `com.planbee.api.place` 1차 (PR #9, CI 그린). TourAPI 클라이언트·서비스·컨트롤러·캐시·`@WebMvcTest` 스모크 3건. `make verify-server` + `make contract-check` 통과. **TourAPI 매칭·resilience4j·랭킹 세부는 server-tester/reviewer 피드백으로 보강 예정**
-- [ ] server-reviewer — PASS / FAIL
-- [ ] server-tester — PASS / FAIL
+- [x] server-developer — `com.planbee.api.place` 1차 + 리뷰 지적 2건 수정 (PR #9)
+- [x] server-reviewer — **PASS** (`review/server.md`). `[MUST]` 2건(DEF-001 거리순, DEF-002 좌표 없는 항목)은 리뷰 세션 중 수정·재확인. `[SHOULD]` 3건은 제안만
+- [~] server-tester — `PlaceApiTest` 작성 (WireMock TourAPI 스텁, AC-NP-7~10 + PD 실패 케이스 13건). CI 확인 중
 - [x] mobile-developer — 로컬 fixture 구현 완료. **개정 계약으로 실제 조회 훅 교체 필요 (재작업)**
 - [ ] mobile-reviewer — PASS / FAIL
 - [ ] mobile-tester — PASS / FAIL
@@ -22,7 +22,7 @@
 
 | 대상 | 횟수 |
 |---|---|
-| server-developer | 0 |
+| server-developer | 1 (server-reviewer DEF-001·002 — 같은 세션 수정) |
 | mobile-developer | 0 |
 
 ## 계약 변경
@@ -52,3 +52,6 @@
 | 2026-09-08 | tech-lead | **계약 재확정.** `contract.yaml` + `place-detail/contract.yaml` 개정, `openapi.yaml` 병합(info 0.4.0, `place` 태그), `error-codes.md` `place` 섹션 확장(`PLACE_UPSTREAM_UNAVAILABLE`). breaking 아님 |
 | 2026-09-08 | tech-lead | **계약 재개정 — 데이터 소스 TourAPI 통일.** 카카오 로컬 REST 에 place_id 조회 엔드포인트가 없어 상세를 이을 수 없었다. 주변·상세 모두 TourAPI(KorService2), `place_id = tour:<contentid>`. `category` enum 을 contentTypeId 에 맞춰 개정(`leisure`/`shopping` 추가, `cafe` 제거). contract 0.3.0 |
 | 2026-09-08 | server-developer | **1차 구현 (PR #9, CI 그린).** `com.planbee.api.place` — `TourApiClient`(RestClient·타임아웃·JsonNode 방어 파싱), `PlaceService`(유형별 조회·병합·거리순), `PlaceController`, DTO record 3종, `PlaceErrorCode`, `TourContentType`, `Distances`. Caffeine 캐시. `SecurityConfig` PUBLIC_PATHS 에 `/api/v1/places/**`. `.env.example`+`RequiredEnvironmentCheck`+compose 에 `TOUR_API_KEY`. `server.md` S-31 추가. `@WebMvcTest` 스모크 3건. `make verify-server` + `make contract-check` 통과 |
+| 2026-09-08 | server-reviewer | **PASS.** `[MUST]` 2건 — DEF-001(다중 카테고리 병합이 거리순 아님), DEF-002(좌표 없는 항목 0.0 포함). 둘 다 리뷰 세션 중 server-developer 가 수정. `[SHOULD]` 3건 제안. `review/server.md` |
+| 2026-09-08 | server-developer | 재작업 1회 — DEF-001·002 수정 (`PlaceService` 정렬·필터). `sort` 를 `nearby()` 인자로 통합 |
+| 2026-09-08 | server-tester | `PlaceApiTest`(`@IntegrationTest` + WireMock) — AC-NP-7~10 · size/category/sort 검증 · place-detail 성공/404/형식오류 · 공개 접근. `wiremock` testImplementation 추가 |

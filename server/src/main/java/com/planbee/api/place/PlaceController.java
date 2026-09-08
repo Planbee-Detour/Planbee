@@ -54,8 +54,7 @@ public class PlaceController {
 			@RequestParam(required = false, defaultValue = "15") int size,
 			@Parameter(description = "정렬. 현재 distance 만", schema = @Schema(allowableValues = "distance", defaultValue = "distance"))
 			@RequestParam(required = false, defaultValue = "distance") String sort) {
-		placeService.assertSupportedSort(sort);
-		return placeService.nearby(latitude, longitude, radius, size, category);
+		return placeService.nearby(latitude, longitude, radius, size, sort, category);
 	}
 
 	@Operation(operationId = "getPlaceDetail", summary = "장소 상세 조회")
