@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 
 /**
  * 테스트가 시각을 직접 움직일 수 있게 하는 {@link Clock}.
@@ -29,12 +30,21 @@ public final class MutableClock extends Clock {
 	}
 
 	public static MutableClock startingNow() {
-		return new MutableClock(Instant.now(), ZoneOffset.UTC);
+		return new MutableClock(nowInColumnResolution(), ZoneOffset.UTC);
 	}
 
 	/** 테스트 하나가 끝나면 다음 테스트에 시각이 새어 나가지 않도록 되감는다. */
 	public void resetToNow() {
-		this.instant = Instant.now();
+		this.instant = nowInColumnResolution();
+	}
+
+	/**
+	 * 운영 {@link com.planbee.api.common.ClockConfig} 과 같은 이유로 마이크로초로 자른다 —
+	 * 시각 컬럼이 {@code TIMESTAMP(6)} 이라, 저장 전후로 정밀도가 달라지면 같은 순간의 두 응답이
+	 * 어긋난다 (auth AC-46). Linux 는 나노초까지 주므로 여기서 맞춰 준다.
+	 */
+	private static Instant nowInColumnResolution() {
+		return Instant.now().truncatedTo(ChronoUnit.MICROS);
 	}
 
 	public void advance(Duration amount) {

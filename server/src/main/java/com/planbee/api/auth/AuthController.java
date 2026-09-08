@@ -27,6 +27,7 @@ import com.planbee.api.auth.dto.UserSummary;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
@@ -87,6 +88,9 @@ public class AuthController {
 
 	@Operation(operationId = "logout", summary = "로그아웃 (이 기기의 리프레시 토큰 폐기)")
 	@ApiResponse(responseCode = "204", description = "폐기됨 (또는 이미 폐기되어 있었다). 본문 없음. (AC-26)")
+	// 계약이 operation 레벨로 security 를 명시한다 — 문서 레벨 기본만 두면 contract-check 가
+	// api-security-removed(ERR) 로 본다 (S-19).
+	@SecurityRequirement(name = "bearerAuth")
 	@PostMapping(path = "/logout", consumes = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<Void> logout(
 			@AuthenticationPrincipal Jwt principal,
@@ -97,6 +101,7 @@ public class AuthController {
 
 	@Operation(operationId = "getMe", summary = "내 계정 정보 조회")
 	@ApiResponse(responseCode = "200", description = "조회 성공")
+	@SecurityRequirement(name = "bearerAuth")
 	@GetMapping(path = "/me", produces = MediaType.APPLICATION_JSON_VALUE)
 	public UserSummary getMe(@AuthenticationPrincipal Jwt principal) {
 		return authService.getMe(userId(principal));
@@ -105,6 +110,7 @@ public class AuthController {
 	@Operation(operationId = "deleteMe", summary = "계정 삭제 (즉시 파기)")
 	@ApiResponse(responseCode = "204",
 			description = "삭제 완료. 본문 없음. 이 계정의 모든 리프레시 토큰도 함께 폐기된다. (AC-31)")
+	@SecurityRequirement(name = "bearerAuth")
 	@DeleteMapping(path = "/me", consumes = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<Void> deleteMe(
 			@AuthenticationPrincipal Jwt principal,
