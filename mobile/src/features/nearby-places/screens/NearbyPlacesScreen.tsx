@@ -13,10 +13,17 @@ function PlaceRow({onPress, place}: {onPress: () => void; place: NearbyPlace}) {
     <Pressable accessibilityRole="button" className="flex-row gap-3 rounded-card border border-border bg-surface p-3 active:opacity-70" onPress={onPress}>
       {place.image_url ? <Image accessibilityLabel={place.name} className="h-24 w-24 rounded-card" source={{uri: place.image_url}} /> : null}
       <View className="flex-1 justify-center">
-        <View className="flex-row justify-between"><Text className="text-caption font-semibold text-brand-dark">{place.category}</Text><Text className={place.status_label.includes('휴관') ? 'text-caption text-danger' : 'text-caption text-success'}>{place.status_label}</Text></View>
+        <View className="flex-row justify-between">
+          <Text className="text-caption font-semibold text-brand-dark">{place.category}</Text>
+          {place.status_label ? (
+            <Text className={place.status_label.includes('휴관') ? 'text-caption text-danger' : 'text-caption text-success'}>{place.status_label}</Text>
+          ) : null}
+        </View>
         <Text className="mt-1 text-title font-semibold text-ink">{place.name}</Text>
         <Text className="mt-1 text-caption text-ink-muted">{place.distance_label}</Text>
-        <Text className="mt-2 text-caption text-ink-muted">{place.tags.join('  ')}</Text>
+        {place.tags && place.tags.length ? (
+          <Text className="mt-2 text-caption text-ink-muted">{place.tags.join('  ')}</Text>
+        ) : null}
       </View>
     </Pressable>
   );
