@@ -11,7 +11,12 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** 주변 장소 조회 */
+        /**
+         * 주변 장소 조회
+         * @description 한국관광공사 TourAPI(KorService2) `locationBasedList2` 로 좌표 기준 주변 장소를 조회한다.
+         *     `status_label` 은 실시간 영업상태가 없어 항상 `null`, `image_url`·`tags` 는 등록 정보가
+         *     없으면 `null` 이다.
+         */
         get: operations["getNearbyPlaces"];
         put?: never;
         post?: never;
@@ -28,7 +33,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** 관광지 상세 조회 */
+        /**
+         * 장소 상세 조회
+         * @description `place_id` 는 `tour:<contentid>` 다. TourAPI `detailCommon2`(+ `detailIntro2` 로 운영시간)
+         *     로 조회한다. `source_label` 은 항상 "한국관광공사 제공".
+         */
         get: operations["getPlaceDetail"];
         put?: never;
         post?: never;
@@ -206,9 +215,15 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * 내 계정 정보 조회
-         * @description 설정 화면(design.md §8.2)의 "계정" 카드를 그린다. 화면의 나머지(약관 버전·앱 버전)는
+         * 내 계정 정보 조회 (관리자 진입점 판정 포함)
+         * @description 설정 화면(`auth` design.md §8.2)의 "계정" 카드를 그린다. 화면의 나머지(약관 버전·앱 버전)는
          *     전부 앱 로컬 값이므로 이 호출 하나로 화면이 완성된다 (C-8).
+         *
+         *     **2026-09-07 `admin-user-approval` 확장 (non-breaking).**
+         *     같은 화면의 `관리자` 섹션(`admin-user-approval` design.md §4)도 이 응답 하나로 그린다 —
+         *     역할은 `role`, 대기 건수는 `pending_approval_count` 다. 호출을 더 만들면 한 화면의
+         *     한 영역에 2회 이상 호출이 되어 C-8 위반이다 (`admin-user-approval` design.md §13-1).
+         *     `pending_approval_count` 는 **`ADMIN` 에게만 정수로 내리고 `USER` 에게는 `null`** 이다.
          */
         get: operations["getMe"];
         put?: never;
@@ -245,6 +260,237 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/users/pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 검토 대기(`PENDING`) 목록
+         * @description `가입 신청 관리` 화면의 **`검토 대기` 세그먼트**를 그린다 (design.md §5.3).
+         *
+         *     - **정렬은 `requested_at` 내림차순**이고 동률은 `user_id` 내림차순으로 깬다 (AC-5).
+         *       동률 깨기가 없으면 커서 페이지네이션이 항목을 건너뛰거나 중복시킨다.
+         *       정렬 옵션은 제공하지 않는다 (PRD Out of scope).
+         *     - 항목이 **시트(design.md §6.3)까지 그린다.** 상세 조회를 위한 추가 왕복을
+         *       만들지 않는다 (C-8 / design.md §6.9).
+         *     - 응답에 `pending_approval_count` 가 함께 온다 — 세그먼트 라벨의 숫자와
+         *       설정 화면의 건수가 **같은 서버 계산**이어야 한다 (AC-32 / design.md §4.5).
+         *       앱은 `items` 의 길이를 세지 않는다. 20건씩 끊어 오므로 세면 틀린다.
+         *     - 빈 목록(AC-6)은 **정상 응답 200** 이다. `items: []` + `has_next: false`.
+         */
+        get: operations["listPendingUsers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/processed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 처리 완료(`APPROVED` · `SUSPENDED` · `REJECTED`) 목록
+         * @description `가입 신청 관리` 화면의 **`처리 완료` 세그먼트**를 그린다 (design.md §5.4).
+         *     세그먼트 라벨은 "처리됨" 이 아니라 **"처리 완료"** 다 (2026-09-07 확정).
+         *
+         *     **세 상태가 한 목록에 섞인다** — `APPROVED` · `SUSPENDED` · `REJECTED` (2026-09-07 Q1).
+         *     상태별 목록으로 쪼개지 않는다. 쪼개면 세그먼트가 4개가 되고, 그건 이미 반려된 안이다.
+         *
+         *     - **정렬은 `processed_at`(마지막으로 상태가 바뀐 시각) 내림차순**이고
+         *       동률은 `user_id` 내림차순으로 깬다.
+         *       AC-20 은 "승인 시각 최신순" 을 요구하는데, `APPROVED` 항목만 놓고 보면
+         *       `processed_at` 이 곧 `approved_at` 이므로 그 안에서의 상대 순서가 보존된다
+         *       (design.md §5.4).
+         *     - 상태 필터 파라미터를 두지 않는다. 화면이 세 상태를 한 번에 보여주기 때문이다.
+         *     - `pending_approval_count` 는 이 응답에도 실린다 — `처리 완료` 를 보는 동안에도
+         *       `검토 대기 N` 세그먼트 라벨이 화면에 남아 있다 (design.md §5.2).
+         *     - 관리자 **자기 계정도 목록에 포함된다.** 숨기지 않는다 —
+         *       숨기면 관리자가 자기 계정 상태를 확인할 수 없다 (design.md §7.6).
+         *       대신 항목에 `is_me` 가 실려 앱이 액션 버튼을 렌더하지 않는다 (AC-25).
+         */
+        get: operations["listProcessedUsers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{user_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 가입 신청 승인 (`PENDING` → `APPROVED`)
+         * @description **전제 상태는 `PENDING` 하나다.** 그 외 상태에서 호출하면 409
+         *     `ADMIN_USER_ALREADY_PROCESSED` 다 (AC-12).
+         *
+         *     - 승인된 사용자는 즉시 로그인할 수 있다 (AC-11 — `auth` `POST /login` 200).
+         *     - **본문이 없다.** 승인에는 입력할 값이 없다.
+         *     - 응답은 갱신된 `pending_approval_count` 와 **처리 완료 목록에 들어갈 형태의 항목**을
+         *       함께 낸다. 앱이 건수를 ±1 하지 않는다 (M-18 / AC-32 / design.md §5.11).
+         *     - 처리 기록(관리자·시각)은 서버에 남지만 응답에 싣지 않는다 (AC-13 / design.md §7.1.1).
+         *     - 가입 사유가 없는 신청도 **완전히 같은 경로**다 (AC-34). 분기가 없다.
+         */
+        post: operations["approveUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{user_id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 가입 신청 거절 (`PENDING` → `REJECTED`)
+         * @description **전제 상태는 `PENDING` 하나다.** 그 외는 409 `ADMIN_USER_ALREADY_PROCESSED` (AC-12).
+         *
+         *     - **거절 사유는 선택 입력이다** (AC-17). 본문 자체를 생략해도, `rejection_reason` 을
+         *       `null` 이나 빈 문자열로 보내도 **정상 200** 이다.
+         *     - **200자를 넘으면 400** 이다 (AC-16). 앱은 `maxLength=200` 으로 입력 자체를
+         *       막지만(design.md §6.4) 서버도 같은 제약을 독립적으로 강제한다.
+         *     - **거절 사유는 어디로도 되읽히지 않는다.** 저장만 한다.
+         *       `auth` 의 `REJECTED` 화면은 사유를 표시하지 않고(`auth` design.md §7.3),
+         *       관리자 화면도 표시하지 않는다 (design.md §7.1.2).
+         *       그래서 이 계약의 **어떤 응답 스키마에도 `rejection_reason` 이 없다.**
+         *     - 거절된 사용자는 다시 로그인하면 "가입이 승인되지 않았어요" 화면을 본다
+         *       (AC-18 — `auth` 403 `AUTH_ACCOUNT_REJECTED`). 이 기능이 그 화면에 내리는 값은 없다.
+         */
+        post: operations["rejectUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{user_id}/reject/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 거절 취소 (`REJECTED` → `PENDING`)
+         * @description **전제 상태는 `REJECTED` 하나다.** 그 외는 409 `ADMIN_USER_ALREADY_PROCESSED` (AC-12).
+         *
+         *     - 이 계약에서 **처리 완료 목록의 항목이 검토 대기 목록으로 돌아가는 유일한 경로**다.
+         *       그래서 응답의 `user` 는 `ProcessedUserItem` 이 아니라 `PendingUserItem` 이다 (AC-19).
+         *     - **`requested_at` 은 바뀌지 않는다.** 원래 신청 시각 그대로 대기 목록의 제자리로
+         *       돌아간다 — 거절 취소 시각으로 정렬하지 않는다 (design.md §7.5).
+         *     - 저장돼 있던 `rejection_reason` 은 **비운다.** 다시 거절할 때 예전 사유가
+         *       남아 있으면 그 값이 어느 결정에 붙은 것인지 알 수 없게 된다.
+         *     - `rejected_at` 도 비운다. 대기 상태에는 거절 시각이 존재하지 않는다.
+         */
+        post: operations["cancelUserRejection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{user_id}/suspend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 이용 정지 (`APPROVED` → `SUSPENDED`)
+         * @description **전제 상태는 `APPROVED` 하나다.** 그 외는 409 `ADMIN_USER_ALREADY_PROCESSED` (AC-12).
+         *
+         *     - **본문이 없다. 정지 사유를 받지 않는다** (2026-09-07 Q3 확정 / design.md §13 6-1).
+         *       입력란도 메모 필드도 없다. 따라서 `auth` 의 `AccountStatusView` 는 **변경 없음**이고,
+         *       정지된 사용자는 `auth` 가 이미 정한 "이용이 정지된 계정이에요" 화면을 그대로 본다
+         *       (AC-22 / `auth` design.md §7.4).
+         *     - **자기 자신은 정지할 수 없다** (AC-25) — 403 `ADMIN_SELF_SUSPEND_FORBIDDEN`.
+         *       앱은 `is_me` 로 버튼을 렌더하지 않으므로 정상 경로에서는 도달하지 않지만,
+         *       **차단의 주체는 서버다** (PRD 제약: 앱의 숨김은 편의일 뿐이다).
+         *     - **대기 건수는 변하지 않는다** (design.md §5.11). 그래도 응답에 담는다 —
+         *       앱이 "변하지 않았다" 를 판단하지 않고 받은 값을 그대로 렌더하기 위해서다.
+         *
+         *     ### 진행 중인 세션에 반영되는 시점 (AC-23 / PRD 열린 질문 4 — 2026-09-07 확정)
+         *
+         *     **매 요청마다 계정 상태를 다시 확인하지 않는다. 현행 유지다.**
+         *     정지는 `POST /api/v1/auth/token/refresh` 가 갱신 시점에 상태를 재확인하는 경로로
+         *     반영되며, 따라서 **최대 지연은 액세스 토큰 수명인 30분**이다 (`auth` 계약).
+         *
+         *     - 매 요청 확인은 모든 인증 요청에 DB 조회를 1회 더하고, `oauth2-resource-server` 의
+         *       무상태 검증(S-17)을 상태 검증으로 바꾼다. "커스텀 인증 필터를 만들지 않는다" 는
+         *       S-17 의 결정을 되돌리게 된다.
+         *     - 30분 지연의 피해 범위는 "이미 로그인된 기기가 30분 더 조회한다" 이고,
+         *       즉시성이 필요한 자산(결제·개인정보 대량 열람)이 아직 없다.
+         *     - 더 빨리 끊어야 할 이유가 생기면 **액세스 토큰 수명을 줄이는 것이 먼저다.**
+         *       코드 변경 없이 `expires_in` 만 바뀐다.
+         *     - **정지가 리프레시 토큰을 폐기하지는 않는다.** 폐기하면 갱신이 401
+         *       `AUTH_REFRESH_TOKEN_INVALID` 가 되어 앱이 "세션이 만료됐어요" 배너를 띄우고,
+         *       사용자는 정지된 사실을 알 수 없게 된다. 폐기하지 않으면 갱신이 403 +
+         *       `account_status`(SUSPENDED) 로 나가 정확한 안내가 뜬다.
+         *     - **`auth` 계약은 이 결정으로 바뀌지 않는다 — breaking 아님.**
+         */
+        post: operations["suspendUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{user_id}/suspend/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 정지 해제 (`SUSPENDED` → `APPROVED`)
+         * @description **전제 상태는 `SUSPENDED` 하나다.** 그 외는 409 `ADMIN_USER_ALREADY_PROCESSED` (AC-12).
+         *
+         *     - 해제된 사용자는 다시 로그인할 수 있다 (AC-24).
+         *     - **`approved_at` 을 이 시각으로 갱신한다.** 근거는 design.md §5.4 다 —
+         *       "`APPROVED` 항목만 놓고 보면 마지막 처리 시각이 곧 승인 시각" 이라고 못 박혀 있어
+         *       `processed_at` 과 `approved_at` 이 갈리면 목록 행("승인 2026. 9. 6. 18:30")과
+         *       시트("승인 시각 2026. 9. 1. 09:12")가 서로 다른 날짜를 말하게 된다.
+         *     - `suspended_at` 은 비운다. 정지가 아닌 상태에는 정지 시각이 존재하지 않고,
+         *       시트는 값이 없는 행을 아예 렌더하지 않는다 (design.md §7.1).
+         *     - 대기 건수는 변하지 않는다. 그래도 응답에 담는다 (정지와 같은 이유).
+         */
+        post: operations["cancelUserSuspension"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -253,41 +499,73 @@ export interface components {
             items: components["schemas"]["NearbyPlace"][];
         };
         NearbyPlace: {
+            /**
+             * @description `tour:<contentid>`. 상세 조회에 그대로 쓴다.
+             * @example tour:126508
+             */
             place_id: string;
+            /**
+             * @description 콘텐츠 유형의 한글 라벨 (서버가 매핑)
+             * @example 관광지
+             */
             category: string;
-            status_label: string;
+            /**
+             * @description 실시간 영업상태가 없어 현재 항상 `null` — 앱은 이 줄을 숨긴다.
+             * @example 운영 중
+             */
+            status_label?: string | null;
+            /** @example 경복궁 */
             name: string;
-            /** Format: uri */
+            /**
+             * Format: uri
+             * @description TourAPI `firstimage`. 없으면 `null`.
+             */
             image_url?: string | null;
+            /**
+             * @description 서버가 TourAPI `dist`(m)로 생성 (C-8)
+             * @example 850m · 도보 12분
+             */
             distance_label: string;
-            tags: string[];
+            /**
+             * @description 콘텐츠 유형 태그. 없으면 `null`.
+             * @example [
+             *       "#관광지"
+             *     ]
+             */
+            tags?: string[] | null;
             /** Format: double */
             latitude: number;
             /** Format: double */
             longitude: number;
         };
         PlaceDetail: {
-            /** @example mmca-seoul */
+            /** @example tour:126508 */
             place_id: string;
             /** @example 역사 · 문화 */
             category: string;
-            /** @example 운영 중 */
-            status_label: string;
-            /** @example 국립현대미술관 서울 */
+            /**
+             * @description 현재 항상 `null` (실시간 영업상태 없음).
+             * @example 운영 중
+             */
+            status_label?: string | null;
+            /** @example 경복궁 */
             name: string;
             /** Format: uri */
             image_url?: string | null;
             address?: string | null;
             opening_hours?: string | null;
             distance_label?: string | null;
-            tags: string[];
+            tags?: string[] | null;
             description?: string | null;
             recommendation_reason?: string | null;
             /** Format: double */
             latitude?: number | null;
             /** Format: double */
             longitude?: number | null;
-            /** @example 한국관광공사 제공 */
+            /**
+             * @description 실제로 사용한 데이터 소스
+             * @example 한국관광공사 제공
+             */
             source_label: string;
         };
         /** @description RFC 9457 Problem Details. 모든 오류 응답의 형식. (C-1) */
@@ -568,7 +846,10 @@ export interface components {
             /** @example 8f2c1d9e-PLACEHOLDER-REFRESH-TOKEN */
             refresh_token: string;
         };
-        /** @description 설정 화면의 "계정" 카드를 그리는 값 (design.md §8.2). */
+        /**
+         * @description 설정 화면의 "계정" 카드 (`auth` design.md §8.2) **와 관리자 섹션**
+         *     (`admin-user-approval` design.md §4)을 함께 그리는 값이다.
+         */
         UserSummary: {
             /**
              * Format: email
@@ -576,7 +857,11 @@ export interface components {
              */
             email: string;
             /**
-             * @description 앱에서 역할을 바꾸는 경로는 없다 (PRD 제약).
+             * @description 앱에서 역할을 바꾸는 경로는 없다 (`auth` PRD 제약).
+             *     **관리자 섹션의 렌더 조건이 이 값이다** — `ADMIN` 일 때만 렌더한다 (AC-1 · AC-2).
+             *     조회 중이거나 조회에 실패하면 섹션을 아예 렌더하지 않는다
+             *     (`admin-user-approval` design.md §4.3) — 스켈레톤도 두지 않는다.
+             *     `USER` 에게 한 프레임이라도 보이면 AC-2 위반이다.
              * @example USER
              * @enum {string}
              */
@@ -587,6 +872,22 @@ export interface components {
              * @enum {string}
              */
             status: "PENDING" | "APPROVED" | "REJECTED" | "SUSPENDED";
+            /**
+             * @description **검토 대기(`PENDING`) 신청 건수** (AC-1 · AC-32).
+             *     2026-09-07 `admin-user-approval` 추가 — **non-breaking(선택 필드 추가)**.
+             *
+             *     - **`role` 이 `ADMIN` 일 때만 정수이고, `USER` 에게는 `null` 이다.**
+             *       앱이 섹션을 숨기는 것과 별개로 값 자체가 가지 않아야 한다 (design.md §13-1).
+             *     - 앱은 이 값을 **그대로 렌더**한다. 목록 항목 수를 세지 않는다 —
+             *       목록은 20건씩 끊어 오므로 25건일 때 20이 표시된다 (M-18 / design.md §4.5).
+             *     - 0이면 설정 행의 값 자리를 비우고 세그먼트 라벨도 숫자 없이 "검토 대기" 다.
+             *       **그 판단은 앱이 한다** — 0 은 서버가 내리는 정수 `0` 이고, 문구가 아니다
+             *       (design.md §4.4 · §5.2).
+             *     - **Discord 알림의 건수(AC-26)와 같은 서버 계산이어야 한다.** AC-32 의 보장 방법이
+             *       "두 곳이 같은 계산을 쓴다" 이므로, 알림 쪽과 이 필드가 다른 쿼리를 쓰면 안 된다.
+             * @example 3
+             */
+            pending_approval_count?: number | null;
         };
         AccountDeleteRequest: {
             /**
@@ -596,6 +897,278 @@ export interface components {
              * @example planbee2026
              */
             password: string;
+        };
+        /**
+         * @description 검토 대기 목록의 한 행 (design.md §5.3)이자 **신청 상세 시트 전체**(§6.3)다.
+         *     시트를 열 때 추가 조회를 하지 않는다 (C-8).
+         */
+        PendingUserItem: {
+            /**
+             * Format: int64
+             * @description 상태 전이 엔드포인트의 경로 변수로 그대로 쓴다.
+             * @example 42
+             */
+            user_id: number;
+            /**
+             * Format: email
+             * @example name@example.com
+             */
+            email: string;
+            /**
+             * @description **화면에 그대로 넣는 완성된 문자열이다. 절대 `null` 이 아니다.** (AC-33 / C-8)
+             *
+             *     원본 가입 사유(`SignupRequest.signup_reason`)는 선택 항목이라 비어 있을 수 있다.
+             *     **비어 있으면 서버가 "입력하지 않음" 을 채워서 내린다.**
+             *     앱은 `null` 검사도, 삼항 연산자도, 기본값 상수도 두지 않는다 —
+             *     **`"입력하지 않음"` 이라는 문자열이 앱 코드 어디에도 나타나면 위반이다**
+             *     (design.md §5.3 · §9.7).
+             *
+             *     그래서 필드 이름이 `signup_reason` 이 아니라 `signup_reason_text` 다.
+             *     원본 값이 아니라 **표시용 문자열**이라는 사실을 이름으로 못 박는다.
+             *
+             *     시각적으로도 다른 항목과 동일하게 다룬다 — 흐리게 하거나 이탤릭으로 구분하지 않는다.
+             * @example 여행 중 일정이 자주 바뀌어서 써보고 싶어요. 특히 비 올 때 대안을 빨리 찾고 싶어요.
+             */
+            signup_reason_text: string;
+            /**
+             * Format: date-time
+             * @description 가입 신청 시각 (ISO 8601 UTC, C-2). 이 목록의 **정렬 키**다 (내림차순).
+             *     앱은 표시 직전에 로컬로 바꿔 `YYYY. M. D. HH:mm` 으로 그린다 (design.md §3.3).
+             *     **거절 취소(AC-19)로 되돌아온 항목도 이 값이 바뀌지 않는다** — 원래 자리로 돌아간다.
+             * @example 2026-09-05T05:20:00Z
+             */
+            requested_at: string;
+            /**
+             * @description **로그인한 관리자 자신인가** (AC-25). 앱이 `/auth/me` 응답과 목록을 이메일로
+             *     비교하면 두 응답을 앱에서 이어붙이는 것이 되어 C-8 / M-18 위반이다.
+             *
+             *     관리자는 `APPROVED` 이므로 이 목록에서는 실제로 항상 `false` 다.
+             *     그래도 두 목록이 같은 규칙을 갖도록 담는다 (design.md §13-2).
+             * @example false
+             */
+            is_me: boolean;
+        };
+        /**
+         * @description 처리 완료 목록의 한 행 (design.md §5.4)이자 **사용자 상세 시트 전체**(§7.1)다.
+         *     `APPROVED` · `SUSPENDED` · `REJECTED` 세 상태가 이 하나의 스키마를 쓴다.
+         *
+         *     **처리자(관리자) 정보는 담지 않는다** (2026-09-07 Q2 / design.md §7.1.1).
+         *     기록은 서버에 남지만(AC-13) 화면에 그리지 않기로 확정됐으므로 응답에 실을 이유가 없다.
+         *     **거절 사유도, 정지 사유도 없다** (design.md §7.1.2 · §13 6-1).
+         */
+        ProcessedUserItem: {
+            /**
+             * Format: int64
+             * @example 7
+             */
+            user_id: number;
+            /**
+             * Format: email
+             * @example hana@example.com
+             */
+            email: string;
+            /**
+             * @description 앱이 **표현만** 결정하는 데 쓴다 — 배지의 배경·테두리·글자색과
+             *     시트의 액션 버튼 구성이다 (design.md §3.4 · §7.2).
+             *     **이 값으로 한국어를 만들지 않는다.** 라벨과 접두어는 아래 두 필드로 온다.
+             *
+             *     `PENDING` 은 이 enum 에 없다. 대기 항목은 `PendingUserItem` 이다.
+             * @example APPROVED
+             * @enum {string}
+             */
+            status: "APPROVED" | "SUSPENDED" | "REJECTED";
+            /**
+             * @description 상태 배지에 그대로 넣는 문자열 — "승인됨" / "정지됨" / "거절됨" (design.md §3.4).
+             *     **서버가 내린다** (C-8 / M-18). 앱이 `status` 로 `switch` 해서 한국어를 고르면 위반이다.
+             * @example 승인됨
+             */
+            status_label: string;
+            /**
+             * Format: date-time
+             * @description **마지막으로 상태가 바뀐 시각** (ISO 8601 UTC, C-2). 이 목록의 **정렬 키**다 (내림차순).
+             *
+             *     상태별로 아래와 같고, 언제나 같은 상태의 시각 필드와 값이 같다.
+             *
+             *     | `status` | `processed_at` |
+             *     |---|---|
+             *     | `APPROVED` | `approved_at` (승인 또는 정지 해제 시각) |
+             *     | `SUSPENDED` | `suspended_at` |
+             *     | `REJECTED` | `rejected_at` |
+             * @example 2026-09-01T00:12:00Z
+             */
+            processed_at: string;
+            /**
+             * @description 목록 행에서 `processed_at` **앞에 붙이는 문자열** — "승인" / "정지" / "거절"
+             *     (design.md §5.4). 결과 화면은 `"{접두어} 2026. 9. 1. 09:12"` 가 된다.
+             *
+             *     **접두어와 시각을 각각 내리는 이유**: 완성된 문장("승인 2026. 9. 1. 09:12")으로
+             *     내리면 앱이 UTC → 로컬 변환(C-2)을 할 수 없다. 반대로 앱이 `status` 로 접두어를
+             *     고르면 C-8 위반이다. 그래서 **문자열은 서버, 시각 포맷팅은 앱**으로 갈랐다.
+             *
+             *     스크린리더 낭독 문장(design.md §3.5)도 이 값을 쓴다.
+             * @example 승인
+             */
+            processed_at_prefix: string;
+            /**
+             * Format: date-time
+             * @description 승인된 시각 (ISO 8601 UTC). 시트의 "승인 시각" 행이다 (design.md §7.1).
+             *
+             *     - **정지 해제(AC-24)가 이 값을 갱신한다.** design.md §5.4 가
+             *       "`APPROVED` 항목만 놓고 보면 마지막 처리 시각이 곧 승인 시각" 이라고 못 박았기
+             *       때문이다. 갱신하지 않으면 같은 사용자의 목록 행과 시트가 다른 날짜를 말한다.
+             *     - `APPROVED` · `SUSPENDED` 에서는 값이 있고, **`REJECTED` 에서는 `null`** 이다 —
+             *       거절은 `PENDING` 에서만 일어나므로 승인된 적이 없다 (design.md §7.2 액션 결정표).
+             *     - **앱은 값이 `null` 인 행을 아예 렌더하지 않는다.** 빈 값이나 "-" 를 두지 않는다.
+             * @example 2026-09-01T00:12:00Z
+             */
+            approved_at?: string | null;
+            /**
+             * Format: date-time
+             * @description 정지된 시각 (ISO 8601 UTC). 시트의 "정지 시각" 행이다.
+             *     **`status` 가 `SUSPENDED` 일 때만 값이 있고 그 외에는 `null`** 이다 —
+             *     정지 해제가 이 값을 비운다.
+             * @example null
+             */
+            suspended_at?: string | null;
+            /**
+             * Format: date-time
+             * @description 거절된 시각 (ISO 8601 UTC). 시트의 "거절 시각" 행이다.
+             *     **`status` 가 `REJECTED` 일 때만 값이 있고 그 외에는 `null`** 이다 —
+             *     거절 취소가 이 값을 비운다.
+             * @example null
+             */
+            rejected_at?: string | null;
+            /**
+             * @description **로그인한 관리자 자신인가** (AC-25). `true` 면 앱은 액션 버튼을 **렌더하지 않고**
+             *     "내 계정이에요. 스스로 정지할 수 없어요." 한 줄로 대체한다 (design.md §7.6).
+             *     비활성 버튼을 두지 않는다.
+             *
+             *     이 판정을 서버가 내리는 이유는 앱이 `/auth/me` 와 목록을 이어붙이지 않게 하기
+             *     위해서다 (C-8 / M-18 / design.md §13-2). 버튼을 숨기는 것은 편의일 뿐이고
+             *     **차단은 서버가 403 `ADMIN_SELF_SUSPEND_FORBIDDEN` 으로 한다.**
+             * @example false
+             */
+            is_me: boolean;
+        };
+        /** @description 검토 대기 목록 한 페이지 (AC-5 · AC-6 · AC-7) */
+        PendingUserPage: {
+            /**
+             * @description `requested_at` 내림차순, 동률은 `user_id` 내림차순.
+             *     **빈 배열이 정상이다** (AC-6) — 오류가 아니다.
+             *
+             *     다음 페이지를 불러온 뒤 읽는 announce "{N}건을 더 불러왔어요"(design.md §3.5)의
+             *     N 은 **이 배열의 길이**다. 별도 필드를 두지 않는다 — 배열과 그 길이를 나눠 담으면
+             *     둘이 어긋날 수 있는 값이 하나 늘 뿐이다. 길이를 세는 것은 C-8 이 금지하는
+             *     "파생값 계산" 이 아니라 응답 자체를 읽는 것이다.
+             */
+            items: components["schemas"]["PendingUserItem"][];
+            /**
+             * @description 다음 페이지가 있는가. 목록 푸터가 **"불러오는 중"** 과 **"모두 확인했어요"** 를
+             *     가르는 근거다 (design.md §5.6). 앱이 `items.length == page_size` 로 추측하지 않는다 —
+             *     마지막 페이지가 정확히 20건이면 그 추측이 틀린다.
+             *
+             *     `next_cursor` 가 있으면 `true`, 없으면 `false` 다. 둘은 항상 일치한다.
+             * @example true
+             */
+            has_next: boolean;
+            /**
+             * @description 다음 페이지 요청에 그대로 실어 보낼 커서. **마지막 페이지면 `null`** 이다.
+             *     앱은 값을 해석하지 않는다 (`components.parameters.Cursor` 참조).
+             * @example eyJ0IjoiMjAyNi0wOS0wNVQwNToyMDowMFoiLCJpIjo0Mn0
+             */
+            next_cursor?: string | null;
+            /**
+             * @description 검토 대기 **전체** 건수 (AC-32). `items` 의 길이가 아니다 —
+             *     20건씩 끊어 오므로 25건일 때 `items` 는 20이고 이 값은 25다.
+             *     세그먼트 라벨("검토 대기 N")과 설정 화면 배지가 이 값을 그대로 쓴다.
+             * @example 25
+             */
+            pending_approval_count: number;
+        };
+        /** @description 처리 완료 목록 한 페이지 (AC-19 · AC-20 · AC-21 · AC-24) */
+        ProcessedUserPage: {
+            /**
+             * @description `processed_at` 내림차순, 동률은 `user_id` 내림차순.
+             *     `APPROVED` · `SUSPENDED` · `REJECTED` 가 섞여 있다 (2026-09-07 Q1).
+             *     **빈 배열이 정상이다** — "아직 처리한 신청이 없어요" 빈 상태다 (design.md §5.8).
+             */
+            items: components["schemas"]["ProcessedUserItem"][];
+            /**
+             * @description `PendingUserPage.has_next` 와 같은 규칙.
+             * @example false
+             */
+            has_next: boolean;
+            /**
+             * @description `PendingUserPage.next_cursor` 와 같은 규칙.
+             * @example null
+             */
+            next_cursor?: string | null;
+            /**
+             * @description **이 목록의 건수가 아니라 검토 대기 건수다.** `처리 완료` 세그먼트를 보고 있는
+             *     동안에도 화면 위쪽의 "검토 대기 N" 라벨이 살아 있어야 하기 때문이다
+             *     (design.md §5.2). `처리 완료` 세그먼트에는 숫자를 붙이지 않는다 —
+             *     처리된 계정은 쌓이기만 하고 관리자가 확인해야 할 잔여량이 아니다.
+             * @example 3
+             */
+            pending_approval_count: number;
+        };
+        /**
+         * @description 승인 · 거절 · 정지 · 정지 해제의 성공 응답. **결과 상태가 처리 완료 목록에 속한다.**
+         *
+         *     `user` 를 함께 내리는 이유는 정지·정지 해제 때문이다 — 그 두 처리는 목록에서
+         *     항목이 사라지지 않고 **배지와 시각만 바뀐다**(design.md §5.11). 새 배지 라벨
+         *     ("정지됨")과 새 접두어("정지")를 앱이 만들면 C-8 위반이므로 서버가 갱신된 항목을 준다.
+         *     승인·거절에서는 항목이 대기 목록에서 사라질 뿐이라 `user` 를 쓰지 않아도 되지만,
+         *     네 처리의 응답 형태를 하나로 두는 편이 앱의 분기를 줄인다.
+         */
+        ProcessedUserActionResult: {
+            /**
+             * @description **처리 직후의 검토 대기 건수** (AC-32 / design.md §5.11).
+             *     앱은 이 값을 그대로 반영한다 — 화면에서 ±1 하지 않는다 (M-18).
+             *     승인·거절이면 줄어들고, 정지·정지 해제면 변하지 않는다.
+             *     "줄어든다" 는 결과의 서술이지 계산 방법이 아니다.
+             * @example 2
+             */
+            pending_approval_count: number;
+            /** @description 처리 후의 항목. 목록 행과 시트를 다시 그리는 데 그대로 쓴다. */
+            user: components["schemas"]["ProcessedUserItem"];
+        };
+        /**
+         * @description **거절 취소의 성공 응답** (AC-19). 결과 상태가 `PENDING` 이므로 `user` 가
+         *     `PendingUserItem` 이다. 이 계약에서 처리 완료 → 검토 대기 방향은 이것 하나뿐이다.
+         */
+        PendingUserActionResult: {
+            /**
+             * @description 거절 취소로 **1 늘어난** 검토 대기 건수. 앱이 더하지 않는다.
+             * @example 4
+             */
+            pending_approval_count: number;
+            /**
+             * @description 검토 대기 목록에 다시 들어갈 항목. `requested_at` 은 **원래 신청 시각**이다 —
+             *     거절 취소 시각이 아니다 (design.md §7.5).
+             */
+            user: components["schemas"]["PendingUserItem"];
+        };
+        /**
+         * @description 거절 요청 본문. **본문 전체가 선택이다** — 사유를 남기지 않는 거절이 정상 흐름이다 (AC-17).
+         *
+         *     승인 · 거절 취소 · 정지 · 정지 해제에는 요청 본문이 **없다.**
+         *     특히 **정지에는 사유 필드를 두지 않는다** (2026-09-07 Q3 / design.md §13 6-1).
+         */
+        RejectUserRequest: {
+            /**
+             * @description 거절 사유. **선택 입력이며 최대 200자다** (AC-16 · AC-17).
+             *
+             *     - `null` · 빈 문자열 · 필드 생략 모두 **정상 200** 이다.
+             *     - 201자 이상이면 400 `VALIDATION_FAILED` (`errors[].field = "rejection_reason"`).
+             *       앱은 `maxLength=200` 으로 201번째 글자를 막지만(design.md §6.4)
+             *       서버가 앱 검증을 신뢰하지 않고 같은 제약을 독립적으로 강제한다.
+             *     - **저장만 하고 어디로도 내려보내지 않는다.** 사용자에게도(`auth` design.md §7.3),
+             *       관리자에게도(design.md §7.1.2) 표시하지 않는다.
+             *     - 거절 취소(AC-19) 시 이 값은 지워진다.
+             * @example 신청 내용만으로는 서비스 목적에 맞는 사용인지 확인하기 어려웠어요.
+             */
+            rejection_reason?: string | null;
         };
     };
     responses: {
@@ -726,8 +1299,179 @@ export interface components {
                 "application/problem+json": components["schemas"]["Problem"];
             };
         };
+        /**
+         * @description 좌표·`radius`·`size` 가 범위를 벗어났거나 `category` 값이 enum 밖이다 (`VALIDATION_FAILED`).
+         *     조용히 잘라내지 않는다. 앱의 버그 신호이므로 전용 화면을 두지 않는다 (M-13 일반 오류).
+         */
+        PlaceParamInvalid: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /**
+         * @description TourAPI 조회가 실패했다 — 상류 5xx·타임아웃·`resultCode` 오류·쿼터 초과 (`PLACE_UPSTREAM_UNAVAILABLE`).
+         *     C-1 이 502/503 을 허용하지 않으므로 상태는 500 이고 `code` 로 구분한다.
+         *     앱은 오류 화면 + "다시 시도" 를 보여준다.
+         */
+        PlaceUpstreamUnavailable: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "type": "about:blank",
+                 *       "title": "Internal Server Error",
+                 *       "status": 500,
+                 *       "detail": "주변 장소를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
+                 *       "instance": "/api/v1/places/nearby",
+                 *       "code": "PLACE_UPSTREAM_UNAVAILABLE"
+                 *     }
+                 */
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /**
+         * @description **역할이 `ADMIN` 이 아니다** (AC-3). `code` 는 `ADMIN_FORBIDDEN`.
+         *
+         *     공통 `FORBIDDEN` 과 갈라 쓰는 이유는 앱이 그리는 화면이 다르기 때문이다 —
+         *     이 코드는 목록 화면의 **권한 없음 블록**("관리자만 볼 수 있어요" + "설정으로 돌아가기",
+         *     design.md §5.10)이고, `FORBIDDEN` 은 일반 오류 문구다 (error-codes.md).
+         *     호출한 엔드포인트가 무엇이었는지로 분기하면 분기 근거가 `code` 밖으로 나간다 (C-1).
+         *
+         *     **"다시 시도" 를 두지 않는다** — 다시 눌러도 같은 결과다.
+         *     `scope: account:delete` 토큰은 이보다 **먼저** `FORBIDDEN` 으로 걸린다 (`auth` 계약).
+         */
+        AdminForbidden: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "type": "about:blank",
+                 *       "title": "Forbidden",
+                 *       "status": 403,
+                 *       "detail": "관리자만 사용할 수 있어요.",
+                 *       "instance": "/api/v1/admin/users/pending",
+                 *       "code": "ADMIN_FORBIDDEN"
+                 *     }
+                 */
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /**
+         * @description **다른 기기가 먼저 상태를 바꿨다** (AC-12). `code` 는 `ADMIN_USER_ALREADY_PROCESSED`.
+         *
+         *     각 상태 전이 엔드포인트는 전제 상태가 하나씩 정해져 있고(`approve` ← `PENDING`,
+         *     `reject` ← `PENDING`, `reject/cancel` ← `REJECTED`, `suspend` ← `APPROVED`,
+         *     `suspend/cancel` ← `SUSPENDED`), 그것과 다르면 이 응답이다.
+         *     **다섯 엔드포인트가 같은 코드를 쓴다** (design.md §13-4).
+         *
+         *     - 앱은 시트를 닫지 않고 **시트 안 배너**로 알린 뒤 목록을 다시 불러온다
+         *       (design.md §6.8 — 토스트로 하지 않는다).
+         *     - **현재 상태를 응답에 담지 않는다.** 앱이 어차피 목록을 다시 불러오고,
+         *       담으면 "배너용 값" 과 "재조회 값" 두 개의 진실이 생긴다.
+         */
+        AdminUserAlreadyProcessed: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "type": "about:blank",
+                 *       "title": "Conflict",
+                 *       "status": 409,
+                 *       "detail": "이미 처리된 신청이에요.",
+                 *       "instance": "/api/v1/admin/users/42/approve",
+                 *       "code": "ADMIN_USER_ALREADY_PROCESSED"
+                 *     }
+                 */
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /**
+         * @description 대상 사용자가 없다 (`NOT_FOUND`). 처리하는 사이에 그 계정이 삭제된 경우다
+         *     (`auth` `DELETE /api/v1/auth/me` 는 즉시 파기다).
+         *
+         *     > **design.md 에 이 상황의 화면이 정의돼 있지 않다** (2026-09-07 tech-lead 확인).
+         *     > "이미 처리됨"(AC-12)과는 사실이 다르므로 같은 배너를 재사용하도록 계약이
+         *     > 임의로 정하지 않았다. 보강 전까지 앱은 M-13 의 일반 오류 처리로 둔다.
+         */
+        AdminUserNotFound: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "type": "about:blank",
+                 *       "title": "Not Found",
+                 *       "status": 404,
+                 *       "detail": "대상을 찾을 수 없어요.",
+                 *       "instance": "/api/v1/admin/users/42/approve",
+                 *       "code": "NOT_FOUND"
+                 *     }
+                 */
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /**
+         * @description `page_size` 가 범위를 벗어났거나(`VALIDATION_FAILED`),
+         *     `cursor` 를 해석할 수 없다(`MALFORMED_REQUEST`).
+         *     둘 다 앱의 버그 신호이므로 전용 화면을 두지 않는다 (M-13 일반 오류).
+         */
+        PageParamInvalid: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "type": "about:blank",
+                 *       "title": "Bad Request",
+                 *       "status": 400,
+                 *       "detail": "요청을 처리할 수 없어요.",
+                 *       "instance": "/api/v1/admin/users/pending",
+                 *       "code": "MALFORMED_REQUEST"
+                 *     }
+                 */
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
     };
-    parameters: never;
+    parameters: {
+        /**
+         * @description 대상 사용자 식별자. 목록 응답의 `user_id` 를 그대로 되돌려 보낸다.
+         *     이메일을 경로에 싣지 않는다 — 개인정보가 URL·접근 로그·프록시 캐시에 남는다.
+         * @example 42
+         */
+        UserId: number;
+        /**
+         * @description 한 페이지 항목 수. **기본값 20** (AC-7). 앱은 이 값을 보내지 않고 기본값을 쓴다.
+         *     테스트가 페이지 경계를 만들기 쉽도록 열어 두었을 뿐이다.
+         *     범위를 벗어나면 400 `VALIDATION_FAILED` 다 — 조용히 잘라내지 않는다.
+         * @example 20
+         */
+        PageSize: number;
+        /**
+         * @description 다음 페이지 커서. **직전 응답의 `next_cursor` 를 그대로** 되돌려 보낸다.
+         *     첫 페이지는 이 파라미터를 보내지 않는다.
+         *
+         *     **앱은 이 값을 해석하지 않는다.** 서버가 만든 불투명 문자열이며 형식은 계약이 아니다 —
+         *     정렬 키와 동률 깨기 키를 담는다는 사실만 계약이고, 인코딩 방식은 서버가 바꿔도 된다.
+         *     앱이 파싱하는 순간 그 형식이 계약이 되어 서버가 바꿀 수 없게 된다.
+         *
+         *     형식이 깨졌거나 서버가 해석할 수 없으면 400 이다. **빈 목록으로 눙치지 않는다** —
+         *     조용히 첫 페이지를 돌려주면 무한 스크롤이 같은 항목을 반복해 그린다.
+         * @example eyJ0IjoiMjAyNi0wOS0wNVQwNToyMDowMFoiLCJpIjo0Mn0
+         */
+        Cursor: string;
+    };
     requestBodies: never;
     headers: never;
     pathItems: never;
@@ -739,6 +1483,14 @@ export interface operations {
             query: {
                 latitude: number;
                 longitude: number;
+                /** @description 콘텐츠 유형. 생략 시 `attraction,culture`. 복수는 `?category=attraction&category=restaurant`. TourAPI contentTypeId 로 매핑. */
+                category?: ("attraction" | "culture" | "leisure" | "accommodation" | "shopping" | "restaurant")[];
+                /** @description 검색 반경(m). TourAPI 상한 20000. */
+                radius?: number;
+                /** @description 반환할 최대 장소 수. 앱은 기본값을 쓴다. */
+                size?: number;
+                /** @description 정렬. 현재 distance 만. */
+                sort?: "distance";
             };
             header?: never;
             path?: never;
@@ -746,7 +1498,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 주변 장소 목록 */
+            /** @description 주변 장소 목록. 반경 안에 결과가 없으면 `items` 가 빈 배열이다. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -755,6 +1507,8 @@ export interface operations {
                     "application/json": components["schemas"]["NearbyPlaceList"];
                 };
             };
+            400: components["responses"]["PlaceParamInvalid"];
+            500: components["responses"]["PlaceUpstreamUnavailable"];
         };
     };
     getPlaceDetail: {
@@ -762,13 +1516,14 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description `tour:<contentid>`. 주변 목록 응답의 `place_id` 를 그대로 되돌려 보낸다. */
                 place_id: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description 관광지 상세 */
+            /** @description 장소 상세. 없는 선택 필드는 `null` 이고 앱은 그 영역을 숨긴다. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -777,7 +1532,35 @@ export interface operations {
                     "application/json": components["schemas"]["PlaceDetail"];
                 };
             };
-            404: components["responses"]["Problem"];
+            /** @description `place_id` 형식 오류 — `tour:<contentid>` 가 아니다 (`MALFORMED_REQUEST`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description 해당 `contentid` 의 장소가 없다 (`PLACE_NOT_FOUND`). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "about:blank",
+                     *       "title": "Not Found",
+                     *       "status": 404,
+                     *       "detail": "장소가 삭제되었거나 현재 공개되지 않았어요.",
+                     *       "instance": "/api/v1/places/tour:0",
+                     *       "code": "PLACE_NOT_FOUND"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            500: components["responses"]["PlaceUpstreamUnavailable"];
         };
     };
     getHealth: {
@@ -1124,6 +1907,304 @@ export interface operations {
                 };
             };
             403: components["responses"]["ForbiddenScope"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    listPendingUsers: {
+        parameters: {
+            query?: {
+                /**
+                 * @description 한 페이지 항목 수. **기본값 20** (AC-7). 앱은 이 값을 보내지 않고 기본값을 쓴다.
+                 *     테스트가 페이지 경계를 만들기 쉽도록 열어 두었을 뿐이다.
+                 *     범위를 벗어나면 400 `VALIDATION_FAILED` 다 — 조용히 잘라내지 않는다.
+                 * @example 20
+                 */
+                page_size?: components["parameters"]["PageSize"];
+                /**
+                 * @description 다음 페이지 커서. **직전 응답의 `next_cursor` 를 그대로** 되돌려 보낸다.
+                 *     첫 페이지는 이 파라미터를 보내지 않는다.
+                 *
+                 *     **앱은 이 값을 해석하지 않는다.** 서버가 만든 불투명 문자열이며 형식은 계약이 아니다 —
+                 *     정렬 키와 동률 깨기 키를 담는다는 사실만 계약이고, 인코딩 방식은 서버가 바꿔도 된다.
+                 *     앱이 파싱하는 순간 그 형식이 계약이 되어 서버가 바꿀 수 없게 된다.
+                 *
+                 *     형식이 깨졌거나 서버가 해석할 수 없으면 400 이다. **빈 목록으로 눙치지 않는다** —
+                 *     조용히 첫 페이지를 돌려주면 무한 스크롤이 같은 항목을 반복해 그린다.
+                 * @example eyJ0IjoiMjAyNi0wOS0wNVQwNToyMDowMFoiLCJpIjo0Mn0
+                 */
+                cursor?: components["parameters"]["Cursor"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 조회 성공 (AC-5 · AC-6 · AC-7) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PendingUserPage"];
+                };
+            };
+            400: components["responses"]["PageParamInvalid"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["AdminForbidden"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    listProcessedUsers: {
+        parameters: {
+            query?: {
+                /**
+                 * @description 한 페이지 항목 수. **기본값 20** (AC-7). 앱은 이 값을 보내지 않고 기본값을 쓴다.
+                 *     테스트가 페이지 경계를 만들기 쉽도록 열어 두었을 뿐이다.
+                 *     범위를 벗어나면 400 `VALIDATION_FAILED` 다 — 조용히 잘라내지 않는다.
+                 * @example 20
+                 */
+                page_size?: components["parameters"]["PageSize"];
+                /**
+                 * @description 다음 페이지 커서. **직전 응답의 `next_cursor` 를 그대로** 되돌려 보낸다.
+                 *     첫 페이지는 이 파라미터를 보내지 않는다.
+                 *
+                 *     **앱은 이 값을 해석하지 않는다.** 서버가 만든 불투명 문자열이며 형식은 계약이 아니다 —
+                 *     정렬 키와 동률 깨기 키를 담는다는 사실만 계약이고, 인코딩 방식은 서버가 바꿔도 된다.
+                 *     앱이 파싱하는 순간 그 형식이 계약이 되어 서버가 바꿀 수 없게 된다.
+                 *
+                 *     형식이 깨졌거나 서버가 해석할 수 없으면 400 이다. **빈 목록으로 눙치지 않는다** —
+                 *     조용히 첫 페이지를 돌려주면 무한 스크롤이 같은 항목을 반복해 그린다.
+                 * @example eyJ0IjoiMjAyNi0wOS0wNVQwNToyMDowMFoiLCJpIjo0Mn0
+                 */
+                cursor?: components["parameters"]["Cursor"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 조회 성공 (AC-20) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcessedUserPage"];
+                };
+            };
+            400: components["responses"]["PageParamInvalid"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["AdminForbidden"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    approveUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description 대상 사용자 식별자. 목록 응답의 `user_id` 를 그대로 되돌려 보낸다.
+                 *     이메일을 경로에 싣지 않는다 — 개인정보가 URL·접근 로그·프록시 캐시에 남는다.
+                 * @example 42
+                 */
+                user_id: components["parameters"]["UserId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 승인됨 (AC-10) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcessedUserActionResult"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["AdminForbidden"];
+            404: components["responses"]["AdminUserNotFound"];
+            409: components["responses"]["AdminUserAlreadyProcessed"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    rejectUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description 대상 사용자 식별자. 목록 응답의 `user_id` 를 그대로 되돌려 보낸다.
+                 *     이메일을 경로에 싣지 않는다 — 개인정보가 URL·접근 로그·프록시 캐시에 남는다.
+                 * @example 42
+                 */
+                user_id: components["parameters"]["UserId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RejectUserRequest"];
+            };
+        };
+        responses: {
+            /** @description 거절됨 (AC-15 · AC-17) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcessedUserActionResult"];
+                };
+            };
+            /**
+             * @description `rejection_reason` 이 200자를 넘었다 (AC-16).
+             *     `code` 는 `VALIDATION_FAILED`, `errors[].field` 는 `rejection_reason` 이다.
+             */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "about:blank",
+                     *       "title": "Bad Request",
+                     *       "status": 400,
+                     *       "detail": "입력값을 확인해 주세요.",
+                     *       "instance": "/api/v1/admin/users/42/reject",
+                     *       "code": "VALIDATION_FAILED",
+                     *       "errors": [
+                     *         {
+                     *           "field": "rejection_reason",
+                     *           "code": "SIZE",
+                     *           "message": "200자까지 쓸 수 있어요"
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["AdminForbidden"];
+            404: components["responses"]["AdminUserNotFound"];
+            409: components["responses"]["AdminUserAlreadyProcessed"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    cancelUserRejection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description 대상 사용자 식별자. 목록 응답의 `user_id` 를 그대로 되돌려 보낸다.
+                 *     이메일을 경로에 싣지 않는다 — 개인정보가 URL·접근 로그·프록시 캐시에 남는다.
+                 * @example 42
+                 */
+                user_id: components["parameters"]["UserId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 검토 대기로 되돌렸다 (AC-19) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PendingUserActionResult"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["AdminForbidden"];
+            404: components["responses"]["AdminUserNotFound"];
+            409: components["responses"]["AdminUserAlreadyProcessed"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    suspendUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description 대상 사용자 식별자. 목록 응답의 `user_id` 를 그대로 되돌려 보낸다.
+                 *     이메일을 경로에 싣지 않는다 — 개인정보가 URL·접근 로그·프록시 캐시에 남는다.
+                 * @example 42
+                 */
+                user_id: components["parameters"]["UserId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 정지됨 (AC-21) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcessedUserActionResult"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /**
+             * @description 권한 없음. **두 `code` 가 서로 구분 가능해야 한다** — 앱이 그리는 화면이 다르다 (M-13).
+             *
+             *     | `code` | 상황 | 앱 |
+             *     |---|---|---|
+             *     | `ADMIN_FORBIDDEN` | 역할이 `ADMIN` 이 아님 (AC-3) | 권한 없음 화면 (design.md §5.10) |
+             *     | `ADMIN_SELF_SUSPEND_FORBIDDEN` | 자기 계정을 정지하려 함 (AC-25) | 시트 안 배너 (design.md §7.6) |
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            404: components["responses"]["AdminUserNotFound"];
+            409: components["responses"]["AdminUserAlreadyProcessed"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    cancelUserSuspension: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description 대상 사용자 식별자. 목록 응답의 `user_id` 를 그대로 되돌려 보낸다.
+                 *     이메일을 경로에 싣지 않는다 — 개인정보가 URL·접근 로그·프록시 캐시에 남는다.
+                 * @example 42
+                 */
+                user_id: components["parameters"]["UserId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 정지가 해제됐다 (AC-24) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcessedUserActionResult"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["AdminForbidden"];
+            404: components["responses"]["AdminUserNotFound"];
+            409: components["responses"]["AdminUserAlreadyProcessed"];
             500: components["responses"]["InternalError"];
         };
     };
