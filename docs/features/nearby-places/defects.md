@@ -29,3 +29,17 @@
 - 기대: 그 항목을 목록에서 제외
 - 실제: `latitude/longitude` 에 `0.0` 을 채워 응답에 포함 → 지도 (0,0) 마커
 - 수정: `nearby()` 스트림에서 좌표 없는 `TourPlace` 를 `filter` 로 제거
+
+---
+
+### DEF-003 [Low] 위치 권한 거부 시 화면이 "연결을 확인" 오류를 보여준다
+- 상태: 열림
+- 보고자: mobile-developer
+- 담당: ux-designer
+- 위치: `mobile/src/features/nearby-places/screens/NearbyPlacesScreen.tsx` (오류 상태)
+- 근거: `design.md` §3 에 위치 권한 거부·측위 실패 상태가 없다. PRD Out of scope 는
+  "위치 권한 **추가**" 를 뺐을 뿐, 권한이 이미 거부된 경우의 화면은 필요하다
+- 현재 처리: 측위 실패(`getCurrentCoordinates() === null`)를 일반 오류 상태로 보낸다 —
+  문구가 "연결을 확인하고 다시 시도해 주세요" 라 원인(권한)과 맞지 않는다
+- 요청: 측위 실패 전용 안내(예: "위치 권한을 허용하면 주변 장소를 볼 수 있어요" + 설정 열기)
+  가 필요한지, 아니면 현 오류 상태로 충분한지 판단. 전용 화면이면 `design.md` §3 에 추가

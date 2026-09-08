@@ -2,7 +2,7 @@
 
 - 기능 슬러그: `nearby-places`
 - 시작일: 2026-08-29
-- 현재 단계: `서버 완료 (2026-09-08, PR #9) — mobile-developer 재작업 대기 (fixture → 실제 조회)`
+- 현재 단계: `mobile-developer 재작업 완료 (2026-09-08) — mobile-reviewer 대기`
 
 ## 파이프라인
 
@@ -13,7 +13,7 @@
 - [x] server-developer — `com.planbee.api.place` 1차 + 리뷰 지적 2건 수정 (PR #9)
 - [x] server-reviewer — **PASS** (`review/server.md`). `[MUST]` 2건(DEF-001 거리순, DEF-002 좌표 없는 항목)은 리뷰 세션 중 수정·재확인. `[SHOULD]` 3건은 제안만
 - [x] server-tester — **PASS.** `PlaceApiTest`(`@IntegrationTest` + WireMock) 13건 — AC-NP-7~10, size/category/sort 400, place-detail 성공/404/형식오류, 공개 접근. `make verify-server` 통과 (CI 그린)
-- [~] mobile-developer — 로컬 fixture 구현 완료 + nullable 필드 처리. **개정 계약(TourAPI) 으로 실제 조회 훅 교체 + 필터 칩 → `category` 파라미터 재작업 남음**
+- [x] mobile-developer — **재작업 완료.** fixture 훅 → `useNearbyPlaces`(react-query, `publicClient` GET `/places/nearby`). 측위(`getCurrentCoordinates`) → 조회. 필터 칩 6종 → `category` 파라미터(다중 토글). fixture·`useLocalNearbyPlaces` 삭제. 4상태 유지. 스모크 1건
 - [ ] mobile-reviewer — PASS / FAIL
 - [ ] mobile-tester — PASS / FAIL
 - [ ] integration-tester — PASS / FAIL
@@ -55,3 +55,4 @@
 | 2026-09-08 | server-reviewer | **PASS.** `[MUST]` 2건 — DEF-001(다중 카테고리 병합이 거리순 아님), DEF-002(좌표 없는 항목 0.0 포함). 둘 다 리뷰 세션 중 server-developer 가 수정. `[SHOULD]` 3건 제안. `review/server.md` |
 | 2026-09-08 | server-developer | 재작업 1회 — DEF-001·002 수정 (`PlaceService` 정렬·필터). `sort` 를 `nearby()` 인자로 통합 |
 | 2026-09-08 | server-tester | **PASS.** `PlaceApiTest`(`@IntegrationTest` + `wiremock-standalone`) 13건 — AC-NP-7~10 · size/category/sort 400 · place-detail 성공/404/형식오류 · 공개 접근. `@BeforeEach` 에서 응답 캐시 비움(키 충돌). `make verify-server` + `contract-check` CI 그린 |
+| 2026-09-08 | mobile-developer | **재작업.** `nearby-places`·`place-detail` fixture → 실제 조회(react-query + `publicClient`). `shared/location` 에 `getCurrentCoordinates` 추가. 필터 칩 → `category` 다중 토글. `place-detail` 404 → 빈 상태 분기(`code` 기준, M-13). fixture 4개 삭제. 스모크 2건. `make verify-mobile` 로컬 통과 |

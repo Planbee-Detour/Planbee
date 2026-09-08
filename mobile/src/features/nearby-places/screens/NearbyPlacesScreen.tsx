@@ -2,11 +2,20 @@ import React, {useState} from 'react';
 import {Image, Pressable, ScrollView, Text, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
-import {useLocalNearbyPlaces} from '../hooks/useLocalNearbyPlaces';
-import type {NearbyPlace} from '../types';
-const filters = ['거리순', '운영 중', '실내', '카페'];
+import {useNearbyPlaces} from '../hooks/useNearbyPlaces';
+import type {NearbyPlace, PlaceCategory} from '../types';
 
 type Props = {onBack: () => void; onPlacePress: (placeId: string) => void};
+
+/** 계약 `category` enum ↔ 화면 라벨 (design.md §2 빠른 필터). */
+const CATEGORY_FILTERS: {label: string; value: PlaceCategory}[] = [
+  {label: '관광지', value: 'attraction'},
+  {label: '문화시설', value: 'culture'},
+  {label: '레포츠', value: 'leisure'},
+  {label: '숙박', value: 'accommodation'},
+  {label: '쇼핑', value: 'shopping'},
+  {label: '음식점', value: 'restaurant'},
+];
 
 function PlaceRow({onPress, place}: {onPress: () => void; place: NearbyPlace}) {
   return (
@@ -35,7 +44,7 @@ function MapView({onPlacePress, places}: {onPlacePress: (placeId: string) => voi
   const positions = ['left-12 top-20', 'right-16 top-40', 'left-36 top-64'];
   return (
     <View className="relative flex-1 overflow-hidden border-t border-border bg-surface">
-      {places.map((place, index) => {
+      {places.slice(0, positions.length).map((place, index) => {
         const active = place.place_id === selectedId;
         return <Pressable key={place.place_id} accessibilityLabel={`${place.name} 마커`} accessibilityRole="button" className={`absolute ${positions[index]} items-center justify-center rounded-chip border border-brand-dark ${active ? 'h-12 w-12 bg-brand' : 'h-10 w-10 bg-surface'}`} onPress={() => setSelectedId(place.place_id)}><Text className="text-title text-ink">⌖</Text></Pressable>;
       })}
@@ -44,17 +53,95 @@ function MapView({onPlacePress, places}: {onPlacePress: (placeId: string) => voi
   );
 }
 
+function Header({onBack}: {onBack: () => void}) {
+  return (
+    <View className="flex-row items-center gap-3 px-5 py-2">
+      <Pressable accessibilityLabel="뒤로" accessibilityRole="button" className="h-11 w-11 items-center justify-center rounded-chip border border-border bg-surface" onPress={onBack}>
+        <Text className="text-h2 text-ink">‹</Text>
+      </Pressable>
+      <Text className="text-title font-semibold text-ink">주변 장소</Text>
+    </View>
+  );
+}
+
 export function NearbyPlacesScreen({onBack, onPlacePress}: Props) {
   const [mode, setMode] = useState<'list' | 'map'>('list');
-  const {retry, state} = useLocalNearbyPlaces();
-  if (state.status === 'loading') return <SafeAreaView accessibilityLabel="주변 장소를 불러오는 중" className="flex-1 bg-background"><View className="flex-row items-center gap-3 px-5 py-2"><Pressable accessibilityLabel="뒤로" onPress={onBack} className="h-11 w-11 items-center justify-center rounded-chip border border-border bg-surface"><Text className="text-h2">‹</Text></Pressable><Text className="text-title font-semibold text-ink">주변 장소</Text></View><View className="gap-3 p-5">{[1,2,3].map(item => <View key={item} className="h-28 rounded-card bg-border" />)}</View></SafeAreaView>;
-  if (state.status === 'empty' || state.status === 'error') { const error = state.status === 'error'; return <SafeAreaView className="flex-1 items-center justify-center bg-background px-8"><Text className="text-h2 font-semibold text-ink">{error ? '주변 장소를 불러오지 못했어요' : '주변에서 추천할 장소를 찾지 못했어요'}</Text><Text className="mt-2 text-center text-body-sm text-ink-muted">{error ? '연결을 확인하고 다시 시도해 주세요.' : '지역을 바꾸거나 잠시 후 다시 확인해 주세요.'}</Text>{error ? <Pressable onPress={retry} className="mt-6 min-h-[52px] w-60 items-center justify-center rounded-button bg-ink"><Text className="text-ink-inverse">다시 시도</Text></Pressable> : null}<Pressable onPress={onBack} className="mt-3 min-h-[52px] w-60 items-center justify-center rounded-button border border-border bg-surface"><Text className="text-ink">이전 화면으로</Text></Pressable></SafeAreaView>; }
+  const [selectedCategories, setSelectedCategories] = useState<PlaceCategory[]>([]);
+  const {retry, state} = useNearbyPlaces(selectedCategories);
+
+  const toggleCategory = (value: PlaceCategory) =>
+    setSelectedCategories(current =>
+      current.includes(value) ? current.filter(item => item !== value) : [...current, value],
+    );
+
+  const filterBar = (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2">
+      {CATEGORY_FILTERS.map(filter => {
+        const active = selectedCategories.includes(filter.value);
+        return (
+          <Pressable
+            key={filter.value}
+            accessibilityRole="button"
+            accessibilityState={{selected: active}}
+            className={`min-h-11 justify-center rounded-chip border px-3 ${active ? 'border-brand-dark bg-brand-light' : 'border-border bg-surface'}`}
+            onPress={() => toggleCategory(filter.value)}>
+            <Text className={`text-caption ${active ? 'font-semibold text-brand-dark' : 'text-ink-muted'}`}>{filter.label}</Text>
+          </Pressable>
+        );
+      })}
+    </ScrollView>
+  );
+
+  if (state.status === 'loading') {
+    return (
+      <SafeAreaView accessibilityLabel="주변 장소를 불러오는 중" className="flex-1 bg-background">
+        <Header onBack={onBack} />
+        <View className="gap-3 p-5">{[1, 2, 3].map(item => <View key={item} className="h-28 rounded-card bg-border" />)}</View>
+      </SafeAreaView>
+    );
+  }
+
+  if (state.status === 'empty' || state.status === 'error') {
+    const error = state.status === 'error';
+    return (
+      <SafeAreaView className="flex-1 items-center justify-center bg-background px-8">
+        <Text accessibilityRole="header" className="text-h2 font-semibold text-ink">
+          {error ? '주변 장소를 불러오지 못했어요' : '주변에서 추천할 장소를 찾지 못했어요'}
+        </Text>
+        <Text className="mt-2 text-center text-body-sm text-ink-muted">
+          {error ? '연결을 확인하고 다시 시도해 주세요.' : '지역을 바꾸거나 잠시 후 다시 확인해 주세요.'}
+        </Text>
+        {error ? (
+          <Pressable accessibilityRole="button" onPress={retry} className="mt-6 min-h-[52px] w-60 items-center justify-center rounded-button bg-ink">
+            <Text className="text-ink-inverse">다시 시도</Text>
+          </Pressable>
+        ) : null}
+        <Pressable accessibilityRole="button" onPress={onBack} className="mt-3 min-h-[52px] w-60 items-center justify-center rounded-button border border-border bg-surface">
+          <Text className="text-ink">이전 화면으로</Text>
+        </Pressable>
+      </SafeAreaView>
+    );
+  }
+
   const nearbyPlaces = state.data;
   return (
     <SafeAreaView className="flex-1 bg-background">
-      <View className="flex-row items-center gap-3 px-5 py-2"><Pressable accessibilityLabel="뒤로" accessibilityRole="button" className="h-11 w-11 items-center justify-center rounded-chip border border-border bg-surface" onPress={onBack}><Text className="text-h2 text-ink">‹</Text></Pressable><Text className="text-title font-semibold text-ink">주변 장소</Text></View>
-      <View className="gap-3 px-5 pb-4"><Text className="text-body-sm text-ink-muted">현재 위치에서 가까운 장소를 모았어요.</Text><View className="h-11 flex-row rounded-button bg-surface p-1"><Pressable className={`flex-1 items-center justify-center rounded-button ${mode === 'list' ? 'bg-brand-light' : ''}`} onPress={() => setMode('list')}><Text className="text-body-sm font-semibold text-ink">목록</Text></Pressable><Pressable className={`flex-1 items-center justify-center rounded-button ${mode === 'map' ? 'bg-brand-light' : ''}`} onPress={() => setMode('map')}><Text className="text-body-sm font-semibold text-ink">지도</Text></Pressable></View><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2">{filters.map(filter => <Pressable key={filter} className="min-h-11 justify-center rounded-chip border border-border bg-surface px-3"><Text className="text-caption text-ink-muted">{filter}</Text></Pressable>)}</ScrollView></View>
-      {mode === 'list' ? <ScrollView contentContainerClassName="gap-3 px-5 pb-6">{nearbyPlaces.items.map(place => <PlaceRow key={place.place_id} onPress={() => onPlacePress(place.place_id)} place={place} />)}</ScrollView> : <MapView onPlacePress={onPlacePress} places={nearbyPlaces.items} />}
+      <Header onBack={onBack} />
+      <View className="gap-3 px-5 pb-4">
+        <Text className="text-body-sm text-ink-muted">현재 위치에서 가까운 장소를 모았어요.</Text>
+        <View className="h-11 flex-row rounded-button bg-surface p-1">
+          <Pressable className={`flex-1 items-center justify-center rounded-button ${mode === 'list' ? 'bg-brand-light' : ''}`} onPress={() => setMode('list')}><Text className="text-body-sm font-semibold text-ink">목록</Text></Pressable>
+          <Pressable className={`flex-1 items-center justify-center rounded-button ${mode === 'map' ? 'bg-brand-light' : ''}`} onPress={() => setMode('map')}><Text className="text-body-sm font-semibold text-ink">지도</Text></Pressable>
+        </View>
+        {filterBar}
+      </View>
+      {mode === 'list' ? (
+        <ScrollView contentContainerClassName="gap-3 px-5 pb-6">
+          {nearbyPlaces.items.map(place => <PlaceRow key={place.place_id} onPress={() => onPlacePress(place.place_id)} place={place} />)}
+        </ScrollView>
+      ) : (
+        <MapView onPlacePress={onPlacePress} places={nearbyPlaces.items} />
+      )}
     </SafeAreaView>
   );
 }
