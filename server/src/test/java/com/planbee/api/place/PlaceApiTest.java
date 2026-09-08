@@ -109,7 +109,7 @@ class PlaceApiTest {
 
 		given().queryParam("latitude", 37.5).queryParam("longitude", 127.0)
 				.when().get("/api/v1/places/nearby")
-				.then().statusCode(500).body("code", equalTo("PLACE_UPSTREAM_UNAVAILABLE"));
+				.then().log().ifValidationFails().statusCode(500).body("code", equalTo("PLACE_UPSTREAM_UNAVAILABLE"));
 	}
 
 	@Test
@@ -119,7 +119,7 @@ class PlaceApiTest {
 
 		given().queryParam("latitude", 37.5).queryParam("longitude", 127.0)
 				.when().get("/api/v1/places/nearby")
-				.then().statusCode(500).body("code", equalTo("PLACE_UPSTREAM_UNAVAILABLE"));
+				.then().log().ifValidationFails().statusCode(500).body("code", equalTo("PLACE_UPSTREAM_UNAVAILABLE"));
 	}
 
 	@Test
