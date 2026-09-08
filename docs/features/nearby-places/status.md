@@ -10,7 +10,7 @@
 - [x] ux-designer — design.md (2026-09-08 필터를 카테고리 그룹으로 개정, "운영 중" 제외)
 - [x] ux-designer — planbee.pen
 - [x] tech-lead — contract.yaml (**2026-09-08 재개정** — 데이터 소스 TourAPI 통일, `place_id = tour:<contentid>`, 파라미터 추가, `status_label`·`tags` nullable, `place` 오류 섹션. `openapi.yaml` 병합)
-- [~] server-developer — `com.planbee.api.place` 착수 (TourAPI 클라이언트·서비스·컨트롤러·캐시·스모크). **TourAPI 매칭·resilience4j·랭킹 세부는 server-tester/reviewer 피드백으로 보강**
+- [x] server-developer — `com.planbee.api.place` 1차 (PR #9, CI 그린). TourAPI 클라이언트·서비스·컨트롤러·캐시·`@WebMvcTest` 스모크 3건. `make verify-server` + `make contract-check` 통과. **TourAPI 매칭·resilience4j·랭킹 세부는 server-tester/reviewer 피드백으로 보강 예정**
 - [ ] server-reviewer — PASS / FAIL
 - [ ] server-tester — PASS / FAIL
 - [x] mobile-developer — 로컬 fixture 구현 완료. **개정 계약으로 실제 조회 훅 교체 필요 (재작업)**
@@ -51,4 +51,4 @@
 | 2026-09-08 | product-manager | PRD 개정 — "서버 조회" 절, US-NP-2 + AC-NP-7~10, "운영 중" 필터 Out of scope 이동 |
 | 2026-09-08 | tech-lead | **계약 재확정.** `contract.yaml` + `place-detail/contract.yaml` 개정, `openapi.yaml` 병합(info 0.4.0, `place` 태그), `error-codes.md` `place` 섹션 확장(`PLACE_UPSTREAM_UNAVAILABLE`). breaking 아님 |
 | 2026-09-08 | tech-lead | **계약 재개정 — 데이터 소스 TourAPI 통일.** 카카오 로컬 REST 에 place_id 조회 엔드포인트가 없어 상세를 이을 수 없었다. 주변·상세 모두 TourAPI(KorService2), `place_id = tour:<contentid>`. `category` enum 을 contentTypeId 에 맞춰 개정(`leisure`/`shopping` 추가, `cafe` 제거). contract 0.3.0 |
-| 2026-09-08 | server-developer | `com.planbee.api.place` 착수 — `TourApiClient`(RestClient), `PlaceService`, `PlaceController`, DTO, `PlaceErrorCode`, Caffeine 캐시. `SecurityConfig` PUBLIC_PATHS 에 `/api/v1/places/**` 추가. `.env.example`+`RequiredEnvironmentCheck` 에 `TOUR_API_KEY`. 스모크 테스트 |
+| 2026-09-08 | server-developer | **1차 구현 (PR #9, CI 그린).** `com.planbee.api.place` — `TourApiClient`(RestClient·타임아웃·JsonNode 방어 파싱), `PlaceService`(유형별 조회·병합·거리순), `PlaceController`, DTO record 3종, `PlaceErrorCode`, `TourContentType`, `Distances`. Caffeine 캐시. `SecurityConfig` PUBLIC_PATHS 에 `/api/v1/places/**`. `.env.example`+`RequiredEnvironmentCheck`+compose 에 `TOUR_API_KEY`. `server.md` S-31 추가. `@WebMvcTest` 스모크 3건. `make verify-server` + `make contract-check` 통과 |
