@@ -56,7 +56,8 @@ dependencies {
 	testImplementation 'org.springframework.security:spring-security-test'
 	testImplementation "com.tngtech.archunit:archunit-junit5:${archunitVersion}"
 	// place — 외부 API(TourAPI)를 스텁한다 (server-tester).
-	testImplementation 'org.wiremock:wiremock:3.9.2'
+	// standalone: Jetty 등 내부 의존성을 shade 해 Spring Boot 의 서버 스택과 충돌하지 않는다.
+	testImplementation 'org.wiremock:wiremock-standalone:3.9.2'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
