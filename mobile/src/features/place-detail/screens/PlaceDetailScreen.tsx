@@ -11,7 +11,7 @@ import {
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 import type {PlaceDetail} from '../types';
-import {useLocalPlaceDetail} from '../hooks/useLocalPlaceDetail';
+import {usePlaceDetail} from '../hooks/usePlaceDetail';
 
 type PlaceDetailScreenProps = {
   onBack: () => void;
@@ -196,7 +196,7 @@ function PlaceContent({onBack, place}: {onBack: () => void; place: PlaceDetail})
 }
 
 export function PlaceDetailScreen({onBack, placeId}: PlaceDetailScreenProps) {
-  const {retry, state} = useLocalPlaceDetail(placeId);
+  const {retry, state} = usePlaceDetail(placeId);
 
   if (state.status === 'loading') return <LoadingScreen onBack={onBack} />;
   if (state.status === 'empty') {

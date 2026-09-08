@@ -2,7 +2,7 @@
 
 - 기능 슬러그: `place-detail`
 - 시작일: 2026-08-29
-- 현재 단계: `서버 완료 (2026-09-08, PR #9) — mobile-developer 재작업 대기`
+- 현재 단계: `mobile-developer 재작업 완료 (2026-09-08) — mobile-reviewer 대기`
 
 ## 파이프라인
 
@@ -13,7 +13,7 @@
 - [x] server-developer — `com.planbee.api.place` (`getPlaceDetail` = TourAPI `detailCommon2` + `detailIntro2`)
 - [x] server-reviewer — PASS (`nearby-places/review/server.md` 에 함께)
 - [x] server-tester — PASS (`PlaceApiTest` 에 place-detail 케이스 3건 — 성공/404/형식오류)
-- [~] mobile-developer — fixture 구현 + nullable 처리. 실제 조회 훅 교체 남음
+- [x] mobile-developer — **재작업 완료.** `useLocalPlaceDetail` → `usePlaceDetail`(react-query, `publicClient` GET `/places/{place_id}`). `PLACE_NOT_FOUND`(404) → 빈 상태, 그 외 → 오류 상태(M-13). fixture 삭제. 화면 4상태 유지. 스모크 1건
 - [ ] mobile-reviewer — PASS / FAIL
 - [ ] mobile-tester — PASS / FAIL
 - [ ] integration-tester — PASS / FAIL

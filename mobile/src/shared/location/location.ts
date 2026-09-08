@@ -29,6 +29,26 @@ async function requestLocationPermission(): Promise<boolean> {
   });
 }
 
+export type Coordinates = {latitude: number; longitude: number};
+
+/**
+ * 현재 위치의 원좌표. 주변 장소 조회처럼 지역명이 아니라 좌표가 필요할 때 쓴다.
+ * 권한 거부·측위 실패면 `null` — 호출부가 오류 상태로 처리한다.
+ */
+export async function getCurrentCoordinates(): Promise<Coordinates | null> {
+  if (!(await requestLocationPermission())) {
+    return null;
+  }
+
+  return new Promise(resolve => {
+    Geolocation.getCurrentPosition(
+      position => resolve({latitude: position.coords.latitude, longitude: position.coords.longitude}),
+      () => resolve(null),
+      {enableHighAccuracy: false, maximumAge: 300000, timeout: 10000},
+    );
+  });
+}
+
 export async function resolveCurrentRegion(): Promise<string | null> {
   if (!(await requestLocationPermission())) {
     return null;
