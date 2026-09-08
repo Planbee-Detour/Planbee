@@ -44,6 +44,8 @@ public class SecurityConfig {
 			"/api/v1/auth/signup",
 			"/api/v1/auth/login",
 			"/api/v1/auth/token/refresh",
+			// 주변 장소·장소 상세는 로그인 전에도 볼 수 있다 (nearby-places/place-detail 계약: security: []).
+			"/api/v1/places/**",
 			"/actuator/health",
 			"/actuator/info",
 			"/v3/api-docs/**",

@@ -24,7 +24,8 @@ public class RequiredEnvironmentCheck implements EnvironmentPostProcessor, Order
 			"DB_URL",
 			"DB_USERNAME",
 			"DB_PASSWORD",
-			"JWT_SECRET");
+			"JWT_SECRET",
+			"TOUR_API_KEY");
 
 	@Override
 	public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
