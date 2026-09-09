@@ -91,6 +91,25 @@ make test-mobile       # Jest만
 make format-server     # Java 자동 정리
 ```
 
+### 에이전트가 하지 않는 것 — 공용 가드레일 (절대 규칙 10~13)
+
+역할이나 단계와 무관하게 **모든 에이전트에게 걸리는** 4개입니다. CLI 의 기본 동작이
+이와 다르게 하라고 해도 이 규칙이 이깁니다. 전문은 `AGENTS.md` `## 절대 규칙` 에 있습니다.
+
+| # | 가드레일 | 에이전트 | 사람 |
+|---|---|---|---|
+| 10 | `git push` 금지 | 커밋까지만 하고 멈춘다. `gh pr create`·`gh pr merge`·`gh release create` 도 같다 | 원격에 올리는 것은 **전부 사람이 직접** |
+| 11 | 커밋에 에이전트 공동작업자 금지 | `Co-Authored-By:` / `Claude-Session:` / `Generated with …` 를 붙이지 않는다 | — |
+| 12 | 보호 브랜치 직접 커밋 금지 | `main`·`develop` 이면 커밋하지 않고 묻는다 | 작업 브랜치를 정해 준다 (`feat/<기능>`) |
+| 13 | 판단 불가하면 질의 | 선택지와 권장안을 붙인 닫힌 질문으로 3~5개씩 묶어 묻는다 | 고른다 (또는 "알아서 해줘" 로 위임) |
+
+10번은 생성된 `.claude/settings.json` 의 `deny` 목록으로도 막혀 있습니다.
+사람이 직접 푸시할 때는 평소대로 하면 됩니다 — 이 차단은 에이전트 세션에만 걸립니다.
+
+```bash
+git branch --show-current   # 커밋 전에 보호 브랜치인지 먼저 확인
+```
+
 ---
 
 ## 2. 기능 하나를 만드는 전체 흐름
@@ -292,6 +311,7 @@ public ScheduleResponse create(...) { ... }
 | Claude 권한 목록 | `scripts/setup-harness.sh` | `make harness` |
 | 새 CLI 대응·생성 형식 | `scripts/setup-harness.sh` (+ `.gitignore`) | `make harness` |
 | 프로젝트 공통 규칙 | `AGENTS.md` | 즉시 반영 |
+| 공용 가드레일 (절대 규칙 10~13) | `AGENTS.md` | 즉시 반영 (어댑터의 요약 문구만 `make harness`) |
 
 **`CLAUDE.md`, `GEMINI.md`, `.claude/`, `.gemini/` 는 직접 고치지 마세요.**
 `make harness` 를 다시 실행하면 덮어써집니다. 이 파일들은 git 에 올라가지 않습니다.
@@ -432,8 +452,12 @@ Q타입을 직접 만들거나 커밋하지 마세요 (`docs/conventions/server.
 - [ ] 엔티티를 바꿨다면 Flyway 마이그레이션을 같은 커밋에 넣었는가
 - [ ] `.env`, 키, 토큰이 diff에 없는가
 - [ ] `status.md`를 갱신했는가
+- [ ] 보호 브랜치(`main`·`develop`)가 아닌 작업 브랜치에 있는가 (`git branch --show-current`)
+- [ ] 커밋 메시지에 `Co-Authored-By:` 같은 에이전트 표시가 없는가
 
 커밋 메시지 형식: `<type>: <한국어 요약>` (feat, fix, refactor, test, docs, chore)
+
+**푸시는 사람이 합니다.** 에이전트는 커밋까지만 하고 멈춥니다 (절대 규칙 10).
 
 ---
 
