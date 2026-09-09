@@ -57,6 +57,22 @@ env: ## .env 생성 (.env.example 복사 — 기존 파일은 덮어쓰지 않�
 	@echo "실제 값을 채운 뒤 사용하세요. .env 는 git 에 커밋되지 않습니다."
 	@echo "운영 키 생성: openssl rand -base64 48"
 
+.PHONY: webhook-check
+webhook-check: ## Discord Webhook 확인 — 실제 메시지를 딱 1건만 보낸다
+	$(REQUIRE_ENV)
+	@[ -n "$$DISCORD_WEBHOOK_URL" ] || { \
+		echo "✗ DISCORD_WEBHOOK_URL 이 비어 있습니다. .env 에 값을 넣으세요."; \
+		exit 1; }
+	@case "$$DISCORD_WEBHOOK_URL" in \
+		https://discord.com/api/webhooks/*|https://discordapp.com/api/webhooks/*) ;; \
+		*) echo "✗ Discord Webhook URL 형식이 아닙니다."; exit 1;; \
+	esac
+	@curl -fsS -X POST -H 'Content-Type: application/json' \
+		-d '{"content":"Planbee — Webhook 연결 확인용 메시지 1건입니다. 이게 보이면 설정이 정상입니다."}' \
+		"$$DISCORD_WEBHOOK_URL" >/dev/null \
+		&& echo "✓ 1건 발송했습니다. Discord 채널을 확인하세요." \
+		|| { echo "✗ 발송 실패 — URL 이 유효한지, 웹후크가 삭제되지 않았는지 확인하세요."; exit 1; }
+
 # ── 하네스 ───────────────────────────────────────────────────────────
 .PHONY: harness
 harness: ## 에이전트 CLI 로컬 파일 생성 (CLAUDE.md, .claude/, .gemini/ — 모두 git 제외)

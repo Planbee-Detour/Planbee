@@ -11,6 +11,8 @@ import {createBottomTabNavigator, type BottomTabBarProps} from '@react-navigatio
 import {createNativeStackNavigator, type NativeStackScreenProps} from '@react-navigation/native-stack';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
+import {AdminSettingsSection} from '../../features/admin-user-approval/components/AdminSettingsSection';
+import {UserApprovalListScreen} from '../../features/admin-user-approval/screens/UserApprovalListScreen';
 import {AccountDeleteScreen} from '../../features/auth/screens/AccountDeleteScreen';
 import {LegalDocumentScreen} from '../../features/auth/screens/LegalDocumentScreen';
 import {SettingsScreen} from '../../features/auth/screens/SettingsScreen';
@@ -78,6 +80,26 @@ function MainTabsScreen({navigation}: NativeStackScreenProps<MainStackParamList,
   );
 }
 
+/**
+ * 설정 화면 + `관리자` 섹션 (`admin-user-approval` design.md §4.7).
+ *
+ * 두 기능을 <b>여기서 조합한다</b> — `SettingsScreen`(auth 소유)이 관리자 기능을 직접
+ * import 하면 M-2(기능 간 직접 import 금지) 위반이다. 설정 화면은 슬롯만 알고,
+ * 섹션을 그릴지 말지는 관리자 기능의 컴포넌트가 역할(`role`)로 판단한다 (AC-1 · AC-2).
+ */
+function SettingsRoute({navigation}: NativeStackScreenProps<MainStackParamList, 'Settings'>) {
+  return (
+    <SettingsScreen
+      renderExtraSection={account => (
+        <AdminSettingsSection
+          account={account}
+          onPress={() => navigation.push('UserApprovalList')}
+        />
+      )}
+    />
+  );
+}
+
 function PlaceDetailRoute({navigation, route}: NativeStackScreenProps<MainStackParamList, 'PlaceDetail'>) {
   return <PlaceDetailScreen onBack={navigation.goBack} placeId={route.params.placeId} />;
 }
@@ -93,7 +115,9 @@ export function MainNavigator() {
       <MainStack.Screen component={NearbyPlacesRoute} name="NearbyPlaces" />
       <MainStack.Screen component={PlaceDetailRoute} name="PlaceDetail" />
       {/* auth 소유 화면. 파라미터는 features/auth/navigation.ts 가 선언한다 (M-2) */}
-      <MainStack.Screen component={SettingsScreen} name="Settings" />
+      <MainStack.Screen component={SettingsRoute} name="Settings" />
+      {/* admin-user-approval 소유 화면. 하단 탭바는 건드리지 않는다 (그 기능 design.md 결정 1) */}
+      <MainStack.Screen component={UserApprovalListScreen} name="UserApprovalList" />
       <MainStack.Screen component={AccountDeleteScreen} name="AccountDelete" />
       <MainStack.Screen component={LegalDocumentScreen} name="LegalDocument" options={{presentation: 'modal'}} />
     </MainStack.Navigator>

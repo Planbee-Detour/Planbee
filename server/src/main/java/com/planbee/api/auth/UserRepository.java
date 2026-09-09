@@ -16,6 +16,13 @@ public interface UserRepository extends JpaRepository<User, Long> {
 	boolean existsByEmail(String email);
 
 	/**
+	 * 상태별 계정 수. 검토 대기 건수({@code PENDING})가 <b>화면 네 곳과 Discord 알림에서
+	 * 같은 값</b>이어야 하므로(admin AC-32) 계산은 이 메서드 하나뿐이다 —
+	 * 호출은 {@code PendingApprovalCounter} 를 거친다.
+	 */
+	long countByStatus(UserStatus status);
+
+	/**
 	 * 동의 이력까지 한 번에 읽는다. {@code open-in-view=false} 라서 트랜잭션 밖에서
 	 * 지연 로딩을 터뜨리면 그냥 실패한다 (S-16 / S-25).
 	 */

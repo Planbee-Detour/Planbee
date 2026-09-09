@@ -14,6 +14,14 @@ type Props = {
   accessibilityHint?: string;
   /** 값 자리에 넣을 커스텀 노드 (스켈레톤, "다시 시도" 등) */
   valueSlot?: React.ReactNode;
+  /**
+   * 낭독에서 값 자리에 읽을 문자열. 보이는 값과 읽는 값이 다를 때만 준다.
+   *
+   * 예: 관리자 진입 행은 화면에 "3건" 만 보이지만 낭독은 "가입 신청 관리, 검토 대기 3건" 이다
+   * (`admin-user-approval` design.md §4.6). 값이 비어 있는 0건 행도 낭독에서는
+   * "검토 대기 없음" 을 말해야 한다 — 시각적으로는 비움이 정보지만 낭독에서 침묵은 정보가 아니다.
+   */
+  valueLabel?: string;
   testID?: string;
 };
 
@@ -25,9 +33,11 @@ export function ListRow({
   tone = 'default',
   accessibilityHint,
   valueSlot,
+  valueLabel,
   testID,
 }: Props) {
   const labelColor = tone === 'danger' ? 'text-danger' : 'text-ink';
+  const spokenValue = valueLabel ?? value;
 
   const content = (
     <View className="min-h-[56px] flex-row items-center px-4">
@@ -45,7 +55,7 @@ export function ListRow({
   if (!onPress) {
     // 값 표시 전용 행은 버튼으로 읽히면 안 된다 (design.md §8.6).
     return (
-      <View accessibilityRole="text" accessibilityLabel={value ? `${label}, ${value}` : label} testID={testID}>
+      <View accessibilityRole="text" accessibilityLabel={spokenValue ? `${label}, ${spokenValue}` : label} testID={testID}>
         {content}
       </View>
     );
@@ -54,7 +64,7 @@ export function ListRow({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={value ? `${label}, ${value}` : label}
+      accessibilityLabel={spokenValue ? `${label}, ${spokenValue}` : label}
       accessibilityHint={accessibilityHint}
       onPress={onPress}
       testID={testID}>

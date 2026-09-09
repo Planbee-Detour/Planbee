@@ -84,7 +84,7 @@ public class RefreshTokenService {
 				now.plus(tokenIssuer.refreshTokenTtl())));
 
 		String accessToken = tokenIssuer.issueAccessToken(
-				user.id(), user.email(), TokenScope.FULL, now, tokenIssuer.accessTokenTtl());
+				user.id(), user.email(), user.role(), TokenScope.FULL, now, tokenIssuer.accessTokenTtl());
 
 		return new TokenPair(
 				accessToken,

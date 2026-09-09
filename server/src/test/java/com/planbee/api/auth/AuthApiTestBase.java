@@ -26,8 +26,13 @@ import io.restassured.specification.RequestSpecification;
  * <p><b>테스트 간 상태를 남기지 않는다.</b> 이 기능에는 DB 밖에도 상태가 셋 있다
  * (`server.md` S-29 — 로그인 실패 카운터 · 가입 IP 레이트 리밋 · 리프레시 유예 창 캐시).
  * DB 만 비우고 그것들을 두면 테스트 순서에 따라 결과가 달라진다 — 매번 함께 비운다.
+ *
+ * <p><b>public 인 이유</b>: {@code admin-user-approval} 의 통합 테스트가 이 준비 작업과 요청
+ * 헬퍼를 그대로 물려받는다 ({@code com.planbee.api.admin.AdminApiTestBase}). 관리자 기능이
+ * 다루는 대상은 결국 {@code auth} 가 만든 계정이라, 계정을 만드는 경로를 두 벌로 두면
+ * 두 테스트가 서로 다른 사실을 검증하게 된다.
  */
-abstract class AuthApiTestBase {
+public abstract class AuthApiTestBase {
 
 	protected static final String PASSWORD = "planbee2026";
 	protected static final String SUPPORT_EMAIL = "support@planbee.app";

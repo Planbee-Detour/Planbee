@@ -240,6 +240,32 @@ M-3(2개 이상 기능이 쓸 때만 `shared/` 로 올린다)의 **명시적 예
   **한 값**을 공유해야 한다. 화면 코드에 `'v1.0'` 을 적지 않는다.
 - `documents.generated.ts` 는 커밋하지 않는다(`.gitignore`). `make verify-mobile` 이 먼저 생성한다.
 
+### M-23. 다른 기능의 화면에 끼워 넣는 블록은 **슬롯 + `app/` 조합**으로 만든다 `[MUST]`
+
+(2026-09-09 확정, `admin-user-approval` 구현)
+
+- 기능 A 의 화면에 기능 B 의 블록이 들어가야 하면, **A 는 `renderXxx` 슬롯 prop 만 받고**
+  실제 컴포넌트는 `app/navigation/*` 이 넣는다. A 가 B 를 import 하면 M-2 위반이다.
+- 슬롯에는 **A 가 이미 조회한 응답을 그대로 넘긴다.** B 가 같은 화면 영역을 위해 자기 쿼리를
+  또 부르면 한 영역에 호출이 2회가 되어 C-8 / M-18 위반이다.
+- **무엇을 그릴지(또는 그리지 않을지)는 B 가 정한다.** A 는 그 판단(역할·권한 등)에 관여하지 않는다.
+  예: `SettingsScreen(renderExtraSection)` ← `MainNavigator` ← `AdminSettingsSection`
+  (`admin-user-approval` design.md §4.7).
+- 근거: 화면 소유자와 블록 소유자가 다를 때 import 방향을 뒤집지 않고도 조합할 수 있는 유일한 자리가
+  `app/` 이다. 슬롯이 없으면 A 의 화면 코드에 B 의 도메인 판단이 스며든다.
+
+### M-24. 기능 경계를 넘는 쿼리 키는 `shared/api/queryKeys.ts` 에 둔다 `[MUST]`
+
+(2026-09-09 확정, `admin-user-approval` 구현)
+
+- 대부분의 쿼리 키는 그 기능 안에 둔다. **다른 기능이 무효화해야 하는 키만** 여기로 올린다.
+  예: `ACCOUNT_QUERY_KEY`(`GET /auth/me`) — 관리자가 신청을 처리하면 그 응답의
+  `pending_approval_count` 가 바뀌므로 `admin-user-approval` 이 무효화해야 한다.
+- 키 문자열을 양쪽에 복사하지 않는다. 한쪽만 바뀌면 무효화가 조용히 안 걸린다.
+  그렇다고 다른 기능의 모듈을 import 하면 M-2 위반이다.
+- **무효화만 한다.** 다른 기능의 캐시 데이터를 직접 읽거나 `setQueryData` 로 쓰지 않는다 —
+  그건 두 기능이 같은 응답 모델을 공유하는 것이고, 필요하면 그 값을 넘겨 주는 쪽(M-23)으로 푼다.
+
 ## 테스트 (mobile-tester)
 
 ### M-11. API 는 msw 로 목킹한다 `[MUST]`

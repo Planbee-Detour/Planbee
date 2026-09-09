@@ -70,6 +70,9 @@ const borderRadius = {
 /** 카드·탭바가 쓰는 그림자. `shadow-card` 로 쓴다. */
 const boxShadow = {
   card: '0 2px 12px rgba(0, 0, 0, 0.06)',
+  // `Control/Segmented`(pen `M4j8Ky`)의 선택 칸 그림자. 카드보다 얕고 짧다 —
+  // pen 의 effect 값(#00000014 / offset y 1 / blur 3)을 그대로 옮겼다. 임의로 만든 값이 아니다.
+  segment: '0 1px 3px rgba(0, 0, 0, 0.08)',
 };
 
 module.exports = {colors, fontSize, fontFamily, borderRadius, boxShadow};

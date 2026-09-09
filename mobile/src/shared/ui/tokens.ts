@@ -21,4 +21,8 @@ export const COLOR = {
   onDark: colors['on-dark'],
   /** Color/Neutral/Background — `bg-background` 와 같은 값 */
   background: colors.background,
+  /** Color/Brand/Honey — `bg-brand` 와 같은 값. 안드로이드 `RefreshControl colors` 용 */
+  brand: colors.brand.DEFAULT,
+  /** Color/Neutral/Surface — `bg-surface` 와 같은 값. 안드로이드 `progressBackgroundColor` 용 */
+  surface: colors.surface,
 } as const;
