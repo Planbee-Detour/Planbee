@@ -2,7 +2,7 @@
 
 - 기능 슬러그: `admin-user-approval`
 - 시작일: 2026-08-23
-- 현재 단계: `계약 확정 (2026-09-07) — server-developer / mobile-developer 병렬 착수 가능`
+- 현재 단계: `서버 트랙 종료 (2026-09-09) / 모바일 리뷰 PASS (2026-09-09 재리뷰) — mobile-tester 대기`
 
 ## 선행 조건
 
@@ -48,13 +48,142 @@
   - **PRD 열린 질문 4·5 종결** (아래 `결정 기록`)
   - AC 34개 전부 계약·구현·앱·`auth` 중 하나에 배정 — 미커버 0
   - ⚠ `make contract-check` **미실행** — 아래 `미해결 / 에스컬레이션` ASK 6 참조
-- [ ] server-developer
-- [ ] server-reviewer — PASS / FAIL
-- [ ] server-tester — PASS / FAIL
-- [ ] mobile-developer
-- [ ] mobile-reviewer — PASS / FAIL
+- [x] server-developer — **완료 (2026-09-09).** 엔드포인트 6개 + `GET /api/v1/auth/me` 확장 1 구현
+  - 새 패키지 `com.planbee.api.admin` — 컨트롤러 1 / 서비스 1 / QueryDSL 리포지토리 1 / 커서 1 /
+    에러 코드 3 / 처리 기록 엔티티 1 / DTO 11 / Discord 알림 3
+  - Flyway `V3__create_admin_user_approval.sql` — `users` 에 상태 전이 시각 4 + `rejection_reason`,
+    커서용 부분 인덱스 2, `admin_action_logs` 신설 (AC-13)
+  - 인가는 경로 선언으로 — `/api/v1/admin/**` 에 `SCOPE_full` + `ROLE_ADMIN` (AC-3).
+    필터 체인 403 의 코드는 `ForbiddenCodeResolver` 확장점으로 갈랐다 (`ADMIN_FORBIDDEN`)
+  - `make lint-server` / `make test-server` / `make contract-check` **모두 통과** (아래 `기록`)
+  - `docs/conventions/server.md` 에 S-32 · S-33 · S-34 추가, "미확정 — 인가 모델" 종결
+- [x] server-reviewer — **PASS (2026-09-09).** `[MUST]` 위반 0건 — `defects.md` 로 이관할 결함 없음
+  - 판단이 넘어온 설계 3건 전부 **규칙 위반 아님**으로 판정 — ① `role` 클레임 + `JwtAuthenticationConverter`
+    (S-17 이 금지하는 것은 검증을 대체하는 **필터**이고, 스코프 불릿이 같은 패턴을 이미 허용한다) ·
+    ② `processed_at` 컬럼 저장(계약은 응답 필드만 규정. 쓰는 지점이 `User` 의 전이 5개로 모여 있음을 확인) ·
+    ③ `ForbiddenCodeResolver`(S-27 과 같은 해법, 의존 방향 `admin → common`)
+  - 리뷰어 실행 게이트: `make lint-server` / `make test-server` / `make contract-check` **모두 통과**
+  - `[SHOULD]` 3건 + 규칙 근거 없는 참고 5건은 `review/server.md`, 타 역할 요청 2건은 `defects.md`
+  - 리포트: `docs/features/admin-user-approval/review/server.md`
+- [x] server-tester — **PASS (2026-09-09).** 통합 테스트 8클래스 · **75건** 추가, 실패 0
+  - AC 34개 판정: **통과 29 / 해당없음(모바일) 3(AC-8·9·14) / 미검증 2(AC-26·AC-28)** —
+    아래 `서버 AC 판정표` 에 각 판정의 근거 테스트 이름이 붙어 있다
+  - **AC-26·AC-28 은 `DISCORD_WEBHOOK_URL` 미발급으로 미검증** (ASK 1. 아래 `미해결` 참조)
+  - 실행 게이트: `make test-server-db` 통과(전체 150건, 실패 0) / `make lint-server` 통과
+  - `defects.md` 에 올릴 결함 **0건** — 구현이 계약·AC 와 어긋난 지점을 찾지 못했다
+  - server-reviewer 가 넘긴 `processed_at` 불변식을 `assertProcessedAtInvariant()` 로 고정했다
+- [x] mobile-developer — **완료 (2026-09-09).** `design.md` 화면 18개 전부 구현 (미구현 화면 0, 연출 2건은 아래 사유)
+  - 진입점은 설정의 `관리자` 섹션 하나 — **하단 탭바를 건드리지 않았다** (결정 1). 조합은
+    `app/navigation/MainNavigator.tsx` 가 하고 `SettingsScreen` 은 슬롯만 받는다 (M-2 / design.md §4.7)
+  - 신규 DS 컴포넌트 5개를 `shared/ui` 에 구현하고 **pen 정의(`M4j8Ky`·`ZcirU`·`CfaaR`·`B8FM7g`·`WJqGp`)와
+    대조해 치수·굵기·간격을 맞췄다.** 신규 색 토큰 0개
+  - 게이트: `make lint-mobile` / `make test-mobile` / `make verify-mobile` **통과**
+  - `NOT_FOUND`(D-1)는 명세가 없어 M-13 일반 오류로 두었다 — 화면을 지어내지 않았다
+  - **미구현 2건(사유 명시)** — ① §5.11 의 항목 제거 애니메이션(200ms 페이드아웃 + 높이 축소):
+    처리 결과는 서버 재조회로 반영되고 `FlatList` 의 제거 시점을 앱이 쥐고 있지 않다. `reanimated`
+    미도입 상태에서 `LayoutAnimation` 으로 흉내내면 안드로이드 실험 플래그가 필요해 M-19 를 건드린다.
+    기능·문구·상태 전이에는 영향이 없다. ② §6.6 의 "처리 후 그 자리의 다음 행으로 포커스":
+    시트를 **취소로** 닫을 때는 연 행으로 되돌리도록 구현했고, 처리 성공 뒤에는 행이 사라져
+    "다음 행" 을 특정할 근거가 목록 갱신 전에는 없다. 완료 사실은 토스트가 낭독한다
+- [x] mobile-reviewer — **PASS (2026-09-09, 재리뷰).** 1차 FAIL 의 `[MUST]` 결함 2건이
+  재작업 1회차에서 **모두 해소됐고 회귀 없음.** 새 `[MUST]` 0건 → 다음은 mobile-tester
+  - DEF-M01 **해소** — `closeAction`(`PendingUserSheet.tsx:117-126`)이 기본 단계(`160`)와
+    거절 사유 입력 단계(`228`) **두 분기 모두**에 걸렸다. 경합 뒤 `거절하기`·`뒤로` 는 비활성이
+    아니라 제거된다. `run()` 재호출 경로 전수 확인 — 버튼(제거)·배너 "다시 시도"(`undefined`)·
+    안드로이드 백(되돌아간 기본 단계도 `closeAction`)로 **같은 409 로 갈 길이 없다.**
+    §6.8 이 남기라고 한 정보 블록·대상 이메일·입력한 사유는 남아 있다
+  - DEF-M02 **해소** — 단언 2곳 실제 삭제(상태 타입 `Exclude<…,'forbidden'>` 로 좁힘,
+    배너 인자는 `bannerKind` **타입 주석**이지 단언이 아니다). 남긴 2곳
+    (`useUserApproval.ts:50-53·63-64`)에 "왜 불가피한지 + `(M-9)`" 주석 — `a11y.tsx:56` 선례 형식.
+    기능 디렉토리 전수 grep 결과 남은 단언은 그 두 줄뿐(`as const`·import 별칭은 대상 아님), `any` 0건
+  - **회귀 없음** — 재작업이 건드린 파일은 3개뿐이고(`PendingUserSheet`·`ProcessedUserSheet`·
+    `useUserApproval`) 나머지는 무수정이다. `code` 기반 분기 · 403 → §5.10 · §9 문구 ·
+    4가지 상태 × 세그먼트 · M-24 · 플랫폼 분기를 다시 읽어 확인했다.
+    **1차의 "결함 아님" 4건도 되돌리지 않았다**(근거 파일 `actionError.ts`·`StatusBadge.tsx`·
+    `UserApprovalListScreen.tsx` 무수정)
+  - 리뷰어 실행 게이트: `make lint-mobile` **통과**(exit 0) / `npx tsc --noEmit` **통과**(exit 0) /
+    회귀 확인용 `make test-mobile` **통과**(16 suites · 151 tests · 실패 0)
+  - mobile-tester 에게 넘긴 요청 R-M4(경합 상태를 **두 단계 모두** 테스트로 고정) 추가. 1차의
+    R-M1·R-M2·R-M3 은 그대로 열려 있고, 결함이 아니므로 PASS 를 막지 않는다
+  - **재작업 카운터는 1 그대로**다 (PASS 이므로 올리지 않는다)
+  - 아래는 **1차 리뷰(FAIL, 2026-09-09) 의 기록**이다 — 지우지 않고 남긴다
+  - DEF-M01 `PendingUserSheet` 의 **거절 사유 입력 단계에서 §6.8 "이미 처리됨" 상태가 절반만** 구현됐다
+    (배너는 뜨지만 "거절하기" 가 활성으로 남아 다시 누르면 같은 409). 409 는 승인보다 거절에서
+    더 자주 나오므로 결함이 있는 쪽이 주 경로다 (M-6 / design.md §6.8 / AC-12)
+  - DEF-M02 사유 주석 없는 타입 단언 4곳 (M-9). 2곳은 상태 타입을 좁히면 단언이 사라지고,
+    2곳(react-query `initialPageParam`)은 사유 주석을 달면 된다
+  - 넘어온 판단 4건은 **전부 규칙 위반 아님** — ① 403 `ADMIN_FORBIDDEN` → §5.10 권한 없음 화면은
+    design.md §2.3·§5.10 · `contract.yaml` 403 표 · `error-codes.md` 가 모두 지정한 처리다
+    (§6.7 일반 배너였다면 그쪽이 위반) · ② `NOT_FOUND`(D-1)를 M-13 일반 오류로 둔 것은 계약과
+    카탈로그가 명시한 처리이고 화면을 지어냈다면 M-7 위반이었다 · ③ 미구현 연출 2건은 **근거 규칙이
+    없어 `[MUST]`·`[SHOULD]` 어느 쪽도 아니다**(절대 규칙 2). reanimated 미도입은 M-19·절대 규칙 8
+    상 옳은 판단 · ④ 배지 패딩은 C-9·M-16 이 "어긋나면 pen 기준" 이라 pen(`[3,10]`)이 맞다 —
+    md 정정은 ux-designer 몫으로 요청(R-M1)
+  - 계약·명세 대조 전항 일치 — 탭바 미변경 · `ADMIN` 조건 렌더(로딩·실패에도 미렌더) · 섹션 위치 ·
+    "처리 완료"(“처리됨” 0건) · 행에 버튼 없음 · `pending_approval_count` 를 세지도 ±1 하지도 않음 ·
+    설정 한 영역에 호출 1회(슬롯) · 오류 분기가 `code` 로만 · 커서 불투명 + `has_next` 근거 ·
+    "입력하지 않음" 문자열 0건 · `snake_case` 경계 타입(생성물) · §9 문구 전수 일치 · 4가지 상태 ·
+    M-2/M-21/M-23/M-24 · `Platform.select` 양쪽 키
+  - 리뷰어 실행 게이트: `make lint-mobile` 통과 / `npx tsc --noEmit` 통과
+  - 리포트: `docs/features/admin-user-approval/review/mobile.md`
 - [ ] mobile-tester — PASS / FAIL
 - [ ] integration-tester — PASS / FAIL
+
+## 서버 AC 판정표 (server-tester, 2026-09-09)
+
+판정 기준은 `PRD.md` 의 AC 34개다. 구현 코드를 보고 기준을 만들지 않았다.
+근거는 전부 `server/src/test/java/com/planbee/api/admin/` 의 테스트 이름이다
+(클래스 접두어 생략 — `Pending`=`AdminPendingListApiTest`, `Processed`=`AdminProcessedListApiTest`,
+`Transition`=`AdminUserTransitionApiTest`, `Auth`=`AdminAuthorizationApiTest`,
+`Count`=`AdminPendingCountApiTest`, `Session`=`AdminSuspendedSessionApiTest`,
+`Discord`=`AdminDiscordNotificationApiTest`, `Disabled`=`AdminNotificationDisabledApiTest`).
+
+| AC | 판정 | 근거 |
+|---|---|---|
+| AC-1 | 통과 | `Count.AC1_ADMIN_에게는_대기_건수를_정수로_내린다` — 진입점을 **그리는** 것은 모바일, 건수를 내리는 것이 서버 몫 |
+| AC-2 | 통과 | `Count.AC2_USER_에게는_null_이다` · `Auth.AC2_USER_에게는_대기_건수를_내리지_않는다` |
+| AC-3 | 통과 | `Auth.AC3_USER_토큰은_관리자_API_에서_403_이다`(관리자 경로 7개 전부) · `Auth.AC3_ADMIN_토큰은_통과한다` · `Auth.삭제_전용_토큰은_공통_FORBIDDEN_이다` |
+| AC-4 | 통과 | `Auth.AC4_미인증_요청은_401_이다`(7개 전부) · `Auth.AC4_무효한_토큰은_401_이다` |
+| AC-5 | 통과 | `Pending.AC5_대기_목록은_신청_시각_최신순이다` |
+| AC-6 | 통과 | `Pending.AC6_빈_목록은_정상_응답이다` · `Processed.처리_완료가_비어_있어도_정상_응답이다` (빈 상태 **문구**는 모바일) |
+| AC-7 | 통과 | `Pending` 커서 6건(`AC7_기본_페이지는_20건이고_커서로_나머지를_불러온다` · `AC7_마지막_페이지가_꽉_차도_has_next_는_false_다` · `AC7_동률은_user_id_내림차순으로_깬다` · `AC7_page_size_경계값은_통과한다` · `AC7_page_size_범위_밖은_400_이다` · `AC7_깨진_커서는_400_이다` · `AC7_너무_긴_커서는_400_이다` · `AC7_보면서_줄어들어도_항목을_건너뛰지_않는다`) + `Processed` 3건 |
+| AC-8 | 해당없음(모바일) | 500 응답의 오류 안내·재시도 버튼은 화면 동작 |
+| AC-9 | 해당없음(모바일) | 당겨서 새로고침은 화면 동작 |
+| AC-10 | 통과 | `Transition.AC10_승인하면_대기_목록에서_사라진다` |
+| AC-11 | 통과 | `Transition.AC11_승인된_사용자는_로그인할_수_있다` |
+| AC-12 | 통과 | `Transition.AC12_전이_5종이_같은_409_코드를_쓴다` — 5종이 **같은 코드 하나** |
+| AC-13 | 통과 | `Transition.AC13_처리_기록이_남는다` (응답에는 싣지 않음 — `Processed.거절_사유는_응답에_실리지_않는다`) |
+| AC-14 | 해당없음(모바일) | 네트워크 끊김 시의 낙관적 갱신 여부는 화면 동작 |
+| AC-15 | 통과 | `Transition.AC15_거절하면_대기_목록에서_사라진다` (확인 단계는 모바일) |
+| AC-16 | 통과 | `Transition.AC16_거절_사유는_200자가_경계다` — 200자 200 / 201자 400 + `errors[].field="rejection_reason"`. 입력란 자체를 막는 것은 모바일 |
+| AC-17 | 통과 | `Transition.AC17_거절_사유는_선택이다` — 본문 생략 · `null` · 공백 셋 다 200 |
+| AC-18 | 통과 | `Transition.AC15_거절하면_대기_목록에서_사라진다` 안의 로그인 403 `AUTH_ACCOUNT_REJECTED` |
+| AC-19 | 통과 | `Transition.AC19_거절_취소는_원래_자리로_되돌린다` · `Processed.AC19_거절_취소한_계정은_처리_완료_목록에서_사라진다` |
+| AC-20 | 통과 | `Processed.AC20_처리_완료_목록은_처리_시각_최신순이다`(세 상태 동거) · `Processed.AC20_상태별_시각_필드가_계약대로다` |
+| AC-21 | 통과 | `Transition.AC21_정지는_상태만_바꾸고_건수를_바꾸지_않는다` |
+| AC-22 | 통과 | `Session.AC22_정지된_사용자는_로그인할_수_없다` (삭제 토큰이 실리지 않는 것까지) |
+| AC-23 | 통과 | `Session.AC23_정지되면_갱신이_403_이다` · `Session.AC23_정지는_리프레시_토큰을_폐기하지_않는다` · `Session.AC23_매_요청_상태_확인은_도입되지_않았다` |
+| AC-24 | 통과 | `Session.AC24_정지가_풀리면_다시_로그인할_수_있다` · `Transition.D2_정지_해제는_승인_시각을_갱신한다` |
+| AC-25 | 통과 | `Transition.AC25_자기_자신은_정지할_수_없다` (403 `ADMIN_SELF_SUSPEND_FORBIDDEN`, 상태 불변) |
+| AC-26 | **미검증** | 실제 Discord 채널 발송. `DISCORD_WEBHOOK_URL` 미발급(ASK 1)이고 **외부 연동 목킹 규칙상 이 계층에서 검증하지 않는다.** 사람이 `make webhook-check` 로 확인 |
+| AC-27 | 통과 | `Discord.AC27_발송이_실패해도_가입은_접수된다` (WireMock 500 → 가입 201, 재시도 1회) |
+| AC-28 | **미검증** | 경고 수준 **로그**의 실물 관측. 재시도 1회까지라는 동작은 위 테스트가 고정했으나 로그 확인은 사람 몫(`make logs`) |
+| AC-29 | 통과 | `Disabled.AC29_URL_이_없어도_가입은_정상_접수된다` · `Disabled.AC29_발송을_건너뛴_뒤에도_서버가_정상이다` |
+| AC-30 | 통과 | `Discord.AC30_실패한_가입은_알리지_않는다` (중복 409 · 검증 400 은 알림 0건) |
+| AC-31 | 통과 | `Discord.AC31_알림에_개인정보가_없다` (이메일 · 사유 · `@` · `token` 부재를 문자열 단위로) |
+| AC-32 | 통과 | `Count` 5건(다섯 곳을 한 시점에 모아 비교 · 승인 후 감소 · 거절 취소 후 증가 · 정지는 불변 · `items` 길이가 아님) · `Discord.AC32_알림_건수는_화면_건수와_같다` |
+| AC-33 | 통과 | `Pending.AC33_가입_사유가_없으면_서버가_대체_문구를_채운다` |
+| AC-34 | 통과 | `Transition.AC34_가입_사유가_없어도_동일하게_처리된다` |
+
+계약·리뷰에서 넘어온 항목도 함께 고정했다 (AC 번호가 없는 것들).
+
+| 항목 | 판정 | 근거 |
+|---|---|---|
+| D-2 정지 해제가 승인 시각을 갱신 | 통과 | `Transition.D2_정지_해제는_승인_시각을_갱신한다` |
+| D-3 거절 취소가 거절 사유를 비움 | 통과 | `Transition.D3_거절_취소는_거절_사유를_비운다` |
+| `processed_at` 불변식 (server-reviewer 이관) | 통과 | `Transition.전이_5종을_거쳐도_processed_at_불변식이_유지된다` + 모든 전이 테스트가 `assertProcessedAtInvariant()` 호출 |
+| 대상 없음 404 (전이 5종) | 통과 | `Transition.없는_대상은_404_다` |
+| 거절 사유·처리자가 응답에 새지 않음 | 통과 | `Processed.거절_사유는_응답에_실리지_않는다` |
 
 ## 재작업 카운터
 
@@ -63,7 +192,7 @@
 | 대상 | 횟수 |
 |---|---|
 | server-developer | 0 |
-| mobile-developer | 0 |
+| mobile-developer | **1** (2026-09-09 mobile-reviewer FAIL — DEF-M01·DEF-M02). **재리뷰 PASS 로 종결 — 더 올라가지 않는다** (2026-09-09) |
 
 ## 계약 변경
 
@@ -99,11 +228,28 @@
 | 3 | ~~거절된(`REJECTED`) 사용자를 관리자가 어디서 보는가~~ → **종결 (2026-09-07).** 권장안 B 채택, 라벨은 **"처리 완료"**. 아래 `결정 기록` 표 참조 | — (닫힘) |
 | 4 | ~~처리 기록(누가 언제)을 사용자 상세 시트에 보여줄 것인가~~ → **종결 (2026-09-07).** 권장안 A 채택 — 표시하지 않는다 | — (닫힘) |
 | 5 | ~~정지에 사유를 남길 것인가~~ → **종결 (2026-09-07).** 권장안 A 채택 — 받지 않는다. **`auth` design.md §14 항목 6 도 함께 닫혔다** | — (닫힘) |
-| 6 | **`make contract-check` 를 아직 실행하지 못했다** (2026-09-07). 계약 작성 세션에 셸 실행 수단이 없었다. **누군가 실행해 통과를 확인해야 이 단계가 게이트를 통과한 것이다** (절대 규칙 6). 예상 결과는 "계약에만 있고 미구현" 정보 보고 6건(`/api/v1/admin/**`)과 통과이며(C-5), `UserSummary` 에 추가한 선택 필드가 ERR 로 잡히지 않는지가 유일한 확인 지점이다 | 구현 착수 전 확인 |
+| 6 | ~~**`make contract-check` 를 아직 실행하지 못했다**~~ → **종결 (2026-09-09, server-developer).** 실행 결과 계약 자체는 문제 없었고 ERR 0건이다. 다만 두 가지가 예상과 달랐다 — ① `UserSummary` 의 선택 필드는 ERR 이 아니라 **warning 2건**(`response-optional-property-removed`, `/auth/me` 와 로그인 응답)으로 잡혔고 구현 완료로 사라졌다. ② 이 기능과 무관한 `nearby-places` 의 기존 결함으로 게이트가 **RED 였다**(`request-parameter-default-value-removed` 3건). 계약이 아니라 구현을 고쳐 해소했다 (아래 `기록` 2026-09-09) | — (닫힘) |
 
-**열린 ASK 는 1번과 6번 둘이다.**
-1번은 Discord Webhook URL 발급(AC-26 실행 검증 단계에서 필요),
-6번은 계약 게이트 실행 확인이다. **구현을 막는 미확정 설계 항목은 없다.**
+**열린 ASK 는 1번 하나다** — Discord Webhook URL 발급 (AC-26 실행 검증 단계에서 필요).
+서버 구현은 값이 없어도 정상 기동하고 발송만 건너뛴다 (AC-29, 실측 확인). 값이 채워지기 전에는
+AC-26·AC-28 의 "실제로 발송된다 / 실패가 경고 로그로 남는다" 를 관측할 수 없다.
+**구현·리뷰·테스트를 막는 미확정 설계 항목은 없다.**
+
+**AC-26 · AC-28 은 server-tester 단계에서도 미검증으로 남는다 (2026-09-09).** 통합 테스트는
+외부 연동을 목킹한다는 계층 규칙(절대 규칙 5)을 지켜야 하므로, 실제 Discord 채널로 나가는
+경로를 테스트에 두지 않는다. 대신 그 자리에 WireMock 을 끼워 **서버가 보내려는 내용**만
+고정했다 (`AdminDiscordNotificationApiTest` — AC-27·AC-30·AC-31·AC-32). 따라서 다음 둘은
+여전히 사람이 확인할 항목이다.
+
+| 미검증 | 무엇을 확인해야 하나 | 누가 |
+|---|---|---|
+| AC-26 | `.env` 에 실제 Webhook URL 을 넣은 뒤 가입 1건을 접수해 **운영 Discord 채널에 메시지가 도착**하는지 (`make webhook-check`) | 사람 (ASK 1 이후) |
+| AC-28 | 그 환경에서 Webhook 이 오류를 낼 때 **경고 수준 로그**가 남는지 (`make logs`) | 사람 (ASK 1 이후) |
+
+**테스트 JVM 은 이 값을 절대 보지 않는다.** `Makefile` 이 `.env` 의 모든 키를 export 하므로
+`server/build.gradle` 의 모든 `Test` 태스크에서 `DISCORD_WEBHOOK_URL` 을 **빈 값으로 고정**한다
+(커밋 `8837042`). 그 줄이 없으면 사람이 채운 진짜 URL 이 테스트로 흘러가 실제 채널에 대량
+발송된다 — 실제로 한 번 일어났다. **그 줄을 지우거나 우회하지 않는다.**
 
 `tech-lead` 로 넘어왔던 PRD 열린 질문 4·5 는 **2026-09-07 에 둘 다 종결됐다** (아래 `결정 기록`).
 `design.md` §13 의 8개 항목은 전부 계약에 반영됐다.
@@ -155,3 +301,10 @@
 | 2026-09-07 | ux-designer | **답변 3건 반영 완료.** 세그먼트 라벨 개정에 딸린 곳을 전부 훑었다 — §1.1·§1.2·§2.1 아트보드명(`Screen 18a`·`18b`)·§2.3 전이표·§3.5 a11y·§3.6·§5.2·§5.4·§5.8 빈 상태 문구·§5.11·§5.12·§7 전반·§9 문구 키·§11·§13·§15. **AC 커버 재계산: 앱 화면 충족 22 / 서버·`auth` 책임 12 / 조건부 0 — 미커버 0.** §12 를 "열린 질문 없음 + 결정 근거 기록" 으로 교체. ASK 3·4·5 종결. **`docs/features/auth/design.md` §14 항목 6 을 해소로 이동**(정지 사유 미도입 → `auth §7.4` 변경 없음), §14 항목 5 에 "이 기능에서 해소되지 않음" 을 명시. **pen 시각화는 여전히 미착수 — ux-designer 단계 미완료 유지** |
 | 2026-09-07 | ux-designer | **`planbee.pen` 시각화 완료 — UI/UX 단계 종료.** 아트보드 18개(`Screen 17a`~`21d`) + Design System `Section — Admin List & Sheet`(`cQPEw`) 추가. **신규 컴포넌트 5개**(`Control/Segmented` `M4j8Ky` · `Badge/Status` `ZcirU` · `Card/UserListRow` `CfaaR` · `Feedback/EmptyState` `B8FM7g` · `Layout/BottomSheet` `WJqGp`), **신규 색 토큰 0개.** 초안이 6개로 셌던 `Button/Secondary` danger 변형은 기존 인스턴스 오버라이드로 충분해 제외. **번호 충돌 발견 — `Screen 16a`~`16e` 를 `nearby-places` 가 이미 쓰고 있어 전체를 +1 이동**(16→17, 17→18, 18→19, 19→20, 20→21). 기존 70개 프레임은 수정·이동 없음. 18개 전부 레이아웃 검증 통과(clipping 0) |
 | 2026-09-07 | tech-lead | **계약 확정 — 4단계 종료.** `contract.yaml` 작성 + `docs/api/openapi.yaml` 병합 + `docs/api/error-codes.md` `admin` 섹션 등록 + `docs/features/auth/contract.yaml` 동기화 + `.env.example` 에 `DISCORD_WEBHOOK_URL` **정의만** 추가(C-4 — 값은 쓰지 않았다). 엔드포인트 **6개**(목록 2 / 상태 전이 4) + `GET /api/v1/auth/me` 확장 1(선택 필드 `pending_approval_count`). **PRD 열린 질문 4·5 종결** — 정지의 세션 반영은 현행 유지(최대 30분, `auth` 계약 변경 없음), 오류 코드는 신규 3개. **breaking 없음.** AC 34개 전부 배정, 미커버 0. 커서 페이지네이션 규약을 이 저장소의 첫 선례로 확정. `design.md` 보강 요청 4건을 D-1~D-4 로 남겼다. **`make contract-check` 는 실행하지 못했다 — ASK 6** |
+| 2026-09-09 | server-developer | **서버 구현 완료 — 5단계(백엔드 구현) 종료.** `contract.yaml` 의 엔드포인트 **7개(관리자 6 + `GET /auth/me` 확장)** 전부 구현, 미구현 0. 계약에 없는 엔드포인트 노출 0. **선행 작업**으로 `nearby-places` 의 기존 결함을 고쳐 게이트를 초록으로 되돌렸다 — `PlaceController` 의 `@Parameter(schema = @Schema(...))` 가 `type` 을 비워 두는 바람에 springdoc 이 `radius`·`size`·`sort` 를 `type: string` 으로 내보내고 `default` 를 떨어뜨리고 있었다(런타임은 정상, 스펙만 어긋남). 계약이 아니라 구현을 고쳤고 규칙 **S-32** 로 남겼다. **게이트 실행 결과** — `make lint-server` 통과 / `make test-server` 통과 / `make contract-check` **통과**(파괴적 변경 0, 미구현 0, 미문서화 0). `pending_approval_count` 경고 2건은 구현으로 사라졌다. **로컬 스모크 확인**(임시 DB + `bootRun`, 계약 문서에 없는 값은 만들지 않음): 목록 2·상태 전이 5·커서 페이지네이션·403/404/409/400 분기·정지 후 `refresh` 403 `AUTH_ACCOUNT_SUSPENDED`·삭제 전용 토큰의 공통 `FORBIDDEN`·`DISCORD_WEBHOOK_URL` 미설정 시 발송 생략 + 가입 201 유지까지 전부 기대대로. **규칙 3건 추가** — S-32(springdoc 파라미터 스키마) · S-33(커서 페이지네이션) · S-34(역할 기반 인가), 그리고 server.md 의 "미확정 — 인가 모델" 을 닫았다. **ASK 6 종결** |
+| 2026-09-09 | server-reviewer | **PASS — `[MUST]` 위반 0건.** 워킹트리 `server/` 변경분 전체(신규 `admin` 패키지 22파일 + `auth`/`common` 신규 5 + 수정 10 + 마이그레이션·시드 2)를 conventions·계약·AC·`error-codes.md` 로 대조했다. **넘어온 설계 판단 3건 전부 규칙 위반 아님** — ① 액세스 토큰 `role` 클레임: S-17 이 금지하는 것은 **검증을 대체하는 커스텀 필터**이고 이번 변경은 검증(oauth2-resource-server)을 그대로 두고 기본 변환기 결과에 `ROLE_*` 를 **더할** 뿐이다. S-17 의 스코프 불릿이 `SCOPE_*` 로 같은 패턴을 이미 허용한다. 역할 없는 토큰은 403 으로 **닫히는 쪽 실패**, 발급 지점 2곳 모두 DB 의 `user.role()` 사용. ② `processed_at` 컬럼 저장: 계약은 응답 필드만 규정하고 저장 형태는 자유. `status` 를 바꾸는 코드가 `User` 안 6곳(가입 + 전이 5)뿐이고 전이 5개가 전부 `touchProcessed`/`processedAt=null` 을 지나므로 상태와 갈라질 경로가 없다. 기존 행 보정(`V3:34-36`)도 있다. ③ `ForbiddenCodeResolver`: S-27 과 같은 해법이고 의존 방향이 `admin → common` 한쪽 — ArchUnit 확인. **계약 대조 전항 일치** — 커서 페이지네이션(오프셋 0·동률 `user_id` DESC·`limit+1`·불투명 커서 400) · 신규 오류 코드 3개뿐(전이 5종이 `requireStatus` 한 곳에서 공유) · 거절 사유 200자 `SIZE`+`rejection_reason` · 거절 취소가 사유를 비움(D-3) · 정지 해제가 승인 시각 갱신(D-2) · 처리자 미노출(ASK 4) · 리프레시 미폐기 및 매 요청 상태 확인 미도입 · `pending_approval_count` 가 `PendingApprovalCounter` 한 곳 계산(C-8/AC-32) · `snake_case` 전수 확인 · `${DISCORD_WEBHOOK_URL:}` 참조만(C-4/S-28). **리뷰어 실행 게이트**: `make lint-server` 통과 / `make test-server` 통과 / `make contract-check` **통과**(ERR 0, admin 관련 warning·info 0건). `[SHOULD]` 3건(`errors[].code=RANGE` 미등록 · Discord 발송의 `RestClientException` 한정 catch · 재시도 간격 없음)과 규칙 근거 없는 참고 5건은 `review/server.md`. `defects.md` 를 새로 만들고 결함 0건 + 타 역할 요청 2건(R-1 카탈로그, R-2 S-31↔S-28 문면 충돌)을 기록했다. **재작업 카운터 0 유지** |
+| 2026-09-09 | mobile-developer | **모바일 구현 완료 — 6단계(프론트) 종료.** `design.md` 의 화면 18개(`Screen 17a`~`21d`)와 4가지 상태를 전부 구현했다. 신규 DS 컴포넌트 5개(`shared/ui` 의 `Segmented`·`StatusBadge`·`UserListRow`·`EmptyState`·`BottomSheet`) + 기능 코드 `features/admin-user-approval/`(api·hooks·components·screens·messages·format). **문구는 §9 표에서만 가져왔고 서버가 내리는 문자열(가입 사유 대체 문구·상태 배지 라벨·시각 접두어·대기 건수)은 앱 코드에 없다** — "입력하지 않음" 은 어디에도 나타나지 않는다 (C-8 / M-18). 진입점은 설정의 `관리자` 섹션뿐이고 하단 탭바는 손대지 않았다(결정 1). `SettingsScreen`(auth 소유)은 슬롯 prop 만 받고 조합은 `app/navigation/MainNavigator.tsx` 가 한다(M-2 / §4.7). 목록은 커서 페이지네이션(`useInfiniteQuery`, `has_next` 근거)이고 대기 건수는 서버 값 그대로다(±1 금지). 처리 후에는 두 목록과 `GET /auth/me` 를 무효화해 재조회한다(§5.11 / AC-32). 오류는 `code` 로만 분기 — `ADMIN_FORBIDDEN` → §5.10 권한 없음 블록 + 역할 재조회, `ADMIN_USER_ALREADY_PROCESSED` → §6.8 시트 안 배너 + 목록 재조회, `ADMIN_SELF_SUSPEND_FORBIDDEN` → §7.6 배너, `VALIDATION_FAILED`+`rejection_reason` → 필드 오류. **`NOT_FOUND`(D-1)는 명세가 없어 M-13 일반 오류로 두고 화면을 지어내지 않았다.** **pen 대조 실시** — `Screen 01` 과 `Section — Admin List & Sheet`(`cQPEw`)의 정의를 읽어 세그먼트(테두리 1 · 선택 칸 라운드 9 · 칸 간격 4 · 라벨 600/500) · 상태 배지(패딩 `[3,10]` · Caption 600) · 카드(자식 간격 8 균일) · EmptyState(패딩 `[40,0]`) · 시트 제목(H2 700)을 pen 값으로 고쳤다. **신규 색 토큰 0개** — 세그먼트 그림자만 pen 의 effect 값으로 `boxShadow.segment` 를 추가했다(M-16 이 허용하는 "pen 에 있는 값으로 토큰 추가"). **게이트 실행 결과** — `make lint-mobile` 통과 / `make test-mobile` 통과(16 suites · 151 tests) / `make verify-mobile` 통과. 스모크 2건만 추가했고 AC 검증은 mobile-tester 몫으로 남겼다. **`design.md` 와 pen 의 불일치 1건 발견** — 상태 배지 패딩(md §3.4 `[2,8]` ↔ pen `[3,10]`). C-9 에 따라 pen 을 따랐고 md 정정은 ux-designer 몫이다 |
+| 2026-09-09 | server-tester | **PASS — 서버 트랙 종료.** 통합 테스트 **8클래스 · 75건** 추가(`server/src/test/java/com/planbee/api/admin/`), 실패 0. 계정을 만드는 경로는 `auth` 의 `AuthApiTestBase` 를 물려받아 한 벌로 유지했다(그 클래스를 `public` 으로만 바꿨다 — 픽스처가 두 벌이면 두 테스트가 서로 다른 사실을 검증한다). **상태는 SQL 이 아니라 실제 엔드포인트로 만든다** — `status` 만 바꾸면 `processed_at` 이 `NULL` 로 남아 처리 완료 목록의 정렬 키가 조용히 깨진다(V901 이 실제로 밟은 함정). **AC 판정: 서버 책임 22개 통과 / 앱 전용 6개(AC-8·9·14 및 AC-1·2·16 의 화면 부분) 해당없음(모바일) / AC-26·AC-28 미검증.** 덮은 것 — 커서 페이지네이션 실순회(1·2건씩 끝까지, 중복·누락 0)와 `page_size` 경계(1·50 통과 / 0·51·-1 → 400) · **동률 깨기**(같은 마이크로초 행 3건을 일부러 만들어 `user_id` DESC 확인, 한 건씩 훑어 경계를 세 번 넘김) · 깨진 커서 4종 → 400 `MALFORMED_REQUEST` · 목록을 보는 중 앞이 처리돼도 건너뛰지 않음 · 처리 완료 목록에 `APPROVED`·`SUSPENDED`·`REJECTED` 가 라벨·접두어와 함께 옴 · 거절 사유가 어떤 응답에도 새지 않음 · 전이 5종의 409 가 **같은 코드 하나**(`ADMIN_USER_ALREADY_PROCESSED`)이고 5종 모두 대상 없음 404 · 자기 정지 403 `ADMIN_SELF_SUSPEND_FORBIDDEN` · 거절 사유 200자 통과 / 201자 400 + `errors[].field="rejection_reason"` · D-3(거절 취소가 사유를 비움) · D-2(정지 해제가 승인 시각 갱신) · 인가 3분기를 **관리자 경로 7개 전부**에 대해(`USER` → `ADMIN_FORBIDDEN` / 삭제 전용 토큰 → 공통 `FORBIDDEN` / 미인증·깨진 토큰 → `UNAUTHORIZED`) · `pending_approval_count` 를 **다섯 곳에서 한 시점에 모아 비교**(AC-32) · 정지 후 `refresh` 403 + `account_status`(SUSPENDED)이고 **리프레시 토큰은 폐기되지 않음** · AC-33·34(가입 사유 없는 신청) · AC-29(Webhook 미설정에서 가입 201, 서버 정상). **server-reviewer 가 넘긴 `processed_at` 불변식**을 `assertProcessedAtInvariant()` 한 줄로 만들어 전이마다 호출했다 — 다섯 상태 조합이 어긋나면 즉시 실패한다. **Discord 는 WireMock 으로만 본다**(AC-27·30·31·32). 실제 발송(AC-26·AC-28)은 계층 규칙상 여기서 검증하지 않으며 사람이 `make webhook-check` 로 확인한다 — `미해결` 절 참조. **게이트 실행 결과** — `make test-server-db` 통과(전체 150건·실패 0, 그중 admin 75건) / `make lint-server` 통과(`--rerun-tasks` 로 재실행 확인). **`defects.md` 에 올릴 결함 0건** — 구현이 계약·AC 와 어긋난 지점을 찾지 못했다. 재작업 카운터 0 유지. `server/src/main` 은 건드리지 않았다 |
+| 2026-09-09 | mobile-reviewer | **FAIL — `[MUST]` 결함 2건.** 워킹트리 `mobile/` 변경분 전체(신규 23파일 — 기능 17 + `shared/ui` 5 + `shared/api/queryKeys.ts` — 와 수정 7파일)를 conventions(M-23·M-24 포함)·`design.md`·`contract.yaml`·`status.md` 결정 기록·`error-codes.md`(admin)로 대조했다. **DEF-M01** — `PendingUserSheet` 의 거절 사유 입력 단계에서 §6.8 "이미 처리됨" 이 절반만 구현됐다. `conflict` 로 액션을 "닫기" 하나로 바꾸는 처리가 기본 단계 분기에만 있어, 거절 단계에서는 배너가 떠도 "거절하기" 가 활성으로 남고 다시 누르면 같은 409 를 받는다 — §6.8 이 "남겨 두면 다시 눌러 같은 오류를 받는다" 며 금지한 그 동작이고, **409 는 승인보다 거절에서 더 자주 나오므로 결함이 있는 쪽이 주 경로다**(M-6 / AC-12). `ProcessedUserSheet` 의 `blocked` 가 같은 요구를 이미 올바르게 구현했다. **DEF-M02** — 사유 주석 없는 타입 단언 4곳(M-9). `errorKind as Exclude<…>` 2곳은 이른 반환으로 이미 걸러지므로 상태 타입을 좁히면 단언이 사라지고, `initialPageParam` 2곳은 불가피하므로 `a11y.tsx:56` 선례대로 사유 주석을 달면 된다. **넘어온 판단 4건은 전부 규칙 위반 아님** — ① 403 `ADMIN_FORBIDDEN` → §5.10 권한 없음 화면(design.md §2.3·§5.10, contract 403 표, error-codes.md 가 모두 그렇게 지정. §6.7 배너였다면 그쪽이 위반) · ② `NOT_FOUND`(D-1) M-13 일반 오류(계약·카탈로그 명시. 화면을 지어냈다면 M-7 위반) · ③ 미구현 연출 2건은 **근거 규칙이 없어 등급을 매기지 않는다**(절대 규칙 2) — reanimated 미도입은 M-19·절대 규칙 8 상 옳고, 완료 낭독은 `Toast` 가 대신한다 · ④ 배지 패딩은 C-9·M-16 상 pen(`[3,10]`)이 기준. **계약·명세 대조 전항 일치** — 탭바 미변경 · `role==='ADMIN'` 일 때만 렌더(로딩·실패에도 미렌더로 AC-2 깜빡임 없음) · 섹션 위치(계정 다음·약관 앞) · "처리 완료"(“처리됨” 코드 0건) · 목록 행에 버튼 없음 · 대기 건수를 세지도 ±1 하지도 않고 재조회 · 설정 한 영역 호출 1회(슬롯으로 응답 전달) · 오류 분기가 `code` 로만(엔드포인트·상태·문구 분기 0) · 커서 불투명 + `has_next` 근거 · **"입력하지 않음" 문자열 앱 코드 0건** · 경계 타입은 생성물 `schema.ts` 만 사용 · §9 문구 전수 일치 · 4가지 상태 × 세그먼트 독립 · M-2/M-21/M-23/M-24 · `Platform.select` 양쪽 키. **리뷰어 실행 게이트**: `make lint-mobile` 통과 / `npx tsc --noEmit` 통과(ESLint 가 잡는 항목은 리포트에 쓰지 않았다 — 절대 규칙 3). `[SHOULD]`·참고 4건과 타 역할 요청 3건(R-M1 md 패딩 정정 · R-M2 §5.11·§6.6 연출 명세 정리 · R-M3 M-20 양쪽 분기 테스트)은 `review/mobile.md`. **재작업 카운터 mobile-developer 0 → 1** |
+| 2026-09-09 | mobile-developer | **재작업 1회차 완료 — DEF-M01·DEF-M02 조치.** 리뷰어가 지적한 두 결함만 고쳤고 문구·계약·화면 구성은 건드리지 않았다(`review/mobile.md` 의 권고). **DEF-M01** — `PendingUserSheet` 의 경합(`conflict`) 액션 영역을 `closeAction` 하나로 뽑아 **기본 단계와 거절 사유 입력 단계 두 분기 모두**에 걸었다. 이제 409 `ADMIN_USER_ALREADY_PROCESSED` 뒤에는 단계와 무관하게 `Button/Secondary "닫기"` 하나만 남고 "거절하기"·"뒤로" 가 사라진다(§6.8 / AC-12). 정보 블록·대상 이메일·입력한 거절 사유는 그대로 둔다 — 어떤 신청이었는지 확인할 수 있어야 한다. `ProcessedUserSheet.tsx` 의 `blocked` 와 같은 형태다. 재리뷰·테스트용으로 닫기 버튼에 `testID="admin-conflict-close"` 를 달았다. **DEF-M02** — 단언 4곳 중 **2곳은 삭제**했다. `errorKind` 상태 타입을 `useState<Exclude<ActionErrorKind, 'forbidden'> | null>` 로 좁히자(`PendingUserSheet`·`ProcessedUserSheet`) `run()` 의 이른 반환이 `forbidden` 을 이미 걸러 주므로 `setErrorKind(kind)` 가 단언 없이 통과하고, 배너에 넘기는 값도 `bannerKind` 지역 변수로 뽑아 `as` 없이 타입이 맞는다. 나머지 **2곳(`useUserApproval.ts` 의 `initialPageParam`)은 react-query 의 `pageParam` 추론을 넓히는 관용구라 불가피**하므로 M-9 가 요구하는 사유 주석을 `shared/lib/a11y.tsx:56` 선례 형식으로 달았다. `mobile/src` 밖은 손대지 않았다(`server/`·`.pen` 무수정). **게이트 실행 결과** — `npx tsc --noEmit` 통과(타입 좁히기가 실제로 컴파일됨) / `make lint-mobile` 통과 / `make test-mobile` 통과(16 suites · 151 tests · 실패 0). **재작업 카운터는 mobile-reviewer 가 이미 1로 올려 두었으므로 그대로 둔다.** 넘겨받은 판단 4건(403→§5.10 · `NOT_FOUND`→M-13 · 미구현 연출 2건 · 배지 패딩 pen 채택)은 리뷰어가 "결함 아님" 으로 확인해 되돌리지 않았다 |
+| 2026-09-09 | mobile-reviewer | **PASS — 재리뷰(재작업 1회차 검증). 6단계 모바일 코드 규칙 종료.** 재작업이 건드린 3파일(`PendingUserSheet.tsx`·`ProcessedUserSheet.tsx`·`useUserApproval.ts`)을 읽고 **DEF-M01·DEF-M02 의 해소를 코드로 확인**했다. **DEF-M01** — 경합 액션이 `closeAction` 하나로 뽑혀 기본 단계(`160`)와 거절 사유 입력 단계(`228`) **두 분기 모두**에서 쓰인다. 경합 뒤 `거절하기`·`뒤로` 는 비활성이 아니라 **JSX 에서 제거**되고, `run()` 을 다시 부를 수 있는 경로 셋(액션 버튼 · 배너 "다시 시도" `onRetry={conflict ? undefined : …}` · 안드로이드 백 `setStep('detail')`)을 전수 확인해 **같은 409 로 되돌아갈 길이 없음**을 확인했다 — 백으로 돌아간 기본 단계도 `conflict` 가 참이라 `closeAction` 만 그린다. §6.8 이 남기라고 한 정보 블록·대상 이메일·입력한 거절 사유는 남아 있다(§6.8 / M-6 / AC-12). **DEF-M02** — 단언 2곳이 실제로 사라졌다(상태 타입 `useState<Exclude<ActionErrorKind,'forbidden'> \| null>`; 배너 인자 `bannerKind` 는 **타입 주석**이지 단언이 아니라 검사를 우회하지 않는다). 남긴 2곳(`useUserApproval.ts:50-53·63-64`)에는 "왜 불가피한지 + `(M-9)` 인용" 주석이 붙어 `a11y.tsx:56` 선례와 같은 형식이다. **기능 디렉토리 전수 grep — 남은 단언은 그 두 줄뿐**이고 나머지는 `as const`(const 단언)·import 별칭이라 M-9 대상이 아니며 `any` 0건. 신규 `shared/ui` 5개와 `queryKeys.ts` 도 함께 확인. **회귀 없음** — 수정 파일이 3개뿐임을 파일 시각으로 확인했고, `code` 기반 분기(`actionError.ts` 무수정) · 403 → §5.10(두 시트의 이른 반환 + 화면 무수정) · §9 문구(`messages.ts` 무수정, 새 문구 0건 — `COMMON.close` 재사용) · 4가지 상태 × 세그먼트 · M-24 쿼리 키 · `Alert` 취소 우선 배치(M-20)를 다시 읽었다. **1차의 "결함 아님" 4건도 되돌리지 않았다**(403→§5.10 · `NOT_FOUND`→M-13 · 미구현 연출 2건 · 배지 패딩 pen `[3,10]`). **리뷰어 실행 게이트**: `make lint-mobile` 통과(exit 0) / `npx tsc --noEmit` 통과(exit 0) / 회귀 확인용 `make test-mobile` 통과(16 suites · 151 tests · 실패 0). **새 `[MUST]` 0건** — 1차에서 지적하지 않은 것을 새로 들고 나오지 않았다(절대 규칙 2·3). mobile-tester 요청 R-M4(경합 상태를 **두 단계 모두** 테스트로 고정 — 이번 회귀 지점) 추가, R-M1·R-M2·R-M3 은 열린 채 유지. **재작업 카운터 mobile-developer 1 유지**(PASS 이므로 올리지 않는다 — 상한 2회). 다음은 mobile-tester |
