@@ -2,7 +2,7 @@
 
 - 기능 슬러그: `nearby-places`
 - 시작일: 2026-08-29
-- 현재 단계: `mobile-developer 재작업 완료 (2026-09-08) — mobile-reviewer 대기`
+- 현재 단계: `모바일 파이프라인 완료 (2026-09-08) — integration-tester 대기 (TOUR_API_KEY 필요)`
 
 ## 파이프라인
 
@@ -13,17 +13,17 @@
 - [x] server-developer — `com.planbee.api.place` 1차 + 리뷰 지적 2건 수정 (PR #9)
 - [x] server-reviewer — **PASS** (`review/server.md`). `[MUST]` 2건(DEF-001 거리순, DEF-002 좌표 없는 항목)은 리뷰 세션 중 수정·재확인. `[SHOULD]` 3건은 제안만
 - [x] server-tester — **PASS.** `PlaceApiTest`(`@IntegrationTest` + WireMock) 13건 — AC-NP-7~10, size/category/sort 400, place-detail 성공/404/형식오류, 공개 접근. `make verify-server` 통과 (CI 그린)
-- [x] mobile-developer — **재작업 완료.** fixture 훅 → `useNearbyPlaces`(react-query, `publicClient` GET `/places/nearby`). 측위(`getCurrentCoordinates`) → 조회. 필터 칩 6종 → `category` 파라미터(다중 토글). fixture·`useLocalNearbyPlaces` 삭제. 4상태 유지. 스모크 1건
-- [ ] mobile-reviewer — PASS / FAIL
-- [ ] mobile-tester — PASS / FAIL
-- [ ] integration-tester — PASS / FAIL
+- [x] mobile-developer — **재작업 완료 + 리뷰 지적 반영.** fixture 훅 → `useNearbyPlaces`/`usePlaceDetail`(react-query, `publicClient`). 측위(`getCurrentCoordinates`) → 조회. 필터 칩 6종 → `category` 다중 토글. DEF-004 수정(`shared/ui/Button`). 측위 쿼리 분리(재시도 안 함)
+- [x] mobile-reviewer — **PASS** (`review/mobile.md`). `[MUST]` 1건(DEF-004 raw Pressable → `Button`) 세션 중 수정. `[SHOULD]` 4건 제안(DEF-005 `Chip` 는 ux-designer 앞)
+- [x] mobile-tester — **PASS.** `nearby-places.test.tsx` 6건 + `place-detail.test.tsx` 5건 — 4상태 × 2화면, AC-NP-7~10, AC-NP-8 필터 재조회, AC-PD-2/3/4/5, iOS·Android 측위 경로(M-20). `make test-mobile` 15 스위트 158건 통과
+- [ ] integration-tester — PASS / FAIL (`TOUR_API_KEY` 필요)
 
 ## 재작업 카운터
 
 | 대상 | 횟수 |
 |---|---|
-| server-developer | 1 (server-reviewer DEF-001·002 — 같은 세션 수정) |
-| mobile-developer | 0 |
+| server-developer | 0 (server-reviewer 는 PASS. DEF-001·002 는 리뷰 세션 중 수정 — FAIL 루프 아님) |
+| mobile-developer | 0 (mobile-reviewer 는 PASS. DEF-004 는 세션 중 수정. "재작업" 은 계약 재개정 반영이지 결함 루프가 아님) |
 
 ## 계약 변경
 
@@ -56,3 +56,7 @@
 | 2026-09-08 | server-developer | 재작업 1회 — DEF-001·002 수정 (`PlaceService` 정렬·필터). `sort` 를 `nearby()` 인자로 통합 |
 | 2026-09-08 | server-tester | **PASS.** `PlaceApiTest`(`@IntegrationTest` + `wiremock-standalone`) 13건 — AC-NP-7~10 · size/category/sort 400 · place-detail 성공/404/형식오류 · 공개 접근. `@BeforeEach` 에서 응답 캐시 비움(키 충돌). `make verify-server` + `contract-check` CI 그린 |
 | 2026-09-08 | mobile-developer | **재작업.** `nearby-places`·`place-detail` fixture → 실제 조회(react-query + `publicClient`). `shared/location` 에 `getCurrentCoordinates` 추가. 필터 칩 → `category` 다중 토글. `place-detail` 404 → 빈 상태 분기(`code` 기준, M-13). fixture 4개 삭제. 스모크 2건. `make verify-mobile` 로컬 통과 |
+| 2026-09-08 | mobile-developer | **재작업.** `nearby-places`·`place-detail` fixture → react-query 실제 조회(`publicClient`). `getCurrentCoordinates` 신설. 필터 칩 → `category` 다중. `place-detail` 404 → 빈 상태(`code`). fixture 4개 삭제 |
+| 2026-09-08 | mobile-reviewer | **PASS.** `[MUST]` DEF-004(상태 버튼 raw Pressable → `shared/ui/Button`) 세션 중 수정. `[SHOULD]` 4건 — `Chip` 컴포넌트(DEF-005, ux-designer), `retry` useCallback 무효(→ 제거), 측위 재시도(→ 쿼리 분리), `PlaceDetailScreen.StateScreen` raw Pressable. `review/mobile.md` |
+| 2026-09-08 | mobile-developer | 재작업 2회 — DEF-004 + 리뷰 SHOULD 3건 수정 (Button 교체, useCallback 제거, 측위 쿼리 분리·skipToken) |
+| 2026-09-08 | mobile-tester | **PASS.** `nearby-places.test.tsx` 6 + `place-detail.test.tsx` 5 — 4상태 × 2화면, AC-NP-7~10, 필터 재조회, AC-PD-2/3/4/5, iOS/Android 측위(M-20). msw 목킹. mobile-developer 스모크 2건은 이 테스트로 대체·삭제. `make test-mobile` 15 스위트 158건 |
