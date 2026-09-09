@@ -6,10 +6,7 @@
  * 경합(AC-12)은 회귀 지점이라 `conflict.test.tsx` 에서 따로 본다.
  */
 
-// jest 는 Node 위에서 돌지만 이 프로젝트는 `@types/node` 를 두지 않는다 — RN 타입만 쓴다.
-// 시간대만 바꾸면 되므로 필요한 만큼만 선언한다.
-declare const process: {env: Record<string, string | undefined>};
-process.env.TZ = 'Asia/Seoul';
+// 시간대는 `jest.config.js` 에서 `Asia/Seoul` 로 고정한다 — 표기 예시는 그 기준이다 (§3.3).
 
 import React from 'react';
 import {fireEvent, render, screen, userEvent, waitFor} from '@testing-library/react-native';

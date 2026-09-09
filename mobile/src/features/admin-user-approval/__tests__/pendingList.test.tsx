@@ -8,13 +8,7 @@
  * API 는 msw 로만 목킹한다 (M-11). 목 응답은 `contract.yaml` 의 example 을 근거로 만들었다.
  */
 
-// 시각은 서버가 ISO 8601 UTC 로 내리고 앱이 <b>기기 로컬</b>로 바꿔 그린다 (C-2 / §3.3).
-// 기기 시간대가 테스트 결과를 흔들지 않도록 고정한다 — design.md 의 예시(`2026. 9. 5. 14:20`)와
-// 같은 KST 기준이 된다.
-// jest 는 Node 위에서 돌지만 이 프로젝트는 `@types/node` 를 두지 않는다 — RN 타입만 쓴다.
-// 시간대만 바꾸면 되므로 필요한 만큼만 선언한다.
-declare const process: {env: Record<string, string | undefined>};
-process.env.TZ = 'Asia/Seoul';
+// 시간대는 `jest.config.js` 에서 `Asia/Seoul` 로 고정한다 — 표기 예시는 그 기준이다 (§3.3).
 
 import React from 'react';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react-native';
