@@ -75,6 +75,10 @@ tasks.withType(Test).configureEach {
 	// 사람이 .env 에 넣은 진짜 Webhook URL 이 테스트 JVM 까지 흘러가 실제로 발송된다.
 	// 발송 로직 자체는 목킹(WireMock)으로 검증한다.
 	environment 'DISCORD_WEBHOOK_URL', ''
+	// 배포 DB 자격 증명도 같은 이유로 차단한다 — 테스트는 Testcontainers 만 쓴다.
+	environment 'PRD_DB_URL', ''
+	environment 'PRD_DB_USERNAME', ''
+	environment 'PRD_DB_PASSWORD', ''
 }
 
 // 기본 test 는 Docker 없이 도는 것만 실행한다 (슬라이스 테스트 + ArchUnit).
