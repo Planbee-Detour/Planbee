@@ -183,6 +183,56 @@ server/src/main/java/com/planbee/api/
   - 이 셋이 어긋나면 `contract-check` 가 **"구현이 계약을 어겼다" 고 거짓 보고**하고,
     C-5 를 따르는 다음 사람이 멀쩡한 구현을 고치게 된다.
 
+### S-32. `@Parameter(schema = @Schema(...))` 에는 `type` 을 반드시 적는다 `[MUST]`
+
+(2026-09-09 확정, `admin-user-approval` 구현 중 `nearby-places` 의 기존 결함으로 발견)
+
+쿼리 파라미터의 제약(`minimum`/`maximum`/`enum`/`default`)을 애노테이션으로 적을 때
+`type` 을 비워 두면 **springdoc 이 자동 추론한 타입을 애노테이션의 빈 스키마로 덮어쓴다.**
+결과는 두 가지로 나타난다.
+
+- `int` 파라미터가 `{"type": "string"}` 으로 생성된다.
+- `@RequestParam(defaultValue = ...)` 도, `@Schema(defaultValue = ...)` 도 `default` 로 실리지 않는다.
+
+런타임 동작은 멀쩡한데 **스펙만 어긋나** `make contract-check` 가
+`request-parameter-default-value-removed`(ERR)로 실패한다. C-5 를 따르는 다음 사람이
+멀쩡한 구현을 고치게 되므로 발견 즉시 막는다.
+
+```java
+// 잘못됨 — type: string 으로 나가고 default 가 사라진다
+@Parameter(schema = @Schema(minimum = "1", maximum = "50", defaultValue = "20"))
+
+// 올바름
+@Parameter(schema = @Schema(type = "integer", minimum = "1", maximum = "50", defaultValue = "20"))
+```
+
+- 제약을 적을 필요가 없으면 **`schema` 자체를 쓰지 않는다.** `@Parameter(description = ...)` 만
+  붙이면 타입·`format`·`default` 가 전부 자동으로 맞는다.
+- 다만 자동 추론은 `format` 까지 붙인다(`int` → `format: int32`). 계약이 `format` 을 적지
+  않았다면 `type` 을 명시하는 쪽이 계약과 정확히 같은 스키마를 만든다.
+- 등급 근거: `contract-check` 가 잡기는 하지만 그때 나오는 메시지("default value was removed")가
+  원인을 가리키지 않는다. 리뷰어가 애노테이션에서 바로 막는 편이 싸다.
+
+### S-33. 목록은 커서 페이지네이션으로 만든다 `[MUST]`
+
+(2026-09-09 확정, `admin-user-approval` — 이 저장소의 첫 목록 구현)
+
+계약이 정한 봉투는 `{ items, has_next, next_cursor }` + 그 화면이 필요로 하는 집계값이다.
+서버 구현이 지켜야 할 것은 아래 넷이다.
+
+- **오프셋을 쓰지 않는다.** 목록이 보면서 줄어들면(승인 한 건마다 앞이 빠진다)
+  `offset` 은 이미 밀려난 위치를 가리켜 항목을 조용히 건너뛴다.
+- **정렬 키와 동률 깨기 키를 함께 커서에 담는다.** 동률 깨기(보통 PK 내림차순)가 없으면
+  같은 초에 들어온 두 행의 순서가 요청마다 달라져 항목이 새거나 겹친다.
+  조건은 `키 < 커서키 OR (키 = 커서키 AND id < 커서id)` 한 식으로 붙인다.
+- **`has_next` 는 세지 말고 한 건 더 읽어서 판단한다** (`limit = page_size + 1`).
+  전체 개수를 세는 쿼리를 따로 내지 않고, `items.length == page_size` 로 추측하지도 않는다 —
+  마지막 페이지가 정확히 `page_size` 면 그 추측이 틀린다.
+- **커서는 불투명 문자열이다.** 인코딩 형식을 계약에 적지 않으며, 해석할 수 없는 값은
+  400 으로 실패한다. 빈 목록이나 첫 페이지로 눙치면 무한 스크롤이 같은 항목을 반복해 그린다.
+- 인덱스는 `(정렬 키 DESC, id DESC)` 로, 목록이 배타적 집합이면 부분 인덱스(`WHERE`)로 만든다.
+- 등급 근거: 어겨도 첫 페이지는 멀쩡해 보인다. 두 번째 페이지에서야 드러나므로 리뷰어가 막는다.
+
 ### S-18. 새 에러 코드는 카탈로그에 등록한다 `[MUST]`
 
 - 코드를 추가하면 **같은 커밋에서** `docs/api/error-codes.md` 에 등록한다.
@@ -330,6 +380,27 @@ RFC 9457 은 표준 필드 외의 멤버를 허용하고, 어떤 오류는 **화
   에서 선언으로 건다. 세션 전체를 주지 않고 **한 가지 동작만 허용해야 하는 토큰**이 필요하면
   새 스코프를 여기 추가한다 (`auth` 의 `account:delete` 가 그 예다).
 
+### S-34. 역할 기반 인가는 경로에 선언으로 건다 `[MUST]`
+
+(2026-09-09 확정, `admin-user-approval` — 아래 "미확정" 의 인가 모델 항목을 닫는다)
+
+역할(`UserRole`)이 필요한 기능이 생겼다. 소유자 검사만으로는 부족한 경우다.
+
+- **역할은 액세스 토큰의 `role` 클레임에 담고**(`common.security.JwtClaims.ROLE`),
+  `SecurityConfig` 의 `JwtAuthenticationConverter` 가 `ROLE_<값>` 권한으로 바꾼다.
+  커스텀 인증 **필터**를 만드는 것과 다르다 — 검증은 여전히 oauth2-resource-server 가 한다 (S-17).
+- **검사는 경로 단위로 `SecurityConfig` 에 선언한다.** 서비스 안에서 역할을 확인하지 않는다.
+  방어선이 컨트롤러보다 앞에 있어야 그 경로에 엔드포인트가 하나 늘 때 검사를 빠뜨려도 막힌다.
+  스코프와 역할을 함께 요구할 때는 `AuthorizationManagers.allOf(...)` 로 묶는다.
+- **매 요청 DB 로 역할을 다시 읽지 않는다.** 무상태 검증을 상태 검증으로 바꾸게 되고 (S-17),
+  앱에 역할을 바꾸는 경로가 없어 토큰 수명(30분) 안의 지연이 문제가 되지 않는다.
+  역할 변경을 즉시 반영해야 하는 요구가 생기면 이 항목을 다시 연다.
+- **필터 체인에서 나가는 403 의 `code` 를 갈라야 하면 `ForbiddenCodeResolver` 를 구현한다.**
+  이 실패는 `GlobalExceptionHandler` 를 타지 않으므로 도메인이 코드를 정할 자리가 필요하다.
+  공통 계층이 도메인 에러 enum 을 직접 참조하면 S-2 의 순환 의존에 걸린다 (S-27 과 같은 해법).
+- 등급 근거: 빠뜨려도 인증은 걸려서 "그럴듯하게" 동작한다. 역할만 통과하는 사고는
+  테스트가 없으면 드러나지 않아 리뷰어가 막는다.
+
 ## 포매팅
 
 ### S-13. Spotless 관리 항목 `[LINT]`
@@ -385,4 +456,5 @@ RFC 9457 은 표준 필드 외의 멤버를 허용하고, 어떤 오류는 **화
 ## 미확정
 
 - **소셜 로그인**(Apple/Google) 도입 여부 — 현재 범위 밖
-- **인가 모델**: 역할(Role) 기반이 필요한지 — 개인용 앱이면 소유자 검사로 충분할 수 있음
+- ~~**인가 모델**: 역할(Role) 기반이 필요한지~~ → **확정 (2026-09-09).**
+  `admin-user-approval` 이 관리자 전용 경로를 도입하면서 역할 기반 인가를 쓴다. S-34 참조.

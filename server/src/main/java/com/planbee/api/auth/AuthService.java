@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,6 +57,8 @@ public class AuthService {
 	private final PasswordEncoder passwordEncoder;
 	private final TokenIssuer tokenIssuer;
 	private final AuthProperties authProperties;
+	private final PendingApprovalCounter pendingApprovalCounter;
+	private final ApplicationEventPublisher eventPublisher;
 	private final Clock clock;
 
 	/**
@@ -77,6 +80,8 @@ public class AuthService {
 			PasswordEncoder passwordEncoder,
 			TokenIssuer tokenIssuer,
 			AuthProperties authProperties,
+			PendingApprovalCounter pendingApprovalCounter,
+			ApplicationEventPublisher eventPublisher,
 			Clock clock) {
 		this.userRepository = userRepository;
 		this.refreshTokenRepository = refreshTokenRepository;
@@ -87,6 +92,8 @@ public class AuthService {
 		this.passwordEncoder = passwordEncoder;
 		this.tokenIssuer = tokenIssuer;
 		this.authProperties = authProperties;
+		this.pendingApprovalCounter = pendingApprovalCounter;
+		this.eventPublisher = eventPublisher;
 		this.clock = clock;
 		this.dummyPasswordHash = passwordEncoder.encode(UUID.randomUUID().toString());
 	}
@@ -133,6 +140,13 @@ public class AuthService {
 		}
 
 		User saved = userRepository.save(user);
+
+		// 관리자 알림 (admin AC-26 ~ AC-30). 발송 자체는 admin 도메인이 하고 auth 는 사실만 알린다 —
+		// auth 가 발송을 직접 부르면 auth -> admin -> auth 순환이 된다 (S-2).
+		// 이벤트는 **커밋 이후 비동기**로 처리되므로 이 트랜잭션이 롤백되면 발송되지 않고(AC-30),
+		// 발송이 실패해도 이 201 응답은 바뀌지 않는다 (AC-27).
+		eventPublisher.publishEvent(new SignupCompletedEvent(saved.id()));
+
 		return new SignupResponse(statusMessages.of(saved.status(), saved.email(), saved.createdAt()));
 	}
 
@@ -304,7 +318,7 @@ public class AuthService {
 		if (user.status().canSelfDeleteWithoutSession()) {
 			Duration ttl = authProperties.deletionTokenTtl();
 			String deletionToken = tokenIssuer.issueAccessToken(
-					user.id(), user.email(), TokenScope.ACCOUNT_DELETE, clock.instant(), ttl);
+					user.id(), user.email(), user.role(), TokenScope.ACCOUNT_DELETE, clock.instant(), ttl);
 			exception
 					.withExtension(DELETION_TOKEN_PROPERTY, deletionToken)
 					.withExtension(DELETION_TOKEN_EXPIRES_IN_PROPERTY, ttl.toSeconds());
@@ -312,8 +326,17 @@ public class AuthService {
 		return exception;
 	}
 
+	/**
+	 * 설정 화면 한 벌을 그리는 값 (C-8).
+	 *
+	 * <p>{@code pending_approval_count} 는 <b>{@code ADMIN} 에게만</b> 싣는다 (admin AC-1 · AC-2).
+	 * 앱이 관리자 섹션을 숨기는 것과 별개로 값 자체가 {@code USER} 에게 가면 안 된다.
+	 */
 	private UserSummary toSummary(User user) {
-		return new UserSummary(user.email(), user.role(), user.status());
+		Integer pendingApprovalCount = user.role() == UserRole.ADMIN
+				? pendingApprovalCounter.countPending()
+				: null;
+		return new UserSummary(user.email(), user.role(), user.status(), pendingApprovalCount);
 	}
 
 	private static String blankToNull(String value) {
