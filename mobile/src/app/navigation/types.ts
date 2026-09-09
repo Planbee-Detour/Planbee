@@ -9,6 +9,7 @@
  *
  * 기능 코드는 이 파일을 import 하지 않는다. 자기 기능의 `navigation.ts` 만 본다.
  */
+import type {AdminRouteParams} from '../../features/admin-user-approval/navigation';
 import type {AuthRouteParams, MainRouteParams} from '../../features/auth/navigation';
 
 export type AuthStackParamList = AuthRouteParams;
@@ -17,8 +18,9 @@ export type AuthStackParamList = AuthRouteParams;
  * 홈·주변장소·장소상세는 아직 자기 `navigation.ts` 를 두지 않아 여기 직접 적는다.
  * 그 기능들이 파라미터를 선언하면 auth 와 같은 방식으로 옮긴다 (2026-09-06 머지).
  */
-export type MainStackParamList = MainRouteParams & {
-  MainTabs: undefined;
-  NearbyPlaces: undefined;
-  PlaceDetail: {placeId: string};
-};
+export type MainStackParamList = MainRouteParams &
+  AdminRouteParams & {
+    MainTabs: undefined;
+    NearbyPlaces: undefined;
+    PlaceDetail: {placeId: string};
+  };

@@ -14,8 +14,8 @@
  *
  * 대상: 오류 배너(§2.5) · 토스트(§4.3) · 스플래시 진입(§3.5).
  */
-import {useEffect} from 'react';
-import {AccessibilityInfo, Platform, View} from 'react-native';
+import {useEffect, useRef} from 'react';
+import {AccessibilityInfo, findNodeHandle, Platform, View} from 'react-native';
 
 /**
  * 안드로이드 측 경로. `accessibilityLiveRegion` 은 안드로이드 전용 prop 이고
@@ -42,6 +42,45 @@ export function useAnnounceForAccessibility(message: string | null | undefined):
     }
     announce(message);
   }, [message]);
+}
+
+/**
+ * 스크린리더 <b>포커스</b>를 특정 요소로 옮긴다.
+ *
+ * 시트가 열리면 제목으로, 시트가 닫히면 시트를 연 목록 행으로 되돌리는 데 쓴다
+ * (`admin-user-approval` design.md §3.5). `setAccessibilityFocus` 는 두 플랫폼 모두 지원하므로
+ * 분기가 필요 없다 — 스크린리더가 꺼져 있으면 아무 일도 일어나지 않는다.
+ */
+export function focusAccessibility(node: unknown): void {
+  if (!node) {
+    return;
+  }
+  // findNodeHandle 은 컴포넌트 인스턴스를 받는다. 제네릭으로 좁히면 View·Text·Pressable 마다
+  // 타입이 갈려 호출부가 단언을 쓰게 되므로 여기 한 곳에서만 unknown 을 받는다 (M-9).
+  const handle = findNodeHandle(node as Parameters<typeof findNodeHandle>[0]);
+  if (handle != null) {
+    AccessibilityInfo.setAccessibilityFocus(handle);
+  }
+}
+
+/**
+ * `active` 가 참이 되는 순간 그 요소로 스크린리더 포커스를 옮긴다.
+ *
+ * 반환한 `ref` 를 포커스 대상에 붙인다. 시트 제목처럼 "열릴 때마다 처음 읽어야 하는" 요소용이다.
+ */
+export function useAccessibilityFocus<T>(active: boolean) {
+  const ref = useRef<T | null>(null);
+
+  useEffect(() => {
+    if (!active) {
+      return;
+    }
+    // 마운트 직후에는 네이티브 뷰가 아직 없을 수 있어 다음 프레임에 옮긴다.
+    const timer = setTimeout(() => focusAccessibility(ref.current), 0);
+    return () => clearTimeout(timer);
+  }, [active]);
+
+  return ref;
 }
 
 /**
