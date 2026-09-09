@@ -45,7 +45,13 @@ export function Segmented<T extends string>({options, selected, onSelect, testID
             className={[
               // pen `M4j8Ky`: 선택 칸 라운드 9 / `Color/Neutral/Surface` + 그림자, 비선택은 투명
               'min-h-[44px] flex-1 items-center justify-center rounded-[9px] px-3',
-              active ? 'bg-surface shadow-segment' : '',
+              // 비선택 칸도 `shadow-none` 을 <b>반드시</b> 갖는다 (mobile.md M-25).
+              // 그림자 유틸리티는 CSS 변수(`--tw-shadow`)를 만드는데, 첫 렌더에 변수가 없던
+              // 컴포넌트에 뒤늦게 생기면 NativeWind 가 "업그레이드" 로 보고 경고를 찍는다.
+              // 그 경고가 props 를 JSON 으로 훑다가 내비게이션 컨텍스트의 throwing getter 를
+              // 건드려 화면 전체가 렌더 오류로 죽었다. `shadow-none` 은 같은 변수를 투명값으로
+              // 선언해 두므로 모양은 그대로이고 업그레이드가 일어나지 않는다.
+              active ? 'bg-surface shadow-segment' : 'shadow-none',
             ].join(' ')}>
             {/* 라벨 굵기는 선택 600 / 비선택 500 (pen `Rc3HX` · `M5EjO`) */}
             <Text
