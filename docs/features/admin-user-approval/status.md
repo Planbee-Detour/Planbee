@@ -2,7 +2,7 @@
 
 - 기능 슬러그: `admin-user-approval`
 - 시작일: 2026-08-23
-- 현재 단계: `서버 트랙 종료 (2026-09-09) / 모바일 리뷰 PASS (2026-09-09 재리뷰) — mobile-tester 대기`
+- 현재 단계: `서버 트랙 종료 (2026-09-09) / 모바일 테스트 FAIL (2026-09-09) — mobile-developer 재작업 2회차 대기 (DEF-T01)`
 
 ## 선행 조건
 
@@ -126,7 +126,21 @@
     M-2/M-21/M-23/M-24 · `Platform.select` 양쪽 키
   - 리뷰어 실행 게이트: `make lint-mobile` 통과 / `npx tsc --noEmit` 통과
   - 리포트: `docs/features/admin-user-approval/review/mobile.md`
-- [ ] mobile-tester — PASS / FAIL
+- [x] mobile-tester — **FAIL (2026-09-09).** `[MUST]` 결함 **1건** (`DEF-T01`) → mobile-developer 재작업 2회차
+  - 테스트 **8스위트 · 72건** 추가 (`mobile/src/features/admin-user-approval/__tests__/`).
+    API 는 전부 msw 목킹, 서버 미기동 (절대 규칙 5 / M-11)
+  - **앱 화면 책임 AC 22개 중 21개 통과 / 1개 실패** — 아래 `모바일 AC 판정표` 참조
+  - `DEF-T01` — **이미 받아 둔 목록이 있는데도 뒤이은 요청이 실패하면 화면 전체가 오류 블록으로
+    바뀐다.** react-query 무한 쿼리는 데이터가 있어도 추가 요청 실패 시 상태를 `error` 로 만드는데,
+    화면이 `active.isError` 하나로 본문을 §5.9 블록으로 갈아 끼운다. 그래서 ⑴ 다음 페이지 로드
+    실패(AC-7 / §5.6 "이미 불러온 항목은 그대로 남는다")와 ⑵ 새로고침 실패(AC-9 / §5.5 "기존 목록을
+    유지")가 둘 다 깨지고, §5.6 의 실패 푸터는 **도달 불가능한 죽은 코드**다.
+    증거는 `pendingList.test.tsx` 의 `test.failing` 2건 — 고치면 통과로 바뀐다
+  - **R-M3 · R-M4 완료** — R-M4(경합을 기본 단계·거절 단계·안드로이드 백 세 곳 모두 고정)는
+    `conflict.test.tsx` 5건, R-M3(M-20 양쪽 분기)은 `platformIos/platformAndroid.test.tsx` 12건
+  - 게이트: `make lint-mobile` 통과(exit 0) / `npm --prefix mobile run typecheck` 통과(exit 0) /
+    `make test-mobile` 통과(exit 0 — 24 suites · 223 tests · 실패 0)
+  - 리포트: `docs/features/admin-user-approval/defects.md` (2026-09-09 mobile-tester 절)
 - [ ] integration-tester — PASS / FAIL
 
 ## 서버 AC 판정표 (server-tester, 2026-09-09)
@@ -185,6 +199,53 @@
 | 대상 없음 404 (전이 5종) | 통과 | `Transition.없는_대상은_404_다` |
 | 거절 사유·처리자가 응답에 새지 않음 | 통과 | `Processed.거절_사유는_응답에_실리지_않는다` |
 
+## 모바일 AC 판정표 (mobile-tester, 2026-09-09)
+
+판정 기준은 `PRD.md` 의 AC 34개이고, **앱 화면이 책임지는 22개**는 `design.md` §11 대조표를 따랐다.
+구현 코드를 보고 기준을 만들지 않았다. 근거는 전부
+`mobile/src/features/admin-user-approval/__tests__/` 의 테스트 이름이다
+(파일 접두어 — `Entry`=`entry`, `PList`=`pendingList`, `DList`=`processedList`,
+`PSheet`=`pendingSheet`, `DSheet`=`processedSheet`, `Conf`=`conflict`,
+`PlatI`=`platformIos`, `PlatA`=`platformAndroid`).
+
+| AC | 판정 | 근거 |
+|---|---|---|
+| AC-1 | 통과 | `Entry.AC1_ADMIN_이면_관리자_섹션과_대기_건수가_보인다` · `Entry.AC1_행을_누르면_가입_신청_관리_화면으로_이동한다` |
+| AC-2 | 통과 | `Entry.AC2_USER_에게는_관리자_섹션이_아예_없다` · `Entry.AC2_역할을_조회하는_동안에도_섹션이_보이지_않는다`(깜빡임 없음) · `Entry.AC2_역할_조회에_실패하면_섹션이_없고_설정_화면의_나머지는_동작한다` |
+| AC-3 | 통과 (앱 표현) | `PList.AC3_403_ADMIN_FORBIDDEN_이면_…_다시_시도가_없다` · `DList.AC3_403_…_권한_없음_화면이_된다` · `PSheet.AC3_승인에서_403_…_시트가_닫히고_권한_없음_화면이_된다`. **차단 자체는 서버** |
+| AC-4 | 해당없음 (auth) | 이 기능에 전용 화면이 없다 (`auth` 전역 세션 처리 — design.md §11) |
+| AC-5 | 통과 | `PList.AC5_대기_3건이_서버가_준_순서대로_이메일_가입사유_신청시각과_함께_보인다` |
+| AC-6 | 통과 | `PList.AC6_대기가_0건이면_검토할_신청이_없어요_가_보인다` |
+| AC-7 | **실패** | `PList.AC7_목록_끝에_닿으면_next_cursor_를_그대로_보내_다음_페이지를_불러온다`(통과) · `PList.AC7_has_next_가_거짓이면_끝에_닿아도_더_부르지_않는다`(통과) · **`PList.AC7_다음_페이지_로드에_실패하면_…`(`test.failing` — `DEF-T01`)** |
+| AC-8 | 통과 | `PList.AC8_서버_500_이면_…_다시_시도가_보인다` · `PList.AC8_네트워크가_끊기면_연결을_확인해_주세요_가_보인다` · `DList` 동형 2건 |
+| AC-9 | **부분 실패** | `PList.AC9_당기면_첫_페이지부터_다시_불러와_최신_목록으로_갱신된다`(통과) · `PList.AC9_빈_상태에서도_당겨서_새로고침이_동작한다`(통과) · `PList.AC9_새로고침에_실패하면_…_배너가_뜬다`(통과) · **`PList.AC9_새로고침에_실패해도_보고_있던_목록은_남는다`(`test.failing` — `DEF-T01`)** |
+| AC-10 | 통과 | `PSheet.AC10_승인하면_시트가_닫히고_토스트가_뜨며_항목이_대기_목록에서_사라진다` |
+| AC-11 | 해당없음 (auth) | 승인된 사용자의 로그인 결과 — 이 기능에 화면 없음 |
+| AC-12 | 통과 | `Conf` 5건 — 기본 단계 · 거절 사유 입력 단계 · 안드로이드 백 복귀 · 닫기 · `ProcessedUserSheet`. 모두 액션이 **제거**되고 `닫기` 하나만 남으며 즉시 목록을 다시 부른다 (R-M4) |
+| AC-13 | 해당없음 (서버) | 처리 기록은 화면에 노출하지 않는다 (Q2). `DSheet.처리자와_거절_사유는_시트에_그리지_않는다` 가 "노출하지 않음" 쪽만 확인 |
+| AC-14 | 통과 | `PSheet.AC14_네트워크가_끊기면_아직_처리되지_않았어요_배너가_뜨고_항목은_목록에_남는다` · `PSheet.AC14_서버_500_이면_…_다시_시도로_같은_요청을_다시_보낸다` · `DSheet.AC14_계열_정지에_실패하면_…` |
+| AC-15 | 통과 | `PSheet.AC15_거절은_확인_단계를_한_번_거친_뒤_목록에서_사라진다` · `PSheet.AC15_뒤로를_누르면_기본_단계로_돌아가고_입력한_사유는_유지된다` |
+| AC-16 | 통과 | `PSheet.AC16_200자에서_한_글자를_더_입력하면_반영되지_않고_카운터는_200_200_을_유지한다`(`userEvent` 가 `maxLength` 를 플랫폼과 같게 지킨다) · `PSheet.AC16_서버가_rejection_reason_검증_오류를_주면_입력_필드_오류로_보인다` |
+| AC-17 | 통과 | `PSheet.AC17_사유를_비워도_거절하기는_활성이고_정상_처리된다` (요청 본문이 `{rejection_reason: null}`) |
+| AC-18 | 해당없음 (auth) | 거절된 사용자가 보는 화면 |
+| AC-19 | 통과 | `DSheet.AC19_확인_다이얼로그를_거쳐_되돌리면_검토_대기_목록에_다시_나타난다` (대기 건수도 서버 값으로 갱신) |
+| AC-20 | 통과 | `DList.AC20_이메일과_처리_시각이_서버가_준_순서대로_보인다` · `DList.세_상태가_한_목록에_상태_배지와_함께_섞여_보인다` |
+| AC-21 | 통과 | `DSheet.AC21_확인_다이얼로그를_거쳐_정지하면_배지가_정지됨으로_바뀐다` · `DSheet.AC21_다이얼로그에서_취소하면_아무_요청도_보내지_않는다` |
+| AC-22 · AC-23 | 해당없음 (auth) | 정지된 사용자 쪽 화면·세션 처리 |
+| AC-24 | 통과 | `DSheet.AC24_확인_다이얼로그_없이_바로_처리되고_배지가_승인됨으로_돌아간다` |
+| AC-25 | 통과 | `DSheet.AC25_내_계정이면_정지_동작이_아예_제공되지_않는다`(비활성이 아니라 미렌더) · `DSheet.AC25_서버가_자기_자신_정지를_거부하면_배너와_닫기만_남는다` |
+| AC-26 ~ AC-31 | 해당없음 (서버) | Discord 알림 — 앱 화면과 접점이 없다 |
+| AC-32 | 통과 (앱 측) | `Entry.AC32_건수는_서버가_내린_정수를_그대로_쓴다` · `Entry.대기_0건이면_값_자리를_비우고…` · `PList.세그먼트_라벨의_숫자는_서버가_준_대기_건수다` — 앱이 세지도 ±1 하지도 않는다 |
+| AC-33 | 통과 | `PList.AC33_가입_사유가_없는_신청도_서버가_내린_문자열_그대로_같은_모양으로_보인다` |
+| AC-34 | 통과 | `PSheet.AC34_가입_사유가_없는_신청도_같은_경로로_승인된다` |
+
+**앱 화면 책임 22개 중 — 통과 21 / 실패 1 (AC-7, AC-9 가 같은 원인 `DEF-T01`).**
+나머지 12개는 서버·`auth` 책임이라 이 계층의 판정 대상이 아니다.
+
+네 가지 상태(로딩 · 정상 · 비어있음 · 오류)는 **세그먼트마다 따로** 덮었다 —
+`검토 대기` 는 `pendingList.test.tsx`, `처리 완료` 는 `processedList.test.tsx`,
+시트 쪽은 `pendingSheet`(§6.9) · `processedSheet`(§7.7) · `conflict`(§6.8).
+
 ## 재작업 카운터
 
 루프 상한은 2회. 3회차에 접어들면 `ESCALATE` 를 적고 사람에게 넘긴다.
@@ -192,7 +253,7 @@
 | 대상 | 횟수 |
 |---|---|
 | server-developer | 0 |
-| mobile-developer | **1** (2026-09-09 mobile-reviewer FAIL — DEF-M01·DEF-M02). **재리뷰 PASS 로 종결 — 더 올라가지 않는다** (2026-09-09) |
+| mobile-developer | **2** (① 2026-09-09 mobile-reviewer FAIL — DEF-M01·DEF-M02, 재리뷰 PASS 로 종결 / ② 2026-09-09 mobile-tester FAIL — DEF-T01). **다음 왕복은 3회차라 `ESCALATE` 다** (절대 규칙 4) |
 
 ## 계약 변경
 
@@ -308,3 +369,4 @@ AC-26·AC-28 의 "실제로 발송된다 / 실패가 경고 로그로 남는다"
 | 2026-09-09 | mobile-reviewer | **FAIL — `[MUST]` 결함 2건.** 워킹트리 `mobile/` 변경분 전체(신규 23파일 — 기능 17 + `shared/ui` 5 + `shared/api/queryKeys.ts` — 와 수정 7파일)를 conventions(M-23·M-24 포함)·`design.md`·`contract.yaml`·`status.md` 결정 기록·`error-codes.md`(admin)로 대조했다. **DEF-M01** — `PendingUserSheet` 의 거절 사유 입력 단계에서 §6.8 "이미 처리됨" 이 절반만 구현됐다. `conflict` 로 액션을 "닫기" 하나로 바꾸는 처리가 기본 단계 분기에만 있어, 거절 단계에서는 배너가 떠도 "거절하기" 가 활성으로 남고 다시 누르면 같은 409 를 받는다 — §6.8 이 "남겨 두면 다시 눌러 같은 오류를 받는다" 며 금지한 그 동작이고, **409 는 승인보다 거절에서 더 자주 나오므로 결함이 있는 쪽이 주 경로다**(M-6 / AC-12). `ProcessedUserSheet` 의 `blocked` 가 같은 요구를 이미 올바르게 구현했다. **DEF-M02** — 사유 주석 없는 타입 단언 4곳(M-9). `errorKind as Exclude<…>` 2곳은 이른 반환으로 이미 걸러지므로 상태 타입을 좁히면 단언이 사라지고, `initialPageParam` 2곳은 불가피하므로 `a11y.tsx:56` 선례대로 사유 주석을 달면 된다. **넘어온 판단 4건은 전부 규칙 위반 아님** — ① 403 `ADMIN_FORBIDDEN` → §5.10 권한 없음 화면(design.md §2.3·§5.10, contract 403 표, error-codes.md 가 모두 그렇게 지정. §6.7 배너였다면 그쪽이 위반) · ② `NOT_FOUND`(D-1) M-13 일반 오류(계약·카탈로그 명시. 화면을 지어냈다면 M-7 위반) · ③ 미구현 연출 2건은 **근거 규칙이 없어 등급을 매기지 않는다**(절대 규칙 2) — reanimated 미도입은 M-19·절대 규칙 8 상 옳고, 완료 낭독은 `Toast` 가 대신한다 · ④ 배지 패딩은 C-9·M-16 상 pen(`[3,10]`)이 기준. **계약·명세 대조 전항 일치** — 탭바 미변경 · `role==='ADMIN'` 일 때만 렌더(로딩·실패에도 미렌더로 AC-2 깜빡임 없음) · 섹션 위치(계정 다음·약관 앞) · "처리 완료"(“처리됨” 코드 0건) · 목록 행에 버튼 없음 · 대기 건수를 세지도 ±1 하지도 않고 재조회 · 설정 한 영역 호출 1회(슬롯으로 응답 전달) · 오류 분기가 `code` 로만(엔드포인트·상태·문구 분기 0) · 커서 불투명 + `has_next` 근거 · **"입력하지 않음" 문자열 앱 코드 0건** · 경계 타입은 생성물 `schema.ts` 만 사용 · §9 문구 전수 일치 · 4가지 상태 × 세그먼트 독립 · M-2/M-21/M-23/M-24 · `Platform.select` 양쪽 키. **리뷰어 실행 게이트**: `make lint-mobile` 통과 / `npx tsc --noEmit` 통과(ESLint 가 잡는 항목은 리포트에 쓰지 않았다 — 절대 규칙 3). `[SHOULD]`·참고 4건과 타 역할 요청 3건(R-M1 md 패딩 정정 · R-M2 §5.11·§6.6 연출 명세 정리 · R-M3 M-20 양쪽 분기 테스트)은 `review/mobile.md`. **재작업 카운터 mobile-developer 0 → 1** |
 | 2026-09-09 | mobile-developer | **재작업 1회차 완료 — DEF-M01·DEF-M02 조치.** 리뷰어가 지적한 두 결함만 고쳤고 문구·계약·화면 구성은 건드리지 않았다(`review/mobile.md` 의 권고). **DEF-M01** — `PendingUserSheet` 의 경합(`conflict`) 액션 영역을 `closeAction` 하나로 뽑아 **기본 단계와 거절 사유 입력 단계 두 분기 모두**에 걸었다. 이제 409 `ADMIN_USER_ALREADY_PROCESSED` 뒤에는 단계와 무관하게 `Button/Secondary "닫기"` 하나만 남고 "거절하기"·"뒤로" 가 사라진다(§6.8 / AC-12). 정보 블록·대상 이메일·입력한 거절 사유는 그대로 둔다 — 어떤 신청이었는지 확인할 수 있어야 한다. `ProcessedUserSheet.tsx` 의 `blocked` 와 같은 형태다. 재리뷰·테스트용으로 닫기 버튼에 `testID="admin-conflict-close"` 를 달았다. **DEF-M02** — 단언 4곳 중 **2곳은 삭제**했다. `errorKind` 상태 타입을 `useState<Exclude<ActionErrorKind, 'forbidden'> | null>` 로 좁히자(`PendingUserSheet`·`ProcessedUserSheet`) `run()` 의 이른 반환이 `forbidden` 을 이미 걸러 주므로 `setErrorKind(kind)` 가 단언 없이 통과하고, 배너에 넘기는 값도 `bannerKind` 지역 변수로 뽑아 `as` 없이 타입이 맞는다. 나머지 **2곳(`useUserApproval.ts` 의 `initialPageParam`)은 react-query 의 `pageParam` 추론을 넓히는 관용구라 불가피**하므로 M-9 가 요구하는 사유 주석을 `shared/lib/a11y.tsx:56` 선례 형식으로 달았다. `mobile/src` 밖은 손대지 않았다(`server/`·`.pen` 무수정). **게이트 실행 결과** — `npx tsc --noEmit` 통과(타입 좁히기가 실제로 컴파일됨) / `make lint-mobile` 통과 / `make test-mobile` 통과(16 suites · 151 tests · 실패 0). **재작업 카운터는 mobile-reviewer 가 이미 1로 올려 두었으므로 그대로 둔다.** 넘겨받은 판단 4건(403→§5.10 · `NOT_FOUND`→M-13 · 미구현 연출 2건 · 배지 패딩 pen 채택)은 리뷰어가 "결함 아님" 으로 확인해 되돌리지 않았다 |
 | 2026-09-09 | mobile-reviewer | **PASS — 재리뷰(재작업 1회차 검증). 6단계 모바일 코드 규칙 종료.** 재작업이 건드린 3파일(`PendingUserSheet.tsx`·`ProcessedUserSheet.tsx`·`useUserApproval.ts`)을 읽고 **DEF-M01·DEF-M02 의 해소를 코드로 확인**했다. **DEF-M01** — 경합 액션이 `closeAction` 하나로 뽑혀 기본 단계(`160`)와 거절 사유 입력 단계(`228`) **두 분기 모두**에서 쓰인다. 경합 뒤 `거절하기`·`뒤로` 는 비활성이 아니라 **JSX 에서 제거**되고, `run()` 을 다시 부를 수 있는 경로 셋(액션 버튼 · 배너 "다시 시도" `onRetry={conflict ? undefined : …}` · 안드로이드 백 `setStep('detail')`)을 전수 확인해 **같은 409 로 되돌아갈 길이 없음**을 확인했다 — 백으로 돌아간 기본 단계도 `conflict` 가 참이라 `closeAction` 만 그린다. §6.8 이 남기라고 한 정보 블록·대상 이메일·입력한 거절 사유는 남아 있다(§6.8 / M-6 / AC-12). **DEF-M02** — 단언 2곳이 실제로 사라졌다(상태 타입 `useState<Exclude<ActionErrorKind,'forbidden'> \| null>`; 배너 인자 `bannerKind` 는 **타입 주석**이지 단언이 아니라 검사를 우회하지 않는다). 남긴 2곳(`useUserApproval.ts:50-53·63-64`)에는 "왜 불가피한지 + `(M-9)` 인용" 주석이 붙어 `a11y.tsx:56` 선례와 같은 형식이다. **기능 디렉토리 전수 grep — 남은 단언은 그 두 줄뿐**이고 나머지는 `as const`(const 단언)·import 별칭이라 M-9 대상이 아니며 `any` 0건. 신규 `shared/ui` 5개와 `queryKeys.ts` 도 함께 확인. **회귀 없음** — 수정 파일이 3개뿐임을 파일 시각으로 확인했고, `code` 기반 분기(`actionError.ts` 무수정) · 403 → §5.10(두 시트의 이른 반환 + 화면 무수정) · §9 문구(`messages.ts` 무수정, 새 문구 0건 — `COMMON.close` 재사용) · 4가지 상태 × 세그먼트 · M-24 쿼리 키 · `Alert` 취소 우선 배치(M-20)를 다시 읽었다. **1차의 "결함 아님" 4건도 되돌리지 않았다**(403→§5.10 · `NOT_FOUND`→M-13 · 미구현 연출 2건 · 배지 패딩 pen `[3,10]`). **리뷰어 실행 게이트**: `make lint-mobile` 통과(exit 0) / `npx tsc --noEmit` 통과(exit 0) / 회귀 확인용 `make test-mobile` 통과(16 suites · 151 tests · 실패 0). **새 `[MUST]` 0건** — 1차에서 지적하지 않은 것을 새로 들고 나오지 않았다(절대 규칙 2·3). mobile-tester 요청 R-M4(경합 상태를 **두 단계 모두** 테스트로 고정 — 이번 회귀 지점) 추가, R-M1·R-M2·R-M3 은 열린 채 유지. **재작업 카운터 mobile-developer 1 유지**(PASS 이므로 올리지 않는다 — 상한 2회). 다음은 mobile-tester |
+| 2026-09-09 | mobile-tester | **FAIL — `[MUST]` 결함 1건(`DEF-T01`).** `PRD.md` 의 AC 34개 중 **앱 화면 책임 22개**(design.md §11)를 기준으로 테스트 **8스위트 · 72건**을 추가해 실행했다(`mobile/src/features/admin-user-approval/__tests__/`). API 는 전부 msw 목킹이고 서버를 띄우지 않았다(절대 규칙 5 / M-11). 목 응답은 `contract.yaml` 의 example 을 근거로 만들었다. **판정: 통과 21 / 실패 1** — 위 `모바일 AC 판정표` 참조. **DEF-T01** — 목록을 이미 받아 놓고도 **뒤이은 요청이 실패하면 본문 전체가 §5.9 오류 블록으로 바뀐다.** react-query 무한 쿼리는 데이터가 있어도 `fetchNextPage`·새로고침 `refetch` 가 실패하면 상태를 `error` 로 만드는데, 화면이 `active.isError` 하나로 본문을 고르기 때문이다. 그래서 ⑴ 다음 페이지 로드 실패에서 §5.6 이 요구한 "이미 불러온 항목은 그대로 남는다" 가 깨지고 실패 푸터(`ListFooter` 의 `failed` 분기)는 **도달 불가능한 죽은 코드**이며(AC-7), ⑵ 새로고침 실패에서 §5.5 의 "기존 목록을 유지" 가 깨져 배너와 전체 오류가 동시에 뜬다(AC-9). 코드만 읽으면 `isFetchNextPageError` 와 `refreshFailed` 가 있어 구현된 것처럼 보이고 **실행해야 드러난다** — 제안은 전체 오류 블록의 조건을 `pages.length === 0` 으로 좁히는 것이다(판단은 개발자 몫). 증거로 `pendingList.test.tsx` 에 `test.failing` 2건을 남겼고, 고치면 통과로 바뀌므로 그때 `test` 로 되돌리는 것까지가 완료 조건이다(`auth` D-T1 선례). **덮은 것** — 진입점 3상태(ADMIN/USER/로딩·실패, AC-2 깜빡임 없음) · 세그먼트 2개 × 네 상태(로딩·정상·빈·오류)를 **세그먼트마다 독립으로**(§3.6) · 커서 페이지네이션(`next_cursor` 를 해석 없이 그대로 되돌려 보냄, `has_next` 가 거짓이면 더 부르지 않음) · 당겨서 새로고침(첫 페이지부터 · 빈 상태에서도) · 권한 없음 화면과 pop · 행 탭 → 시트(행에 버튼 없음) · 승인/거절 2단계/거절 사유 200자 경계(`userEvent` 로 `maxLength` 를 플랫폼과 같게)/사유 없이 거절(`{rejection_reason: null}`)/서버 필드 오류 · 정지·해제·거절 취소와 확인 다이얼로그 · 자기 계정 미제공(AC-25) · 오류 분기가 **`code` 로만**(`ADMIN_FORBIDDEN` → §5.10 / 409 → §6.8 / `ADMIN_SELF_SUSPEND_FORBIDDEN` → §7.6 / 그 외 → M-13 일반) · 가입 사유 빈 값의 서버 문자열 그대로 렌더(AC-33·34) · §9 문구 일치. **R-M4 완료**(`conflict.test.tsx` 5건 — 기본 단계·거절 사유 입력 단계·안드로이드 백 복귀 세 곳 모두에서 액션이 **제거**되고 `닫기` 하나만 남는지, 배너에 "다시 시도" 가 없는지, 즉시 재조회하는지). **R-M3 완료**(`platformIos` 5건 · `platformAndroid` 7건 — 키보드 회피 `padding`↔`height` 와 `default` 키 채움 · 시트 열림 시 스와이프 백 · `Alert` 취소 우선 배치 양쪽 · 하드웨어 백 3가지). **게이트 실행 결과** — `make lint-mobile` 통과(exit 0) / `npm --prefix mobile run typecheck` 통과(exit 0) / `make test-mobile` 통과(exit 0 — 24 suites · 223 tests · 실패 0. 기존 16·151 에서 +8 스위트 +72건, 기존 테스트 회귀 0). `mobile/src` 구현 코드는 건드리지 않았고 새로 만든 것은 `__tests__` 8파일뿐이다. 테스트 도구의 한계 3건(N-1 `RefreshControl` 색 prop · N-2 처리 중 하드웨어 백의 중간 상태 · N-3 스크림이 jest 에서 숨은 요소)은 `defects.md` 에 근거와 대안을 적었다. **재작업 카운터 mobile-developer 1 → 2 — 다음 왕복은 3회차라 `ESCALATE` 다** |
