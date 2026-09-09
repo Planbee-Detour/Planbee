@@ -71,6 +71,10 @@ tasks.withType(Test).configureEach {
 	environment 'DB_PASSWORD', 'test'
 	environment 'KAKAO_REST_API_KEY', 'test-only-kakao-key'
 	environment 'TOUR_API_KEY', 'test-only-tour-key'
+	// 빈 값으로 고정한다. Makefile 이 .env 의 모든 키를 export 하므로 이 줄이 없으면
+	// 사람이 .env 에 넣은 진짜 Webhook URL 이 테스트 JVM 까지 흘러가 실제로 발송된다.
+	// 발송 로직 자체는 목킹(WireMock)으로 검증한다.
+	environment 'DISCORD_WEBHOOK_URL', ''
 }
 
 // 기본 test 는 Docker 없이 도는 것만 실행한다 (슬라이스 테스트 + ArchUnit).

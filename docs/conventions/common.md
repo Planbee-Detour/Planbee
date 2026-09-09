@@ -114,6 +114,11 @@
 - **테스트는 `.env` 에 의존하지 않는다.** 테스트 전용 값은 `server/build.gradle` 의
   `tasks.withType(Test)` 에서 주입한다. 그 값은 다른 곳에서 재사용하지 않는다.
 - 새 변수를 추가하면 **같은 커밋에서** `.env.example` 과 `RequiredEnvironmentCheck.REQUIRED`(필수인 경우)에 등록한다.
+- **외부로 나가는 변수는 같은 커밋에서 `server/build.gradle` 의 `tasks.withType(Test)` 에도
+  등록한다** (2026-09 추가). `Makefile` 이 `.env` 의 **모든 키를 export** 하므로, 등록하지 않으면
+  사람이 `.env` 에 넣은 진짜 자격 증명이 테스트 JVM 까지 흘러가 **테스트가 실제 외부 서비스를
+  호출한다.** 실제로 `DISCORD_WEBHOOK_URL` 이 빠져 통합 테스트가 실제 Discord 채널로
+  발송한 사고가 있었다. 외부 호출은 테스트에서 목킹으로만 검증한다.
 - 코드·문서·테스트·커밋 메시지에 실제 키, 토큰, 비밀번호를 넣지 않는다.
 - `.env.example` 의 값은 로컬 전용이다. 운영/스테이징 값은 어떤 경우에도 여기 적지 않는다.
 
