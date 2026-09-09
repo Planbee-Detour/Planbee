@@ -143,6 +143,34 @@ mobile/src/
 - 새 색이 필요하면 pen 의 Design System 에 있는지 먼저 확인하고, 있으면 그 값으로 토큰을 추가해 쓴다.
   pen 에 없는 값은 임의로 만들지 말고 `defects.md` 로 ux-designer 에게 요청한다.
 
+### M-25. CSS 변수를 만드는 유틸리티는 조건부로 <b>붙였다 뗐다</b> 하지 않는다 `[MUST]`
+
+(2026-09-09 확정, `admin-user-approval` 재작업 — 세그먼트 전환 시 화면 백지 결함)
+
+- 대상은 Tailwind 가 `--tw-*` 변수로 컴파일하는 유틸리티다:
+  `shadow-*` · `ring-*` · `blur-*` / `drop-shadow-*` 등 필터 · `scale-*` / `rotate-*` /
+  `translate-*` / `skew-*` 등 트랜스폼 · `from-*` / `via-*` / `to-*` 그라디언트.
+- 이런 클래스를 **한쪽 분기에만** 넣으면 안 된다. 반대 분기에도 같은 계열의 기본값
+  (`shadow-none`, `scale-100`, `rotate-0` …)을 함께 준다.
+
+  ```tsx
+  // 안 됨 — 선택될 때 CSS 변수가 처음 생긴다
+  active ? 'bg-surface shadow-segment' : ''
+  // 됨 — 두 상태 모두 --tw-shadow 를 선언한다. 모양은 같다
+  active ? 'bg-surface shadow-segment' : 'shadow-none'
+  ```
+
+- **이유.** 첫 렌더에 CSS 변수가 없던 컴포넌트에 변수가 뒤늦게 생기면 NativeWind 는 그것을
+  "업그레이드"(`VariableContext.Provider` 로 감싸기)로 보고 개발 빌드에서 경고를 찍는다.
+  그 경고는 `JSON.stringify` 로 props 전체를 훑는데(`react-native-css-interop`
+  `render-component` 의 `printUpgradeWarning`), 그 과정에서 React Navigation 의
+  `NavigationStateContext` 기본값에 있는 **던지는 getter** 를 건드린다. 결과는 경고가 아니라
+  <b>렌더 오류</b>이고, 화면 전체가 백지가 된다. 오류 문구가
+  `Couldn't find a navigation context. Have you wrapped your app with 'NavigationContainer'?`
+  라서 내비게이션 배선 문제로 보이지만 **원인은 스타일 문자열**이다. 배선을 아무리 뒤져도 나오지 않는다.
+- 값이 정말 동적이어야 하면 클래스를 갈아 끼우지 말고 `className` 을 받지 못하는 prop 처럼
+  `COLOR`/`StyleSheet` 로 내려보내고 사유를 주석에 남긴다 (M-15).
+
 ## 플랫폼
 
 ### M-19. iOS 배포가 우선, 구현은 안드로이드도 성립해야 한다 `[MUST]`
