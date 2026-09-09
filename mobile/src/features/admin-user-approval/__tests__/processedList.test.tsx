@@ -7,11 +7,7 @@
  * 이 세그먼트도 로딩 · 정상 · 비어있음 · 오류 네 상태를 따로 갖는다 (§3.6 / M-6).
  */
 
-// 시각은 앱이 기기 로컬로 바꿔 그린다 (§3.3). 시간대를 고정해 결과가 흔들리지 않게 한다.
-// jest 는 Node 위에서 돌지만 이 프로젝트는 `@types/node` 를 두지 않는다 — RN 타입만 쓴다.
-// 시간대만 바꾸면 되므로 필요한 만큼만 선언한다.
-declare const process: {env: Record<string, string | undefined>};
-process.env.TZ = 'Asia/Seoul';
+// 시간대는 `jest.config.js` 에서 `Asia/Seoul` 로 고정한다 — 표기 예시는 그 기준이다 (§3.3).
 
 import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react-native';
