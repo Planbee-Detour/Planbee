@@ -339,6 +339,20 @@ M-3(2개 이상 기능이 쓸 때만 `shared/` 로 올린다)의 **명시적 예
   찍고 <b>5분을 더 기다린 뒤</b> 종료한다 — CI 에서 런마다 5분씩 낭비했다.
   `queries` 뿐 아니라 **`mutations` 의 `gcTime` 도 함께 0** 이어야 한다. 하나만 0으로 두면 증상이 그대로다.
   (2026-09-10. 전체 게이트 329초 → 35초) 앱의 실제 설정은 `app/providers.tsx` 이고 여기 값을 옮기지 않는다.
+- **목킹한 `Alert` 의 `onPress` 를 직접 부를 때는 `await act(async () => …)` 로 감싼다.**
+  `Alert` 은 렌더된 컴포넌트가 아니라 네이티브 모듈이라 화면 트리에 버튼 노드가 없다 —
+  `fireEvent` 로 누를 대상이 없어 테스트가 핸들러를 직접 부르게 되는데, 그러면 어떤 `act` 창에도
+  들어가지 않아 `not wrapped in act(...)` 가 난다. M-12(사용자 관점 쿼리)의 예외가 아니라
+  그 규칙이 다루지 않는 영역이다. (2026-09-10, `settings`·`accountDelete`·`processedSheet`·`conflict`)
+- **`await` 뒤에 상태를 갱신하는 제출 핸들러는 제출이 끝날 때까지를 한 `act` 창으로 묶는다.**
+  `fireEvent` 는 핸들러가 돌려준 프로미스를 기다리지 않으므로, `await` 뒤의 꼬리 갱신
+  (`setSubmitting(false)` 같은)이 `act` 창 밖에서 떨어진다. `LoginScreen` 은 최소 노출 시간
+  400ms 를 채운 뒤 갱신하므로 `login.test.tsx` 의 `pressSubmit` 처럼 그만큼을 `act` 안에서
+  기다린다. (2026-09-10. 경고 107건 → 9건)
+- **react-query 의 `notifyManager` 를 동기 스케줄러로 바꾸지 않는다.** 남은 경고 몇 건을
+  없애려고 `notifyManager.setScheduler(cb => cb())` 를 넣으면 알림이 즉시 떨어져
+  <b>"승인 중…" 같은 처리 중 상태가 아예 관찰되지 않는다.</b> 그 중간 상태를 검증하는
+  인수조건 테스트가 깨진다. 실측으로 배제했다. (2026-09-10, `pendingSheet`·`platformAndroid`)
 - **네이티브 목의 기본 동작을 주석으로 단정하지 말고 파일을 열어 확인한다.**
   `__mocks__/@react-native-community/geolocation.ts` 는 좌표로 <b>즉시 성공</b>하는데 테스트는
   "응답하지 않는다" 고 가정했다. 화면이 곧바로 조회로 넘어가 msw 핸들러가 없어 오류 상태가 됐고,

@@ -5,7 +5,7 @@
  * 서버는 띄우지 않는다 — API 는 전부 msw 로 목킹한다 (절대 규칙 5 / M-11).
  */
 import React from 'react';
-import {fireEvent, render, screen, waitFor} from '@testing-library/react-native';
+import {act, fireEvent, render, screen, waitFor} from '@testing-library/react-native';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {http, HttpResponse} from 'msw';
@@ -82,9 +82,24 @@ async function fillCredentials(email = 'name@example.com', password = 'planbee20
   await fireEvent.changeText(screen.getByLabelText('비밀번호'), password);
 }
 
-function pressLogin() {
-  return fireEvent.press(screen.getByRole('button', {name: '로그인'}));
+/**
+ * 제출 핸들러는 응답이 아무리 빨라도 최소 노출 시간(`LoginScreen` 의 `MIN_SUBMIT_MS` = 400ms)을
+ * 채운 뒤에야 배너·비밀번호·제출 상태를 갱신한다 (§4.6). `fireEvent` 는 핸들러가 돌려준
+ * 프로미스를 기다리지 않으므로, 그 꼬리 갱신은 RNTL 이 열어 둔 `act` 창 밖에서 떨어진다.
+ * 제출이 끝날 때까지를 한 `act` 창으로 묶어 `not wrapped in act(...)` 경고를 없앤다.
+ */
+const SUBMIT_SETTLE_MS = 450;
+
+async function pressSubmit(name: string) {
+  await act(async () => {
+    await fireEvent.press(screen.getByRole('button', {name}));
+    await new Promise<void>(resolve => {
+      setTimeout(() => resolve(), SUBMIT_SETTLE_MS);
+    });
+  });
 }
+
+const pressLogin = () => pressSubmit('로그인');
 
 beforeEach(async () => {
   await clearTokens();
@@ -351,7 +366,7 @@ describe('서버·네트워크 오류 — AC-19', () => {
     await pressLogin();
     await screen.findByTestId('login-error', {}, {timeout: 3000});
 
-    await fireEvent.press(screen.getByRole('button', {name: '다시 시도'}));
+    await pressSubmit('다시 시도');
 
     await waitFor(() => expect(useSession.getState().isSignedIn).toBe(true), {timeout: 3000});
     expect(attempt).toBe(2);

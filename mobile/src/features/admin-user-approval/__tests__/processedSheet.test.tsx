@@ -11,7 +11,7 @@
 
 import React from 'react';
 import {Alert} from 'react-native';
-import {fireEvent, render, screen, waitFor} from '@testing-library/react-native';
+import {act, fireEvent, render, screen, waitFor} from '@testing-library/react-native';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -96,7 +96,9 @@ async function pressAlertButton(label: string) {
   const buttons = calls[calls.length - 1][2] as Array<{text: string; onPress?: () => void}>;
   const button = buttons.find(entry => entry.text === label);
   expect(button).toBeDefined();
-  await button?.onPress?.();
+  await act(async () => {
+    await button?.onPress?.();
+  });
 }
 
 const processedList = (items: unknown[]) =>

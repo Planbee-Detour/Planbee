@@ -7,7 +7,7 @@
  */
 import React from 'react';
 import {Alert} from 'react-native';
-import {fireEvent, render, screen} from '@testing-library/react-native';
+import {act, fireEvent, render, screen} from '@testing-library/react-native';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -45,7 +45,10 @@ const deleteButton = () => screen.getByRole('button', {name: '계정 삭제'});
 
 async function pressAlertButton(alert: jest.SpyInstance, label: string) {
   const buttons = alert.mock.calls[0][2] as Array<{text: string; onPress?: () => void}>;
-  await buttons.find(entry => entry.text === label)?.onPress?.();
+  const button = buttons.find(entry => entry.text === label);
+  await act(async () => {
+    await button?.onPress?.();
+  });
 }
 
 /** 비밀번호를 넣고 삭제 → 확인 다이얼로그의 "삭제" 까지 누른다. */
