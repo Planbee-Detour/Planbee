@@ -5,13 +5,14 @@
 import React from 'react';
 import {render} from '@testing-library/react-native';
 import {http, HttpResponse} from 'msw';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {QueryClientProvider} from '@tanstack/react-query';
 
 import {API_ORIGIN, server} from '../../../shared/test/mswServer';
+import {createTestQueryClient} from '../../../shared/test/queryClient';
 import {PlaceDetailScreen} from '../screens/PlaceDetailScreen';
 
 function renderScreen() {
-  const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
+  const client = createTestQueryClient();
   return render(
     <QueryClientProvider client={client}>
       <PlaceDetailScreen onBack={jest.fn()} placeId="tour:126508" />

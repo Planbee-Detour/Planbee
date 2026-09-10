@@ -24,10 +24,11 @@ import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {fireEvent, render, screen} from '@testing-library/react-native';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {QueryClientProvider} from '@tanstack/react-query';
 import {http, HttpResponse} from 'msw';
 
 import {API_ORIGIN, server} from '../../../shared/test/mswServer';
+import {createTestQueryClient} from '../../../shared/test/queryClient';
 import {BottomSheet, sheetGestureEnabled} from '../../../shared/ui/BottomSheet';
 import {UserApprovalListScreen} from '../screens/UserApprovalListScreen';
 
@@ -50,7 +51,7 @@ const PROCESSED_ITEM = {
 const Stack = createNativeStackNavigator<{UserApprovalList: undefined}>();
 
 async function renderList() {
-  const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
+  const queryClient = createTestQueryClient();
   return render(
     <QueryClientProvider client={queryClient}>
       <NavigationContainer>

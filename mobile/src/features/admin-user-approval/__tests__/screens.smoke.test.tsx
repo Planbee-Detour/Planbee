@@ -8,10 +8,11 @@ import React from 'react';
 import {render, waitFor} from '@testing-library/react-native';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {QueryClientProvider} from '@tanstack/react-query';
 import {http, HttpResponse} from 'msw';
 
 import {API_ORIGIN, server} from '../../../shared/test/mswServer';
+import {createTestQueryClient} from '../../../shared/test/queryClient';
 import {AdminSettingsSection} from '../components/AdminSettingsSection';
 import {UserApprovalListScreen} from '../screens/UserApprovalListScreen';
 import type {AdminRouteParams} from '../navigation';
@@ -21,7 +22,7 @@ const PENDING = `${API_ORIGIN}/api/v1/admin/users/pending`;
 const Stack = createNativeStackNavigator<AdminRouteParams>();
 
 function renderList() {
-  const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
+  const queryClient = createTestQueryClient();
   return render(
     <QueryClientProvider client={queryClient}>
       <NavigationContainer>

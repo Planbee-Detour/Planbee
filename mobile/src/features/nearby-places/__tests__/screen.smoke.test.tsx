@@ -4,13 +4,14 @@
  */
 import React from 'react';
 import {render} from '@testing-library/react-native';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {QueryClientProvider} from '@tanstack/react-query';
 import Geolocation from '@react-native-community/geolocation';
 
 import {NearbyPlacesScreen} from '../screens/NearbyPlacesScreen';
+import {createTestQueryClient} from '../../../shared/test/queryClient';
 
 function renderScreen() {
-  const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
+  const client = createTestQueryClient();
   return render(
     <QueryClientProvider client={client}>
       <NearbyPlacesScreen onBack={jest.fn()} onPlacePress={jest.fn()} />

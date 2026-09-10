@@ -7,13 +7,14 @@
  */
 import React from 'react';
 import {Alert} from 'react-native';
-import {fireEvent, render, screen, waitFor} from '@testing-library/react-native';
+import {act, fireEvent, render, screen, waitFor} from '@testing-library/react-native';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {QueryClientProvider} from '@tanstack/react-query';
 import {http, HttpResponse} from 'msw';
 
 import {API_ORIGIN, problemBody, server} from '../../../shared/test/mswServer';
+import {createTestQueryClient} from '../../../shared/test/queryClient';
 import {clearTokens, loadTokens, saveTokens} from '../../../shared/api/session';
 import {AccountDeleteScreen} from '../screens/AccountDeleteScreen';
 import {LegalDocumentScreen} from '../screens/LegalDocumentScreen';
@@ -32,7 +33,7 @@ const meOk = () =>
 const Stack = createNativeStackNavigator<MainRouteParams>();
 
 async function renderSettings() {
-  const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
+  const queryClient = createTestQueryClient();
   return render(
     <QueryClientProvider client={queryClient}>
       <NavigationContainer>
@@ -51,7 +52,9 @@ async function pressAlertButton(alert: jest.SpyInstance, label: string) {
   const buttons = alert.mock.calls[0][2] as Array<{text: string; onPress?: () => void}>;
   const button = buttons.find(entry => entry.text === label);
   expect(button).toBeDefined();
-  await button?.onPress?.();
+  await act(async () => {
+    await button?.onPress?.();
+  });
 }
 
 beforeEach(async () => {

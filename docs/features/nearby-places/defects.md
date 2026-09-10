@@ -97,7 +97,8 @@ console.error [MSW] Error: intercepted a request without a matching request hand
 
 - `nearby-places` 에는 이 스모크 하나뿐이라 성공·비어있음·오류 경로가 테스트로 고정돼 있지
   않다. mobile-tester 층의 공백이다.
-- `jest` 가 테스트 종료 후 바로 빠져나오지 못한다
-  (`Jest did not exit one second after the test run has completed`).
-  이 결함과 무관하게 **통과하는 런에서도** 나며, CI 에서 테스트 종료 후 약 5분을 더 쓴다
-  (34408335385: 21:43:08 종료 → 21:48:04 프로세스 종료). 원인 미확인.
+- ~~`jest` 가 테스트 종료 후 바로 빠져나오지 못한다.~~ **원인 확인·수정 완료(2026-09-10).**
+  테스트가 만드는 `QueryClient` 의 `gcTime` 기본값이 300초라 gc 타이머가 이벤트 루프를 잡고
+  있었다. `queries` 와 `mutations` **양쪽** 을 0으로 둬야 하고, 하나만 0으로 두면 증상이 그대로다
+  (queries 만 0 → 326초, 양쪽 0 → 29초). `shared/test/queryClient.ts` 의
+  `createTestQueryClient()` 로 통일했다. 전체 게이트 329초 → 35초. `mobile.md` 테스트 환경 메모 참조.
