@@ -14,11 +14,12 @@ import React from 'react';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react-native';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {QueryClientProvider} from '@tanstack/react-query';
 import {http, HttpResponse} from 'msw';
 import {Text} from 'react-native';
 
 import {API_ORIGIN, problemBody, server} from '../../../shared/test/mswServer';
+import {createTestQueryClient} from '../../../shared/test/queryClient';
 import {UserApprovalListScreen} from '../screens/UserApprovalListScreen';
 
 const PENDING = `${API_ORIGIN}/api/v1/admin/users/pending`;
@@ -58,7 +59,7 @@ function SettingsStub() {
 }
 
 async function renderList() {
-  const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
+  const queryClient = createTestQueryClient();
   return render(
     <QueryClientProvider client={queryClient}>
       {/* 설정 → 목록으로 들어온 상태에서 시작한다 (§5.1). 뒤로 갈 자리가 있어야 §5.10 을 볼 수 있다 */}

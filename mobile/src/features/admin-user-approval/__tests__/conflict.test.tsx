@@ -14,10 +14,11 @@ import React from 'react';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react-native';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {QueryClientProvider} from '@tanstack/react-query';
 import {http, HttpResponse} from 'msw';
 
 import {API_ORIGIN, problemBody, server} from '../../../shared/test/mswServer';
+import {createTestQueryClient} from '../../../shared/test/queryClient';
 import {UserApprovalListScreen} from '../screens/UserApprovalListScreen';
 
 const PENDING = `${API_ORIGIN}/api/v1/admin/users/pending`;
@@ -64,7 +65,7 @@ let pendingRequests = 0;
 
 async function renderList() {
   pendingRequests = 0;
-  const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
+  const queryClient = createTestQueryClient();
   return render(
     <QueryClientProvider client={queryClient}>
       <NavigationContainer>

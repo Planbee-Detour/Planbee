@@ -333,6 +333,18 @@ M-3(2개 이상 기능이 쓸 때만 `shared/` 로 올린다)의 **명시적 예
   (`src/shared/test/mswServer.ts` 참조)
 - 핸들러에 없는 요청은 오류로 처리한다(`onUnhandledRequest: 'error'`). 테스트가 실제 네트워크를 타면 안 된다.
 - 네이티브 모듈 목은 `mobile/__mocks__/` 에 둔다 (Keychain, Config). 새 네이티브 모듈을 쓰면 목도 함께 추가한다.
+- **react-query 를 쓰는 테스트는 `shared/test/queryClient.ts` 의 `createTestQueryClient()` 로 만든다.**
+  직접 `new QueryClient(...)` 를 쓰면 `gcTime` 기본값 300초짜리 gc 타이머가 남아, 테스트가 끝나도
+  이벤트 루프가 살아 있다. jest 가 `Jest did not exit one second after the test run has completed` 를
+  찍고 <b>5분을 더 기다린 뒤</b> 종료한다 — CI 에서 런마다 5분씩 낭비했다.
+  `queries` 뿐 아니라 **`mutations` 의 `gcTime` 도 함께 0** 이어야 한다. 하나만 0으로 두면 증상이 그대로다.
+  (2026-09-10. 전체 게이트 329초 → 35초) 앱의 실제 설정은 `app/providers.tsx` 이고 여기 값을 옮기지 않는다.
+- **네이티브 목의 기본 동작을 주석으로 단정하지 말고 파일을 열어 확인한다.**
+  `__mocks__/@react-native-community/geolocation.ts` 는 좌표로 <b>즉시 성공</b>하는데 테스트는
+  "응답하지 않는다" 고 가정했다. 화면이 곧바로 조회로 넘어가 msw 핸들러가 없어 오류 상태가 됐고,
+  단언이 그 전환보다 먼저 도느냐 뒤에 도느냐로 결과가 갈려 CI 에서 간헐적으로 깨졌다.
+  중간 상태를 단언하려면 목을 그 테스트에서 **명시적으로 덮어써** 전환 자체를 없앤다.
+  (2026-09-10, `nearby-places` 스모크. `defects.md` DEF-004)
 
 ## 미확정
 

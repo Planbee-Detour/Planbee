@@ -10,10 +10,11 @@ import {Alert} from 'react-native';
 import {fireEvent, render, screen} from '@testing-library/react-native';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {QueryClientProvider} from '@tanstack/react-query';
 import {http, HttpResponse} from 'msw';
 
 import {API_ORIGIN, problemBody, server} from '../../../shared/test/mswServer';
+import {createTestQueryClient} from '../../../shared/test/queryClient';
 import {clearTokens, loadTokens, saveTokens} from '../../../shared/api/session';
 import {AccountDeleteScreen} from '../screens/AccountDeleteScreen';
 import {LoginScreen} from '../screens/LoginScreen';
@@ -26,7 +27,7 @@ const ME = `${API_ORIGIN}/api/v1/auth/me`;
 const Stack = createNativeStackNavigator<MainRouteParams & {Login: undefined}>();
 
 async function renderDelete(params: {deletionToken?: string; origin: AccountDeleteOrigin}) {
-  const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
+  const queryClient = createTestQueryClient();
   return render(
     <QueryClientProvider client={queryClient}>
       <NavigationContainer>

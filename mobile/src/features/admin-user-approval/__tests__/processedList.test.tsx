@@ -13,10 +13,11 @@ import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react-native';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {QueryClientProvider} from '@tanstack/react-query';
 import {http, HttpResponse} from 'msw';
 
 import {API_ORIGIN, problemBody, server} from '../../../shared/test/mswServer';
+import {createTestQueryClient} from '../../../shared/test/queryClient';
 import {UserApprovalListScreen} from '../screens/UserApprovalListScreen';
 
 const PENDING = `${API_ORIGIN}/api/v1/admin/users/pending`;
@@ -55,7 +56,7 @@ const Stack = createNativeStackNavigator<{UserApprovalList: undefined}>();
 
 /** 화면에 들어와 `처리 완료` 세그먼트로 전환한 상태를 만든다 (§5.2 — 기본은 `검토 대기`). */
 async function renderProcessed() {
-  const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
+  const queryClient = createTestQueryClient();
   const result = await render(
     <QueryClientProvider client={queryClient}>
       <NavigationContainer>
