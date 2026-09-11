@@ -262,7 +262,7 @@ export function UserApprovalListScreen() {
           <View className="px-5 pt-4">
             <ListSkeleton accessibilityLabel={LIST_MESSAGES.more.loading} />
           </View>
-        ) : active.isError ? (
+        ) : active.isError && pages.length === 0 ? (
           <View className="flex-1 px-5">
             <EmptyState
             glyph={errorCode === NETWORK_ERROR_CODE ? GLYPH.wifiOff : GLYPH.alertCircle}
