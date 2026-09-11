@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
+import {Button} from '../../../shared/ui/Button';
 import type {PlaceDetail} from '../types';
 import {usePlaceDetail} from '../hooks/usePlaceDetail';
 
@@ -57,21 +58,13 @@ function StateScreen({
         </Text>
         <Text className="mt-2 text-center text-body-sm text-ink-muted">{body}</Text>
         {onRetry ? (
-          <Pressable
-            accessibilityRole="button"
-            className="mt-6 min-h-[52px] w-60 items-center justify-center rounded-button bg-ink active:opacity-70"
-            onPress={onRetry}>
-            <Text className="text-body font-semibold text-ink-inverse">다시 시도</Text>
-          </Pressable>
+          <View className="mt-6 w-60">
+            <Button label="다시 시도" onPress={onRetry} variant="primary" />
+          </View>
         ) : null}
-        <Pressable
-          accessibilityRole="button"
-          className={`${onRetry ? 'mt-3 border border-border bg-surface' : 'mt-6 bg-ink'} min-h-[52px] w-60 items-center justify-center rounded-button active:opacity-70`}
-          onPress={onBack}>
-          <Text className={`text-body font-semibold ${onRetry ? 'text-ink' : 'text-ink-inverse'}`}>
-            이전 화면으로
-          </Text>
-        </Pressable>
+        <View className={`w-60 ${onRetry ? 'mt-3' : 'mt-6'}`}>
+          <Button label="이전 화면으로" onPress={onBack} variant={onRetry ? 'secondary' : 'primary'} />
+        </View>
       </View>
     </SafeAreaView>
   );

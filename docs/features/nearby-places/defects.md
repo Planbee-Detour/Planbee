@@ -102,3 +102,26 @@ console.error [MSW] Error: intercepted a request without a matching request hand
   있었다. `queries` 와 `mutations` **양쪽** 을 0으로 둬야 하고, 하나만 0으로 두면 증상이 그대로다
   (queries 만 0 → 326초, 양쪽 0 → 29초). `shared/test/queryClient.ts` 의
   `createTestQueryClient()` 로 통일했다. 전체 게이트 329초 → 35초. `mobile.md` 테스트 환경 메모 참조.
+
+---
+
+### DEF-006 [Medium] 상태 화면 버튼이 shared/ui/Button 을 쓰지 않는다
+- 상태: 해결 (2026-09-08, mobile-developer)
+- 보고자: mobile-reviewer
+- 담당: mobile-developer
+- 위치: `mobile/src/features/nearby-places/screens/NearbyPlacesScreen.tsx` (오류·비어있음 상태)
+- 근거: `conventions/mobile.md` M-21 (pen Design System 컴포넌트는 shared/ui). `Button/Primary`·`Button/Secondary` 가 이미 `shared/ui/Button.tsx` 에 있다
+- 실제: "다시 시도"·"이전 화면으로" 를 raw `Pressable` + `Text` 로 구현
+- 수정: `shared/ui/Button` 의 `Button`(primary/secondary)·`TextButton` 으로 교체
+
+---
+
+### DEF-007 [Low] 빠른 필터 칩에 shared/ui/Chip 컴포넌트가 필요한지 확인
+- 상태: 열림
+- 보고자: mobile-reviewer
+- 담당: ux-designer
+- 위치: `mobile/src/features/nearby-places/screens/NearbyPlacesScreen.tsx` (`CATEGORY_FILTERS` 렌더)
+- 근거: `conventions/mobile.md` M-21. `place-detail/design.md` §4 가 `Chip/QuickAction` 을 참조
+- 요청: pen `Screen 01 — Design System` 에 필터/카테고리 칩 컴포넌트가 있는지 확인.
+  있으면 `shared/ui/Chip` 을 코드로 옮기고 mobile-developer 가 raw 구현을 교체한다.
+  없으면 이 항목을 닫고 raw 구현을 유지한다 (현재 접근성·터치영역은 충족)
