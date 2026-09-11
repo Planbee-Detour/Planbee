@@ -14,7 +14,7 @@
 - [x] server-reviewer — PASS (`nearby-places/review/server.md` 에 함께)
 - [x] server-tester — PASS (`PlaceApiTest` 에 place-detail 케이스 3건 — 성공/404/형식오류)
 - [x] mobile-developer — **재작업 완료.** `useLocalPlaceDetail` → `usePlaceDetail`(react-query, `publicClient` GET `/places/{place_id}`). `PLACE_NOT_FOUND`(404) → 빈 상태, 그 외 → 오류 상태(M-13). fixture 삭제. 화면 4상태 유지
-- [x] mobile-reviewer — PASS (`nearby-places/review/mobile.md` 에 함께). `PlaceDetailScreen.StateScreen` raw Pressable 은 SHOULD(별도 정리)
+- [x] mobile-reviewer — PASS (`nearby-places/review/mobile.md` 에 함께). `PlaceDetailScreen.StateScreen` raw Pressable 은 SHOULD(별도 정리) → **정리 완료 (2026-09-11)**: `shared/ui/Button` 으로 교체
 - [x] mobile-tester — PASS (`place-detail.test.tsx` 5건 — AC-PD-2/3/4/5, 4상태)
 - [ ] integration-tester — PASS / FAIL (`TOUR_API_KEY` 필요)
 
