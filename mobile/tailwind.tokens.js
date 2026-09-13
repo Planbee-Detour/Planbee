@@ -42,6 +42,13 @@ const colors = {
   // Color/Semantic
   success: '#2E9B64',
   danger: '#D94A4A',
+  // Color/Illustration — 캐릭터 일러스트 전용. UI 면·글자에 쓰지 않는다 (docs/design/bee-loader.md §4)
+  illustration: {
+    bee: '#FFC713', // Color/Illustration/BeeYellow
+    stripe: '#F49B24', // Color/Illustration/BeeStripe
+    cream: '#FFF3BE', // Color/Illustration/Cream
+    outline: '#1E1E1F', // Color/Illustration/Outline
+  },
 };
 
 /** 타이포 스케일. 이름은 design.md 가 쓰는 것과 같다. */
