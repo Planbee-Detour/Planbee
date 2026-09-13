@@ -8,7 +8,7 @@
 import React, {useEffect, useRef} from 'react';
 import {Animated, View} from 'react-native';
 
-import {useReduceMotion} from '../hooks/useReduceMotion';
+import {useReduceMotion} from '../../../shared/lib/useReduceMotion';
 
 const CARD_COUNT = 3;
 const PULSE_MS = 700;
