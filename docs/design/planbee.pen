@@ -5251,6 +5251,896 @@
         },
         {
           "type": "frame",
+          "id": "U7bsOM",
+          "name": "Section — AI Loading",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 16,
+          "children": [
+            {
+              "type": "frame",
+              "id": "xeY0a",
+              "name": "Header",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": "$Space/4",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "kR0PM",
+                  "name": "Title",
+                  "fill": "$Color/Text/Primary",
+                  "content": "AI Loading",
+                  "fontFamily": "$Font/Family",
+                  "fontSize": "$Font/Size/H2",
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "text",
+                  "id": "dJAtf",
+                  "name": "Desc",
+                  "fill": "$Color/Text/Secondary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "BeeLoader — AI 결과를 기다리는 동안 보여주는 캐릭터 로더 · docs/design/bee-loader.md",
+                  "fontFamily": "$Font/Family",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "rectangle",
+              "id": "aWN6U",
+              "name": "Rule",
+              "fill": "$Color/Neutral/Border",
+              "width": "fill_container",
+              "height": 1
+            },
+            {
+              "type": "frame",
+              "id": "Wfh7D",
+              "name": "Loader Row",
+              "width": "fill_container",
+              "gap": 48,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "A4Mcw",
+                  "name": "Default",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "e0o8C",
+                      "name": "AI/BeeLoader",
+                      "reusable": true,
+                      "width": 96,
+                      "height": 96,
+                      "layout": "none",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "BzXBC",
+                          "x": 0,
+                          "y": 0,
+                          "name": "Body Back",
+                          "width": 96,
+                          "height": 96,
+                          "layout": "none",
+                          "children": [
+                            {
+                              "type": "path",
+                              "id": "X5QQc",
+                              "x": 28.797826363289694,
+                              "y": 80.3629032668107,
+                              "name": "Stinger",
+                              "geometry": "M2.10938 0l-2.10938 16.875 1.17188 1.17188 17.57812-10.07813-16.64063-7.96875z",
+                              "viewBox": [
+                                0,
+                                0,
+                                18.75,
+                                18.0469
+                              ],
+                              "fill": "$Color/Illustration/Outline",
+                              "width": 10.010169060633023,
+                              "height": 9.634801067751367
+                            },
+                            {
+                              "type": "path",
+                              "id": "d3vg13",
+                              "x": 25.419407652218126,
+                              "y": 47.32934536672173,
+                              "name": "Body",
+                              "geometry": "M0 36.09375c1.17188 17.57813 12.42188 29.76563 26.01563 32.8125 13.59375 2.10938 27.42188-5.15625 34.92187-19.92188l-36.5625-48.98437c-14.53125 6.09375-24.375 21.5625-24.375 36.09375z",
+                              "viewBox": [
+                                0,
+                                0,
+                                60.9375,
+                                69.2649
+                              ],
+                              "fill": "$Color/Illustration/BeeYellow",
+                              "width": 32.53304944705732,
+                              "height": 36.97884581161814
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "G4aYuk",
+                          "x": 0,
+                          "y": 0,
+                          "name": "Wing Fill",
+                          "width": 96,
+                          "height": 96,
+                          "layout": "none",
+                          "children": [
+                            {
+                              "type": "path",
+                              "id": "sdR8D",
+                              "x": 10.896654379051744,
+                              "y": 35.985928562349045,
+                              "name": "Wing",
+                              "geometry": "M50.63998 21.48159l-6.32812-9.375c-9.375-9.60937-17.8125-12.89062-26.25-11.95312-8.4375 0.9375-17.57812 7.73437-18.04688 17.81249-0.46875 13.125 10.07812 23.67187 29.0625 21.09375l3.28125 0 18.28125-17.57812z",
+                              "viewBox": [
+                                0,
+                                0,
+                                50.64,
+                                39.4502
+                              ],
+                              "fill": "$Color/Illustration/Cream",
+                              "width": 27.03546459895767,
+                              "height": 21.06150247870853
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "VCskJ",
+                          "x": 0,
+                          "y": 0,
+                          "name": "Body Mid",
+                          "width": 96,
+                          "height": 96,
+                          "layout": "none",
+                          "children": [
+                            {
+                              "type": "path",
+                              "id": "PgL9N",
+                              "x": 25.294267192068137,
+                              "y": 58.09025041311808,
+                              "name": "Stripe 1",
+                              "geometry": "M4.21875 0c3.51563 4.6875 17.34375 20.15625 40.3125 23.67188l-1.875 8.43749 11.48438 6.5625c-31.40625 2.8125-52.96875-18.28125-54.14063-23.20312 0.46875-5.15625 1.875-11.01563 4.21875-15.46875z",
+                              "viewBox": [
+                                0,
+                                0,
+                                54.1406,
+                                38.9289
+                              ],
+                              "fill": "$Color/Illustration/BeeStripe",
+                              "width": 28.904349815685773,
+                              "height": 20.783193085038768
+                            },
+                            {
+                              "type": "path",
+                              "id": "dNJzc",
+                              "x": 27.546581924494724,
+                              "y": 51.33341299097494,
+                              "name": "Stripe 2",
+                              "geometry": "M9.84375 0c7.5 9.60938 20.39063 17.10938 33.51563 18.98438l-1.87501 7.49999 2.57813 3.98438-3.75 5.39062c-17.10938-3.04688-29.76563-11.01563-40.3125-23.67187 2.57813-4.6875 6.79688-9.60938 9.84375-12.1875z",
+                              "viewBox": [
+                                0,
+                                0,
+                                44.0625,
+                                35.8594
+                              ],
+                              "fill": "$Color/Illustration/BeeStripe",
+                              "width": 23.523897292487604,
+                              "height": 19.144461675352737
+                            },
+                            {
+                              "type": "path",
+                              "id": "Z6cg6",
+                              "x": 33.05217490784288,
+                              "y": 17.547837803482896,
+                              "name": "Head",
+                              "geometry": "M0 32.58038c0 15.46875 12.42188 30.46875 30.23438 30.46875 15.70313 0 30.23438-10.54688 30.93749-28.35937 0.70313-16.875-14.0625-34.92187-31.64062-34.6875-13.82813 0.23437-29.53125 14.0625-29.53125 32.57812z",
+                              "viewBox": [
+                                0,
+                                0,
+                                61.196,
+                                63.0491
+                              ],
+                              "fill": "$Color/Illustration/BeeYellow",
+                              "width": 32.67105631117325,
+                              "height": 33.660381339773735
+                            },
+                            {
+                              "type": "path",
+                              "id": "s30bs6",
+                              "x": 48.818164484555744,
+                              "y": 17.674206177704328,
+                              "name": "Head Highlight",
+                              "geometry": "M0 0c13.82813 0.9375 30.9375 11.48438 31.17188 31.17188 0 6.32813-1.875 12.65625-5.62501 17.81249 3.04688-7.03125 3.75-16.40625 1.875-22.96875-3.51563-12.1875-15.23438-23.90625-27.42187-26.01562z",
+                              "viewBox": [
+                                0,
+                                0,
+                                31.1719,
+                                48.9844
+                              ],
+                              "fill": "$Color/Illustration/Cream",
+                              "width": 16.641919410194483,
+                              "height": 26.151580017795855
+                            },
+                            {
+                              "type": "path",
+                              "id": "xIqeR",
+                              "x": 33.05217490784288,
+                              "y": 47.5795728994534,
+                              "name": "Neck",
+                              "geometry": "M9.375 0c4.92188 3.75 11.48438 7.26563 22.03125 6.79688 4.6875 0 9.375-0.70313 13.35938-2.57813 1.875 0.9375 4.45313 6.09375 5.39062 8.67188l-14.53125 0.9375-2.34375 11.71875c-11.25-1.17188-25.3125-8.90625-33.28125-18.04688l9.375-7.5z",
+                              "viewBox": [
+                                0,
+                                0,
+                                50.1563,
+                                25.5469
+                              ],
+                              "fill": "$Color/Illustration/BeeYellow",
+                              "width": 26.7772289309775,
+                              "height": 13.638868692004575
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "ij5dL",
+                          "x": 0,
+                          "y": 0,
+                          "name": "Wing Line",
+                          "width": 96,
+                          "height": 96,
+                          "layout": "none",
+                          "children": [
+                            {
+                              "type": "path",
+                              "id": "a9hHn",
+                              "x": 10.894412101182164,
+                              "y": 36.222488877589925,
+                              "name": "Wing Outline",
+                              "geometry": "M43.61296 10.25725c-8.20313-8.20313-18.51563-12.42188-29.0625-9.14063-6.79688 1.875-15 9.375-14.53125 18.04688 0.46875 11.25 10.07813 19.92187 23.4375 19.6875 2.10938 0 6.09375 0 8.90625-0.70313",
+                              "viewBox": [
+                                0,
+                                0,
+                                43.613,
+                                38.8556
+                              ],
+                              "width": 23.283920172874026,
+                              "height": 20.744059997457732,
+                              "stroke": "$Color/Illustration/Outline",
+                              "strokeWidth": 1.6912180627939493,
+                              "strokeLinejoin": "round",
+                              "strokeLinecap": "round"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "IimP7",
+                          "x": 0,
+                          "y": 0,
+                          "name": "Body Front",
+                          "width": 96,
+                          "height": 96,
+                          "layout": "none",
+                          "children": [
+                            {
+                              "type": "path",
+                              "id": "VUjDx",
+                              "x": 25.419407652218126,
+                              "y": 47.45443243930342,
+                              "name": "Body Outline",
+                              "geometry": "M24.84375 0c-12.65625 5.85938-24.84375 19.21875-24.84375 37.03125 0 15.23438 11.71875 32.57813 30.46875 32.57813 15.46875 0 25.07813-8.67188 30.46875-20.39063m-47.10938-41.95313c6.5625 8.4375 17.8125 16.40625 33.51563 18.75001",
+                              "viewBox": [
+                                0,
+                                0,
+                                60.9375,
+                                69.6094
+                              ],
+                              "width": 32.53304944705732,
+                              "height": 37.162765984492175,
+                              "stroke": "$Color/Illustration/Outline",
+                              "strokeWidth": 1.6912180627939493,
+                              "strokeLinejoin": "round",
+                              "strokeLinecap": "round"
+                            },
+                            {
+                              "type": "path",
+                              "id": "SmQA4",
+                              "x": 27.546581924494724,
+                              "y": 58.340531333418056,
+                              "name": "Stripe Line 1",
+                              "geometry": "M0 0c6.5625 8.90625 19.21875 20.15625 39.84375 22.96875",
+                              "viewBox": [
+                                0,
+                                0,
+                                39.8438,
+                                22.9688
+                              ],
+                              "width": 21.271635947629335,
+                              "height": 12.262483793059616,
+                              "stroke": "$Color/Illustration/Outline",
+                              "strokeWidth": 1.6912180627939493,
+                              "strokeLinejoin": "round",
+                              "strokeLinecap": "round"
+                            },
+                            {
+                              "type": "path",
+                              "id": "t6JMdz",
+                              "x": 25.54454811236812,
+                              "y": 66.59889411465615,
+                              "name": "Stripe Line 2",
+                              "geometry": "M0 0c12.65625 15.23438 29.29688 24.60938 52.96875 22.73438",
+                              "viewBox": [
+                                0,
+                                0,
+                                52.9688,
+                                22.972
+                              ],
+                              "width": 28.278754290072452,
+                              "height": 12.264192195245963,
+                              "stroke": "$Color/Illustration/Outline",
+                              "strokeWidth": 1.6912180627939493,
+                              "strokeLinejoin": "round",
+                              "strokeLinecap": "round"
+                            },
+                            {
+                              "type": "path",
+                              "id": "p5NBK8",
+                              "x": 56.82629973306216,
+                              "y": 49.58160671158001,
+                              "name": "Arm Line",
+                              "geometry": "M0 0c2.10938 2.34375 4.45313 5.85938 5.625 9.14063",
+                              "viewBox": [
+                                0,
+                                0,
+                                5.625,
+                                9.1406
+                              ],
+                              "width": 3.0030507181899067,
+                              "height": 4.879944070166517,
+                              "stroke": "$Color/Illustration/Outline",
+                              "strokeWidth": 1.6912180627939493,
+                              "strokeLinejoin": "round",
+                              "strokeLinecap": "round"
+                            },
+                            {
+                              "type": "path",
+                              "id": "KEsYF",
+                              "x": 42.05502732935045,
+                              "y": 9.040422016016267,
+                              "name": "Antenna L",
+                              "geometry": "M0.01175 18.51563c-0.23437-6.32813 3.04688-14.29688 9.14062-18.51563",
+                              "viewBox": [
+                                0,
+                                0,
+                                9.1524,
+                                18.5156
+                              ],
+                              "width": 4.886243803228676,
+                              "height": 9.885028600483029,
+                              "stroke": "$Color/Illustration/Outline",
+                              "strokeWidth": 1.6912180627939493,
+                              "strokeLinejoin": "round",
+                              "strokeLinecap": "round"
+                            },
+                            {
+                              "type": "path",
+                              "id": "e0Ebca",
+                              "x": 54.69912546078557,
+                              "y": 10.66708783526121,
+                              "name": "Antenna R",
+                              "geometry": "M0 14.0625c2.34375-6.09375 7.73438-11.95313 14.29688-14.0625",
+                              "viewBox": [
+                                0,
+                                0,
+                                14.2969,
+                                14.0625
+                              ],
+                              "width": 7.632767255624762,
+                              "height": 7.507626795474767,
+                              "stroke": "$Color/Illustration/Outline",
+                              "strokeWidth": 1.6912180627939493,
+                              "strokeLinejoin": "round",
+                              "strokeLinecap": "round"
+                            },
+                            {
+                              "type": "path",
+                              "id": "rsC4M",
+                              "x": 33.05217490784288,
+                              "y": 17.423925257404346,
+                              "name": "Head Outline",
+                              "geometry": "M30.46875 0c-15 0-30.46875 13.125-30.46875 32.10938 0 14.76563 11.95313 31.40625 30.70313 31.40624 14.0625-0.23438 30.23438-10.07813 30.46874-30 0.70313-16.40625-13.35938-33.51563-30.70312-33.51562z",
+                              "viewBox": [
+                                0,
+                                0,
+                                61.1971,
+                                63.5156
+                              ],
+                              "width": 32.671643574424806,
+                              "height": 33.909434346002286,
+                              "stroke": "$Color/Illustration/Outline",
+                              "strokeWidth": 1.6912180627939493,
+                              "strokeLinejoin": "round",
+                              "strokeLinecap": "round"
+                            },
+                            {
+                              "type": "path",
+                              "id": "YOb1H",
+                              "x": 45.940254226515826,
+                              "y": 6.002455828142874,
+                              "name": "Antenna Tip L",
+                              "geometry": "M0 4.51853c0.23438-2.8125 3.04688-4.92188 6.09375-4.45312 2.34375 0.46875 3.98438 2.8125 3.51563 5.39062-0.46875 2.57813-3.04688 4.45313-5.625 3.75-2.10938-0.23438-3.98438-2.57813-3.98438-4.6875z",
+                              "viewBox": [
+                                0,
+                                0,
+                                9.6895,
+                                9.355
+                              ],
+                              "fill": "$Color/Illustration/Outline",
+                              "width": 5.17298843269353,
+                              "height": 4.994407016651836
+                            },
+                            {
+                              "type": "path",
+                              "id": "nAClk",
+                              "x": 61.542664293885856,
+                              "y": 8.251353756196771,
+                              "name": "Antenna Tip R",
+                              "geometry": "M0.07205 4.29054c0.46875-2.8125 3.04687-4.6875 6.09375-4.21876 2.34375 0.70312 3.98437 3.04688 3.51563 5.625-0.46875 2.57813-3.04687 4.21875-5.625 3.75-2.57813-0.46875-4.45313-2.57813-3.98438-5.15625z",
+                              "viewBox": [
+                                0,
+                                0,
+                                9.7616,
+                                9.5266
+                              ],
+                              "fill": "$Color/Illustration/Outline",
+                              "width": 5.211480869454683,
+                              "height": 5.086020083894749
+                            },
+                            {
+                              "type": "path",
+                              "id": "ixyqd",
+                              "x": 36.805961611796114,
+                              "y": 58.340531333418056,
+                              "name": "Arm Line 2",
+                              "geometry": "M0 0c2.57813 4.92188 8.67188 13.82813 19.92188 13.82813",
+                              "viewBox": [
+                                0,
+                                0,
+                                19.9219,
+                                13.8281
+                              ],
+                              "width": 10.635817973814667,
+                              "height": 7.382486335324773,
+                              "stroke": "$Color/Illustration/Outline",
+                              "strokeWidth": 1.6912180627939493,
+                              "strokeLinejoin": "round",
+                              "strokeLinecap": "round"
+                            },
+                            {
+                              "type": "path",
+                              "id": "RJNrY",
+                              "x": 48.1925155713741,
+                              "y": 38.069912291852035,
+                              "name": "Mouth",
+                              "geometry": "M0 0c1.64063 4.92188 8.20313 5.15625 8.90625 0",
+                              "viewBox": [
+                                0,
+                                0,
+                                8.9063,
+                                3.7798
+                              ],
+                              "width": 4.754856997584848,
+                              "height": 2.0179433074869704,
+                              "stroke": "$Color/Illustration/Outline",
+                              "strokeWidth": 1.20797715139189,
+                              "strokeLinejoin": "round",
+                              "strokeLinecap": "round"
+                            },
+                            {
+                              "type": "path",
+                              "id": "AsSQ9",
+                              "x": 40.42670649548749,
+                              "y": 30.186917503495604,
+                              "name": "Eye",
+                              "geometry": "M0.01486 7.96875c0 3.75 2.34375 7.73438 5.39063 7.73438 3.04688 0 5.15625-3.28125 5.15625-7.5 0-3.98438-2.34375-8.20313-5.625-8.20313-2.57813 0.23438-5.15625 3.28125-4.92188 7.96875z",
+                              "viewBox": [
+                                0,
+                                0,
+                                10.5617,
+                                15.7031
+                              ],
+                              "fill": "$Color/Illustration/Outline",
+                              "width": 5.638634803610016,
+                              "height": 8.383503241388075
+                            },
+                            {
+                              "type": "path",
+                              "id": "ENRy6",
+                              "x": 42.78910639379687,
+                              "y": 31.70574043472734,
+                              "name": "Eye Highlight",
+                              "geometry": "M0.04297 2.31135c-0.46875 3.04687 3.04688 3.98437 3.28125 0.70312 0.46875-3.51563-3.04688-4.21875-3.28125-0.70312z",
+                              "viewBox": [
+                                0,
+                                0,
+                                3.3672,
+                                5.0753
+                              ],
+                              "fill": "$Color/Neutral/Surface",
+                              "width": 1.7976662005847208,
+                              "height": 2.7095792551163087
+                            },
+                            {
+                              "type": "path",
+                              "id": "VIQJ5",
+                              "x": 54.266205669251306,
+                              "y": 31.7355840854201,
+                              "name": "Wink",
+                              "geometry": "M0.10777 6.23984c-0.9375-3.51563 4.45312-7.5 7.96875-5.85938l0.46875 0.9375c0.70313 0.23438 3.04688 2.57813 3.04688 3.04688 0.70313 3.04688-2.10938 0.70313-3.28125 0-3.04687-0.46875-5.625 0.46875-6.79688 2.34375l-1.40625 0.46875 0-0.9375z",
+                              "viewBox": [
+                                0,
+                                0,
+                                11.7034,
+                                7.1773
+                              ],
+                              "fill": "$Color/Illustration/Outline",
+                              "width": 6.2481606711580016,
+                              "height": 3.831785941273674
+                            },
+                            {
+                              "type": "path",
+                              "id": "v7mUj3",
+                              "x": 48.1925155713741,
+                              "y": 53.8359552561332,
+                              "name": "Map",
+                              "geometry": "M7.26563 2.34375l22.03124-2.34375 18.75 8.4375-2.57812 35.85938-23.20313-7.96876-22.26562 3.75 3.04688-13.35937 4.21875-24.375z",
+                              "viewBox": [
+                                0,
+                                0,
+                                48.0469,
+                                44.2969
+                              ],
+                              "fill": "$Color/Illustration/Cream",
+                              "width": 25.6510715647642,
+                              "height": 23.649037752637597
+                            },
+                            {
+                              "type": "path",
+                              "id": "w6Elx",
+                              "x": 48.1925155713741,
+                              "y": 52.58465742976992,
+                              "name": "Map Outline",
+                              "geometry": "M4.6875 16.40625l2.57813-11.71875 22.03124-2.34375 18.75 8.67188 18.75-11.01563-7.03125 36.79688-18.28125 11.24999-19.21875-9.14062-22.26562 3.51562 3.04687-13.35937",
+                              "viewBox": [
+                                0,
+                                0,
+                                66.7969,
+                                48.0469
+                              ],
+                              "width": 35.66124062539722,
+                              "height": 25.6510715647642,
+                              "stroke": "$Color/Illustration/Outline",
+                              "strokeWidth": 1.6912180627939493,
+                              "strokeLinejoin": "round",
+                              "strokeLinecap": "round"
+                            },
+                            {
+                              "type": "path",
+                              "id": "UOeVJ",
+                              "x": 59.82935045125207,
+                              "y": 53.8359552561332,
+                              "name": "Map Fold 1",
+                              "geometry": "M7.26563 0l-7.03125 36.09375-0.23438 0.23438",
+                              "viewBox": [
+                                0,
+                                0,
+                                7.2656,
+                                36.3281
+                              ],
+                              "width": 3.8789271641032155,
+                              "height": 19.3946892080844,
+                              "stroke": "$Color/Illustration/Outline",
+                              "strokeWidth": 1.6912180627939493,
+                              "strokeLinejoin": "round",
+                              "strokeLinecap": "round"
+                            },
+                            {
+                              "type": "path",
+                              "id": "jPuoY",
+                              "x": 70.34002796491674,
+                              "y": 58.84103978644971,
+                              "name": "Map Fold 2",
+                              "geometry": "M6.5625 0l-6.5625 35.625",
+                              "viewBox": [
+                                0,
+                                0,
+                                6.5625,
+                                35.625
+                              ],
+                              "width": 3.503559171221558,
+                              "height": 19.019321215202744,
+                              "stroke": "$Color/Illustration/Outline",
+                              "strokeWidth": 1.6912180627939493,
+                              "strokeLinejoin": "round",
+                              "strokeLinecap": "round"
+                            },
+                            {
+                              "type": "path",
+                              "id": "MbHsk",
+                              "x": 47.31663912546079,
+                              "y": 61.34358205160797,
+                              "name": "Hand L",
+                              "geometry": "M0 6.79688c0 3.51563 3.51563 6.09375 7.03125 6.32812 3.51563 0.23438 6.09375-2.8125 6.09375-6.32813 0-3.98438-3.28125-6.79688-6.79688-6.79687-3.51563 0-6.32813 2.8125-6.32812 6.79688z",
+                              "viewBox": [
+                                0,
+                                0,
+                                13.125,
+                                13.1377
+                              ],
+                              "fill": "$Color/Illustration/BeeYellow",
+                              "width": 7.007118342443116,
+                              "height": 7.013898563620185
+                            },
+                            {
+                              "type": "path",
+                              "id": "S4qZu",
+                              "x": 47.31663912546079,
+                              "y": 61.468669124189645,
+                              "name": "Hand L Outline",
+                              "geometry": "M0 6.5625c0 3.51563 3.51563 6.32813 7.03125 6.32813 3.51563 0 5.85938-2.57813 5.85938-6.32813 0-3.51563-3.28125-6.5625-6.5625-6.5625-3.51563 0-6.32813 3.04688-6.32813 6.5625z",
+                              "viewBox": [
+                                0,
+                                0,
+                                12.8906,
+                                12.8906
+                              ],
+                              "width": 6.881977882293122,
+                              "height": 6.881977882293122,
+                              "stroke": "$Color/Illustration/Outline",
+                              "strokeWidth": 1.6912180627939493,
+                              "strokeLinejoin": "round",
+                              "strokeLinecap": "round"
+                            },
+                            {
+                              "type": "path",
+                              "id": "P0wFK",
+                              "x": 78.9738121266048,
+                              "y": 59.34154823948136,
+                              "name": "Hand R",
+                              "geometry": "M0 6.09375c0 3.75 3.28125 6.09375 6.32813 6.09375 2.8125 0 5.15625-2.34375 5.15625-6.09375 0-3.28125-2.34375-6.09375-5.85938-6.09375-2.57813 0-5.625 2.8125-5.625 6.09375z",
+                              "viewBox": [
+                                0,
+                                0,
+                                11.4844,
+                                12.1875
+                              ],
+                              "fill": "$Color/Illustration/BeeYellow",
+                              "width": 6.131241896529808,
+                              "height": 6.506609889411465
+                            },
+                            {
+                              "type": "path",
+                              "id": "wcrTH",
+                              "x": 78.9738121266048,
+                              "y": 59.34154823948136,
+                              "name": "Hand R Outline",
+                              "geometry": "M0 6.09375c0 3.75 3.04688 6.09375 5.85938 6.09375 3.28125 0 5.625-2.57813 5.625-6.09375 0-3.28125-2.57813-6.09375-5.625-6.09375-2.57813 0-5.85938 2.57813-5.85938 6.09375z",
+                              "viewBox": [
+                                0,
+                                0,
+                                11.4844,
+                                12.1875
+                              ],
+                              "width": 6.131241896529808,
+                              "height": 6.506609889411465,
+                              "stroke": "$Color/Illustration/Outline",
+                              "strokeWidth": 1.6912180627939493,
+                              "strokeLinejoin": "round",
+                              "strokeLinecap": "round"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "lmmTs",
+                      "name": "Caption",
+                      "fill": "$Color/Text/Secondary",
+                      "content": "AI/BeeLoader · 96pt (기본)",
+                      "fontFamily": "$Font/Family",
+                      "fontSize": "$Font/Size/Caption",
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "nYLxX",
+              "name": "Illustration Colors",
+              "gap": 24,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "S2pAU",
+                  "name": "BeeYellow",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "children": [
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 12,
+                      "id": "YkGeT",
+                      "name": "Chip",
+                      "fill": "$Color/Illustration/BeeYellow",
+                      "width": 64,
+                      "height": 40,
+                      "stroke": "$Color/Neutral/Border",
+                      "strokeWidth": 1
+                    },
+                    {
+                      "type": "text",
+                      "id": "u05vRT",
+                      "name": "Name",
+                      "fill": "$Color/Text/Primary",
+                      "content": "Illustration/BeeYellow",
+                      "fontFamily": "$Font/Family",
+                      "fontSize": "$Font/Size/Caption",
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "UBdgS",
+                      "name": "Hex",
+                      "fill": "$Color/Text/Secondary",
+                      "content": "#FFC713",
+                      "fontFamily": "$Font/Family",
+                      "fontSize": "$Font/Size/Caption",
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "qKWTl",
+                  "name": "BeeStripe",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "children": [
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 12,
+                      "id": "LSnU1",
+                      "name": "Chip",
+                      "fill": "$Color/Illustration/BeeStripe",
+                      "width": 64,
+                      "height": 40,
+                      "stroke": "$Color/Neutral/Border",
+                      "strokeWidth": 1
+                    },
+                    {
+                      "type": "text",
+                      "id": "FSa35",
+                      "name": "Name",
+                      "fill": "$Color/Text/Primary",
+                      "content": "Illustration/BeeStripe",
+                      "fontFamily": "$Font/Family",
+                      "fontSize": "$Font/Size/Caption",
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "TNLRs",
+                      "name": "Hex",
+                      "fill": "$Color/Text/Secondary",
+                      "content": "#F49B24",
+                      "fontFamily": "$Font/Family",
+                      "fontSize": "$Font/Size/Caption",
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "BxPBv",
+                  "name": "Cream",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "children": [
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 12,
+                      "id": "zY94J",
+                      "name": "Chip",
+                      "fill": "$Color/Illustration/Cream",
+                      "width": 64,
+                      "height": 40,
+                      "stroke": "$Color/Neutral/Border",
+                      "strokeWidth": 1
+                    },
+                    {
+                      "type": "text",
+                      "id": "x7sOeJ",
+                      "name": "Name",
+                      "fill": "$Color/Text/Primary",
+                      "content": "Illustration/Cream",
+                      "fontFamily": "$Font/Family",
+                      "fontSize": "$Font/Size/Caption",
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "dVf9Z",
+                      "name": "Hex",
+                      "fill": "$Color/Text/Secondary",
+                      "content": "#FFF3BE",
+                      "fontFamily": "$Font/Family",
+                      "fontSize": "$Font/Size/Caption",
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "M4dDlU",
+                  "name": "Outline",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "children": [
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 12,
+                      "id": "dRYx0",
+                      "name": "Chip",
+                      "fill": "$Color/Illustration/Outline",
+                      "width": 64,
+                      "height": 40,
+                      "stroke": "$Color/Neutral/Border",
+                      "strokeWidth": 1
+                    },
+                    {
+                      "type": "text",
+                      "id": "NbSuw",
+                      "name": "Name",
+                      "fill": "$Color/Text/Primary",
+                      "content": "Illustration/Outline",
+                      "fontFamily": "$Font/Family",
+                      "fontSize": "$Font/Size/Caption",
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "c3R1m",
+                      "name": "Hex",
+                      "fill": "$Color/Text/Secondary",
+                      "content": "#1E1E1F",
+                      "fontFamily": "$Font/Family",
+                      "fontSize": "$Font/Size/Caption",
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
           "id": "gvCmT",
           "name": "Section — Place Components",
           "width": "fill_container",
@@ -26887,6 +27777,22 @@
     "Screen/Width": {
       "type": "number",
       "value": 390
+    },
+    "Color/Illustration/BeeYellow": {
+      "type": "color",
+      "value": "#FFC713"
+    },
+    "Color/Illustration/BeeStripe": {
+      "type": "color",
+      "value": "#F49B24"
+    },
+    "Color/Illustration/Cream": {
+      "type": "color",
+      "value": "#FFF3BE"
+    },
+    "Color/Illustration/Outline": {
+      "type": "color",
+      "value": "#1E1E1F"
     }
   },
   "fileToken": "16213594-ee96-4e6c-a7ab-98ebce35bd9c"

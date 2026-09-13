@@ -25,4 +25,9 @@ export const COLOR = {
   brand: colors.brand.DEFAULT,
   /** Color/Neutral/Surface — `bg-surface` 와 같은 값. 안드로이드 `progressBackgroundColor` 용 */
   surface: colors.surface,
+  /** Color/Illustration/* — `BeeLoader` 의 SVG `fill`·`stroke` 용. UI 에 쓰지 않는다 */
+  illustrationBee: colors.illustration.bee,
+  illustrationStripe: colors.illustration.stripe,
+  illustrationCream: colors.illustration.cream,
+  illustrationOutline: colors.illustration.outline,
 } as const;
