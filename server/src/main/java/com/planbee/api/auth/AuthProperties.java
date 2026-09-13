@@ -23,6 +23,9 @@ import org.springframework.validation.annotation.Validated;
  * @param refreshGraceWindow  리프레시 회전 유예 창 (AC-49)
  * @param deletionTokenTtl    거절 계정에 발급하는 삭제 전용 토큰의 수명 (AC-50)
  * @param signupRateLimit     가입 IP 레이트 리밋
+ * @param rejectedAccountRetention 거절된 계정을 보관하는 기간. 거절 시각({@code rejected_at})부터 세고,
+ *                            지나면 {@link RejectedAccountPurgeService} 가 파기한다
+ *                            ({@code docs/legal/privacy-policy.md} 3항 — 문서와 같은 값이어야 한다)
  */
 @Validated
 @ConfigurationProperties(prefix = "planbee.auth")
@@ -31,7 +34,8 @@ public record AuthProperties(
 		@NotNull @DefaultValue LoginLock loginLock,
 		@DefaultValue("10s") Duration refreshGraceWindow,
 		@DefaultValue("10m") Duration deletionTokenTtl,
-		@NotNull @DefaultValue RateLimit signupRateLimit) {
+		@NotNull @DefaultValue RateLimit signupRateLimit,
+		@DefaultValue("30d") Duration rejectedAccountRetention) {
 
 	/**
 	 * 설정값이 비었으면 {@code null} 을 돌려준다 — 응답에 빈 문자열이 나가면 앱이
