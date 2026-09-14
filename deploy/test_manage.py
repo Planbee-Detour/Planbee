@@ -13,6 +13,7 @@ class DeploymentTest(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         shutil.copy(Path(__file__).with_name('manage.sh'), self.root)
+        shutil.copy(Path(__file__).with_name('remote-deploy.sh'), self.root)
         (self.root / '.env.example').write_text('DB_URL=\n')
         docker = self.root / 'docker'
         docker.write_text('''#!/bin/bash
@@ -82,6 +83,45 @@ exit 0
     def test_check_never_loads_runtime_env(self):
         self.assertEqual(self.run_action('check').returncode, 0)
         self.assertIn('config --no-env-resolution --quiet', self.calls())
+
+    def run_remote(self, **env):
+        gcloud = self.root / 'gcloud'
+        gcloud.write_text('''#!/bin/bash
+printf '%s\\n' "$*" >> "$CALLS"
+case " $* " in
+  *" compute scp "*) exit "${SCP_EXIT:-0}" ;;
+  *"--command=test "*) exit "${PREFLIGHT_EXIT:-0}" ;;
+esac
+exit 0
+''')
+        gcloud.chmod(0o700)
+        return subprocess.run(['bash', str(self.root / 'remote-deploy.sh')],
+                              env={**self.env, 'GCP_PROJECT_ID': 'example-project',
+                                   'GCP_INSTANCE': 'example-vm', 'GCP_ZONE': 'us-central1-a',
+                                   'IMAGE_TAG': 'a' * 40, **env}, capture_output=True, text=True)
+
+    def test_remote_rejects_shell_input(self):
+        self.assertNotEqual(self.run_remote(IMAGE_TAG='abc;exit 0').returncode, 0)
+        self.assertEqual(self.calls(), '')
+
+    def test_remote_preflight_failure_stops_transfer(self):
+        self.assertNotEqual(self.run_remote(PREFLIGHT_EXIT='1').returncode, 0)
+        self.assertNotIn('compute scp', self.calls())
+
+    def test_remote_transfer_failure_stops_deployment(self):
+        self.assertNotEqual(self.run_remote(SCP_EXIT='1').returncode, 0)
+        self.assertNotIn('make deploy', self.calls())
+
+    def test_remote_uses_iap_and_preserves_secrets(self):
+        self.assertEqual(self.run_remote().returncode, 0)
+        calls = self.calls().splitlines()
+        self.assertEqual(len(calls), 3)
+        self.assertTrue(all('--tunnel-through-iap' in line for line in calls))
+        files = calls[1].split()
+        self.assertIn('.env.example', files)
+        self.assertNotIn('.env', files)
+        self.assertNotIn('certs/supabase.crt', files)
+        self.assertIn('make deploy IMAGE_TAG=' + 'a' * 40, calls[2])
 
 
 if __name__ == '__main__':

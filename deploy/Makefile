@@ -6,6 +6,11 @@ IMAGE_REPOSITORY ?= ghcr.io/planbee-detour/planbee-api
 IMAGE_TAG ?=
 GHCR_USER ?=
 export DEPLOY_DIR IMAGE_REPOSITORY IMAGE_TAG GHCR_USER
+export GCP_PROJECT_ID GCP_INSTANCE GCP_ZONE
+
+.PHONY: remote-deploy
+remote-deploy: ## CI에서 IAP로 설정 파일 전달 후 VM 배포 (GCP 인증 필요)
+	@bash '$(DEPLOY_DIR)/remote-deploy.sh'
 
 .PHONY: help env ghcr-login image-build image-push deploy rollback status logs stop check verify
 help: ## 운영 명령 안내
@@ -34,4 +39,5 @@ check: ## 운영 Compose 구조 검사 (시크릿 파일을 읽지 않음)
 	@bash '$(DEPLOY_DIR)/manage.sh' check
 verify: check ## 배포 스크립트 구문·실패 경로 검증 (원격 접속·실제 배포 없음)
 	@bash -n '$(DEPLOY_DIR)/manage.sh'
+	@bash -n '$(DEPLOY_DIR)/remote-deploy.sh'
 	@python3 '$(DEPLOY_DIR)/test_manage.py'

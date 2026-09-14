@@ -1,0 +1,88 @@
+name: deploy
+
+on:
+  push:
+    branches: [develop, main]
+  workflow_dispatch:
+
+# 현재는 develop만 배포한다. Repository variable DEPLOY_BRANCH=main으로 전환한다.
+# push 이벤트는 PR 병합뿐 아니라 직접 push도 포함하므로 브랜치 보호를 설정한다.
+concurrency:
+  group: planbee-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    if: github.ref == format('refs/heads/{0}', vars.DEPLOY_BRANCH || 'develop')
+    uses: ./.github/workflows/verify.yml
+
+  publish:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@v3
+      - name: 배포 도구 검증
+        run: make -f deploy/Makefile verify
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: 검증한 커밋 이미지 빌드·게시
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          make -f deploy/Makefile image-build
+          make -f deploy/Makefile image-push
+
+  deploy:
+    needs: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      GCP_INSTANCE: ${{ vars.GCP_INSTANCE }}
+      GCP_ZONE: ${{ vars.GCP_ZONE || 'us-central1-a' }}
+      IMAGE_TAG: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: 오래된 실행의 배포 방지
+        run: |
+          current_sha=$(git ls-remote origin "refs/heads/$GITHUB_REF_NAME" | cut -f1)
+          if [ "$current_sha" != "$GITHUB_SHA" ]; then
+            echo '::error::브랜치에 더 최신 커밋이 있습니다. 최신 실행으로 배포하세요.'
+            exit 1
+          fi
+      - name: 필수 설정 확인
+        env:
+          WIF_PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          SERVICE_ACCOUNT: ${{ vars.GCP_SERVICE_ACCOUNT }}
+        run: |
+          for key in GCP_PROJECT_ID GCP_INSTANCE GCP_ZONE WIF_PROVIDER SERVICE_ACCOUNT; do
+            if [ -z "${!key}" ]; then
+              echo "::error::GitHub variable $key 설정이 필요합니다. deploy/ACTIONS.md를 확인하세요."
+              exit 1
+            fi
+          done
+      - uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: IAP로 배포 파일 전달·API 교체
+        run: make -f deploy/Makefile remote-deploy
