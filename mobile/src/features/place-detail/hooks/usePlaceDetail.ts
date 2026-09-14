@@ -4,7 +4,6 @@
  * `PLACE_NOT_FOUND`(404) 는 "찾을 수 없어요" 빈 상태, 그 외 오류는 오류 상태로 가른다
  * (design.md §3.3 / §3.4 / M-13). 분기는 `code` 로 한다.
  */
-import {useCallback} from 'react';
 import {useQuery} from '@tanstack/react-query';
 
 import {isApiError} from '../../../shared/api/problem';
@@ -29,9 +28,9 @@ export function usePlaceDetail(placeId: string) {
         ? {status: 'error'}
         : {status: 'success', place: query.data};
 
-  const retry = useCallback(() => {
+  const retry = () => {
     query.refetch();
-  }, [query]);
+  };
 
   return {retry, state};
 }

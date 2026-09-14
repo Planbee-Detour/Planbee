@@ -2,6 +2,7 @@ import React, {useState} from 'react';
 import {Image, Pressable, ScrollView, Text, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
+import {Button} from '../../../shared/ui/Button';
 import {useNearbyPlaces} from '../hooks/useNearbyPlaces';
 import type {NearbyPlace, PlaceCategory} from '../types';
 
@@ -112,13 +113,13 @@ export function NearbyPlacesScreen({onBack, onPlacePress}: Props) {
           {error ? '연결을 확인하고 다시 시도해 주세요.' : '지역을 바꾸거나 잠시 후 다시 확인해 주세요.'}
         </Text>
         {error ? (
-          <Pressable accessibilityRole="button" onPress={retry} className="mt-6 min-h-[52px] w-60 items-center justify-center rounded-button bg-ink">
-            <Text className="text-ink-inverse">다시 시도</Text>
-          </Pressable>
+          <View className="mt-6 w-60">
+            <Button label="다시 시도" onPress={retry} variant="primary" />
+          </View>
         ) : null}
-        <Pressable accessibilityRole="button" onPress={onBack} className="mt-3 min-h-[52px] w-60 items-center justify-center rounded-button border border-border bg-surface">
-          <Text className="text-ink">이전 화면으로</Text>
-        </Pressable>
+        <View className={`w-60 ${error ? 'mt-3' : 'mt-6'}`}>
+          <Button label="이전 화면으로" onPress={onBack} variant={error ? 'secondary' : 'primary'} />
+        </View>
       </SafeAreaView>
     );
   }
