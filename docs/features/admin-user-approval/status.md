@@ -2,7 +2,7 @@
 
 - 기능 슬러그: `admin-user-approval`
 - 시작일: 2026-08-23
-- 현재 단계: `서버 트랙 종료 (2026-09-09) / 모바일 재작업 2회차 진행 중 — 긴급 렌더 크래시 DEF-C01 수정 완료(2026-09-09), DEF-T01 미착수`
+- 현재 단계: `서버 트랙 종료 (2026-09-09) / 모바일 재작업 2회차 완료 (2026-09-11) — DEF-C01·DEF-T01 모두 해소, mobile-tester 재확인 대기`
 
 ## 선행 조건
 
@@ -141,14 +141,18 @@
   - 게이트: `make lint-mobile` 통과(exit 0) / `npm --prefix mobile run typecheck` 통과(exit 0) /
     `make test-mobile` 통과(exit 0 — 24 suites · 223 tests · 실패 0)
   - 리포트: `docs/features/admin-user-approval/defects.md` (2026-09-09 mobile-tester 절)
-- [ ] mobile-developer 재작업 2회차 — **진행 중**
+- [x] mobile-developer 재작업 2회차 — **완료 (2026-09-11)**
   - [x] `DEF-C01` (긴급, 사람이 실기기에서 재현) — `처리 완료` 세그먼트 전환 시 화면 백지.
     원인은 내비게이션 배선이 아니라 **조건부 `shadow-segment` 가 만든 CSS 변수의 뒤늦은 등장**이다
     (NativeWind 업그레이드 경고 → `JSON.stringify` 가 내비게이션 컨텍스트의 던지는 getter 를
     건드림). `shared/ui/Segmented.tsx` 의 비선택 칸에 `shadow-none` 을 주어 해소.
     규칙 `M-25` 등록 + 회귀 테스트 `shared/ui/__tests__/Segmented.test.tsx`.
     자세한 내용은 `결정 기록` 표 참조
-  - [ ] `DEF-T01` — **미착수.** 이번 크래시 수정과 범위를 섞지 않았다
+  - [x] `DEF-T01` — **해소 (2026-09-11).** `UserApprovalListScreen.tsx` 의 전체 오류 블록 조건을
+    `active.isError && pages.length === 0` 로 좁혀, 이미 페이지가 있으면 다음 페이지 실패는
+    §5.6 푸터로 · 새로고침 실패는 §5.5 배너로만 알린다. `pendingList.test.tsx` 의 `test.failing`
+    2건을 `test` 로 되돌렸고 둘 다 통과. `make lint-mobile`(exit 0) ·
+    `npx jest src/features/admin-user-approval`(9 스위트 · 74건 전부 통과) 확인
 - [ ] integration-tester — PASS / FAIL
 
 ## 서버 AC 판정표 (server-tester, 2026-09-09)

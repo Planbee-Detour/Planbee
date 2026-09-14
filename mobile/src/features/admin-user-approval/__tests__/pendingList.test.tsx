@@ -361,14 +361,14 @@ describe('페이지네이션 — AC-7 (design.md §5.6)', () => {
   });
 
   /**
-   * <b>DEF-T01 — 지금은 실패한다</b> (`defects.md` 2026-09-09 mobile-tester).
+   * <b>DEF-T01 — 해소</b> (`defects.md` 2026-09-09 mobile-tester → 2026-09-11 수정).
    *
-   * 화면이 `active.isError` 하나로 본문 전체를 §5.9 오류 블록으로 바꾼다. react-query 는
-   * 이미 받은 데이터가 있어도 <b>추가 페이지 요청이 실패하면 쿼리 상태를 `error` 로</b> 만들므로,
-   * 목록이 통째로 사라지고 §5.6 의 "더 불러오지 못했어요" 푸터에는 도달할 수 없다.
-   * 고치면 이 테스트가 통과로 바뀌고 `test.failing` 이 실패한다 — 그때 `test` 로 되돌린다.
+   * 화면이 `active.isError` 하나로 본문 전체를 §5.9 오류 블록으로 바꿨었다. react-query 는
+   * 이미 받은 데이터가 있어도 추가 페이지 요청이 실패하면 쿼리 상태를 `error` 로 만드는데,
+   * 화면은 이제 `pages.length === 0` 일 때만(최초 로드 실패) 전체 오류 블록을 보여준다 —
+   * 이미 페이지가 있으면 §5.6 의 "더 불러오지 못했어요" 푸터로만 알린다.
    */
-  test.failing('AC7_다음_페이지_로드에_실패하면_이미_불러온_항목은_남고_다시_시도로_이어붙인다', async () => {
+  test('AC7_다음_페이지_로드에_실패하면_이미_불러온_항목은_남고_다시_시도로_이어붙인다', async () => {
     let attempt = 0;
     server.use(
       http.get(PENDING, ({request}) => {
@@ -458,18 +458,17 @@ describe('당겨서 새로고침 — AC-9 (design.md §5.5)', () => {
     await fireEvent(screen.getByTestId('admin-pending-list'), 'refresh');
 
     expect(await screen.findByText('새로 고치지 못했어요', {}, {timeout: 3000})).toBeTruthy();
-    // 부연은 §5.9 오류 블록과 같은 문장이라 `getAll` 로 본다 — 지금은 DEF-T01 때문에 둘 다 뜬다.
     expect(screen.getAllByText('잠시 후 다시 시도해 주세요.').length).toBeGreaterThan(0);
   });
 
   /**
-   * <b>DEF-T01 — 지금은 실패한다</b> (`defects.md` 2026-09-09 mobile-tester).
+   * <b>DEF-T01 — 해소</b> (`defects.md` 2026-09-09 mobile-tester → 2026-09-11 수정).
    *
    * §5.5 는 "기존 목록을 유지" 하고 배너만 띄우라고 못 박았는데("이미 보고 있던 내용을 실패가
-   * 지우면 안 된다"), 실제로는 보고 있던 목록이 사라지고 §5.9 오류 블록이 그 자리를 덮는다.
-   * 배너와 전체 오류 블록이 <b>동시에</b> 뜨는 상태가 된다. 원인은 위 AC-7 항목과 같다.
+   * 지우면 안 된다"), 실제로는 보고 있던 목록이 사라지고 §5.9 오류 블록이 그 자리를 덮었었다.
+   * 원인은 위 AC-7 항목과 같다 — 이제 `pages.length === 0` 조건으로 갈라 재발하지 않는다.
    */
-  test.failing('AC9_새로고침에_실패해도_보고_있던_목록은_남는다', async () => {
+  test('AC9_새로고침에_실패해도_보고_있던_목록은_남는다', async () => {
     server.use(
       http.get(PENDING, () => failAfterFirstPage([pendingItem({email: 'kept@example.com'})])),
     );

@@ -197,7 +197,9 @@
 
 - 올린 역할: mobile-tester (2026-09-09)
 - 받는 역할: mobile-developer
-- 상태: **열림 (차단)**
+- 상태: **해결 (2026-09-11, mobile-developer)** — `UserApprovalListScreen.tsx` 의 전체 오류 블록
+  조건을 `active.isError && pages.length === 0` 로 좁혔다 (아래 `제안` 항목 그대로). `pendingList.test.tsx`
+  의 `test.failing` 2건을 `test` 로 되돌렸고 둘 다 통과한다
 - 위치: `mobile/src/features/admin-user-approval/screens/UserApprovalListScreen.tsx:265-289`
   (본문 영역을 고르는 `active.isError` 분기)
 - 근거: PRD **AC-7 · AC-9** / `design.md` §5.5 · §5.6 · §5.12
