@@ -142,6 +142,7 @@ public class TourApiClient {
 			root = restClient.get().uri(uriFunction).retrieve().body(JsonNode.class);
 		}
 		catch (RestClientException exception) {
+			log.warn("TourAPI 요청 실패", exception);
 			throw upstreamUnavailable();
 		}
 		if (root == null) {
