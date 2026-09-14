@@ -39,6 +39,10 @@ GHCR 게시에는 자동 제공되는 `GITHUB_TOKEN`의 `packages: write` 권한
 이미지 주소는 `ghcr.io/planbee-detour/planbee-api:<전체 커밋 SHA>`다.
 DB 비밀번호·JWT·TourAPI 키를 GitHub에 복사하지 않는다.
 
+`publish`의 `make verify`는 서비스 `env_file`도 `/dev/null`로 지정해 Compose 구조를
+검사한다. checkout에 운영 `.env`가 없어도 된다. `make env`를 CI에 추가할 필요가 없다.
+VM의 `make deploy`에서는 환경 파일 경로를 `.env`로 고정하고, 파일이 없으면 실패한다.
+
 ## GCP 최초 설정 (운영자)
 
 1. Compute Engine, IAM Credentials, Security Token Service, IAP, OS Login 관련 API를 활성화한다.
