@@ -1,12 +1,6 @@
-/**
- * 세션이 있을 때의 스택. 하단 탭(홈·탐색·저장·마이) 위에 장소 화면과
- * `auth` 가 소유한 계정 화면(설정·계정 삭제·약관)이 함께 얹힌다.
- *
- * `NavigationContainer` 는 여기 없다 — 컨테이너는 `RootNavigator` 하나뿐이고
- * 이 스택은 세션이 성립했을 때만 마운트된다 (auth design.md §1.1).
- */
+/** 홈을 첫 화면으로 두고, 로그인 화면은 필요한 순간에 스택 위로 올린다. */
 import React from 'react';
-import {Pressable, StatusBar, Text, View} from 'react-native';
+import {Alert, Pressable, StatusBar, Text, View} from 'react-native';
 import {createBottomTabNavigator, type BottomTabBarProps} from '@react-navigation/bottom-tabs';
 import {createNativeStackNavigator, type NativeStackScreenProps} from '@react-navigation/native-stack';
 import {SafeAreaView} from 'react-native-safe-area-context';
@@ -14,11 +8,19 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {AdminSettingsSection} from '../../features/admin-user-approval/components/AdminSettingsSection';
 import {UserApprovalListScreen} from '../../features/admin-user-approval/screens/UserApprovalListScreen';
 import {AccountDeleteScreen} from '../../features/auth/screens/AccountDeleteScreen';
+import {AccountStatusScreen} from '../../features/auth/screens/AccountStatusScreen';
 import {LegalDocumentScreen} from '../../features/auth/screens/LegalDocumentScreen';
+import {LoginScreen} from '../../features/auth/screens/LoginScreen';
 import {SettingsScreen} from '../../features/auth/screens/SettingsScreen';
+import {SignUpScreen} from '../../features/auth/screens/SignUpScreen';
+import {useBackgroundSessionRestore} from '../../features/auth/hooks/useBackgroundSessionRestore';
+import {useSession} from '../../features/auth/hooks/useSession';
 import {HomeScreen} from '../../features/home/screens/HomeScreen';
 import {NearbyPlacesScreen} from '../../features/nearby-places/screens/NearbyPlacesScreen';
 import {PlaceDetailScreen} from '../../features/place-detail/screens/PlaceDetailScreen';
+import {SituationCard} from '../../features/plan-b-recommendation/components/SituationCard';
+import {PlanBRecommendationScreen} from '../../features/plan-b-recommendation/screens/PlanBRecommendationScreen';
+import {ScheduleProgressScreen} from '../../features/plan-b-recommendation/screens/ScheduleProgressScreen';
 import {MyScreen} from '../../features/profile/screens/MyScreen';
 import {usePreferredRegion} from '../usePreferredRegion';
 import type {MainStackParamList} from './types';
@@ -54,8 +56,9 @@ function AppTabBar({navigation, state}: BottomTabBarProps) {
   );
 }
 
-function PlaceholderScreen({tab}: {tab: '탐색' | '저장'}) {
+function PlaceholderScreen({tab, onProtectedPress}: {tab: '탐색' | '저장'; onProtectedPress?: () => void}) {
   return (
+    <Pressable accessibilityRole={onProtectedPress ? 'button' : undefined} onPress={onProtectedPress} className="flex-1">
     <SafeAreaView className="flex-1 items-center justify-center bg-background px-8 pb-20">
       <Text className="text-display text-brand">{tab === '탐색' ? '⌕' : '▣'}</Text>
       <Text className="mt-4 text-h1 font-bold text-ink">{tab}</Text>
@@ -63,19 +66,27 @@ function PlaceholderScreen({tab}: {tab: '탐색' | '저장'}) {
         {tab === '탐색' ? '새로운 장소와 계획을 찾아보세요.' : '저장한 장소와 계획을 모아볼 수 있어요.'}
       </Text>
     </SafeAreaView>
+    </Pressable>
   );
 }
 
-function MainTabsScreen({navigation}: NativeStackScreenProps<MainStackParamList, 'MainTabs'>) {
+function MainTabsScreen({navigation, route}: NativeStackScreenProps<MainStackParamList, 'MainTabs'>) {
   const {isResolvingRegion, region, setRegion} = usePreferredRegion();
+  const isSignedIn = useSession(state => state.isSignedIn);
+  const planBState = route.params?.planBState ?? 'needs-confirmation';
   const openPlace = (placeId: string) => navigation.push('PlaceDetail', {placeId});
+  const requestLogin = () => Alert.alert('로그인이 필요한 기능이에요', '로그인하시겠어요?', [
+    {text: '아니요', style: 'cancel'},
+    {text: '예', onPress: () => navigation.push('Login')},
+  ]);
+  const protectedAction = () => { if (!isSignedIn) requestLogin(); };
   return (
     <Tab.Navigator screenOptions={{headerShown: false}} tabBar={AppTabBar}>
-      <Tab.Screen name="Home">{() => <SafeAreaView className="flex-1 bg-background"><StatusBar barStyle="dark-content" /><HomeScreen isResolvingRegion={isResolvingRegion} onMorePlacesPress={() => navigation.push('NearbyPlaces')} onPlacePress={openPlace} region={region} /></SafeAreaView>}</Tab.Screen>
+      <Tab.Screen name="Home">{() => <SafeAreaView className="flex-1 bg-background"><StatusBar barStyle="dark-content" /><HomeScreen isResolvingRegion={isResolvingRegion} onAiHelpPress={protectedAction} onMorePlacesPress={() => navigation.push('NearbyPlaces')} onPlacePress={openPlace} region={region} situationSlot={planBState === 'no-impact' ? null : <SituationCard status={planBState} onPress={planBState === 'needs-confirmation' ? () => navigation.push('PlanBProgress') : planBState === 'confirmed' ? () => navigation.push('PlanBRecommendation') : undefined} />} /></SafeAreaView>}</Tab.Screen>
       <Tab.Screen name="Explore">{() => <PlaceholderScreen tab="탐색" />}</Tab.Screen>
-      <Tab.Screen name="Saved">{() => <PlaceholderScreen tab="저장" />}</Tab.Screen>
+      <Tab.Screen name="Saved">{() => <PlaceholderScreen tab="저장" onProtectedPress={isSignedIn ? undefined : requestLogin} />}</Tab.Screen>
       {/* 마이 탭이 계정 설정으로 가는 유일한 진입점이다 — AC-28(계정 삭제)·AC-35(약관)의 전제 */}
-      <Tab.Screen name="My">{() => <SafeAreaView className="flex-1 bg-background"><MyScreen region={region} onRegionChange={setRegion} onAccountSettingsPress={() => navigation.push('Settings')} /></SafeAreaView>}</Tab.Screen>
+      <Tab.Screen name="My">{() => <SafeAreaView className="flex-1 bg-background"><MyScreen isSignedIn={isSignedIn} region={region} onRegionChange={setRegion} onLoginPress={() => navigation.push('Login')} onSignupPress={() => navigation.push('SignUp')} onPersonalizationPress={protectedAction} onAccountSettingsPress={() => navigation.push('Settings')} /></SafeAreaView>}</Tab.Screen>
     </Tab.Navigator>
   );
 }
@@ -90,6 +101,7 @@ function MainTabsScreen({navigation}: NativeStackScreenProps<MainStackParamList,
 function SettingsRoute({navigation}: NativeStackScreenProps<MainStackParamList, 'Settings'>) {
   return (
     <SettingsScreen
+      onSignedOut={() => navigation.navigate('MainTabs')}
       renderExtraSection={account => (
         <AdminSettingsSection
           account={account}
@@ -98,6 +110,21 @@ function SettingsRoute({navigation}: NativeStackScreenProps<MainStackParamList, 
       )}
     />
   );
+}
+
+function LoginRoute({navigation}: NativeStackScreenProps<MainStackParamList, 'Login'>) {
+  const finishLogin = () => navigation.canGoBack()
+    ? navigation.goBack()
+    : navigation.navigate('MainTabs');
+  return <LoginScreen onSignedIn={finishLogin} onBack={finishLogin} />;
+}
+
+function PlanBProgressRoute({navigation}: NativeStackScreenProps<MainStackParamList, 'PlanBProgress'>) {
+  return <ScheduleProgressScreen onBack={navigation.goBack} onConfirmed={hasRemaining => navigation.navigate('MainTabs', {planBState: hasRemaining ? 'confirmed' : 'no-impact'})} />;
+}
+
+function PlanBRecommendationRoute({navigation}: NativeStackScreenProps<MainStackParamList, 'PlanBRecommendation'>) {
+  return <PlanBRecommendationScreen onBack={navigation.goBack} onApplied={() => navigation.navigate('MainTabs', {planBState: 'applied'})} />;
 }
 
 function PlaceDetailRoute({navigation, route}: NativeStackScreenProps<MainStackParamList, 'PlaceDetail'>) {
@@ -109,11 +136,17 @@ function NearbyPlacesRoute({navigation}: NativeStackScreenProps<MainStackParamLi
 }
 
 export function MainNavigator() {
+  useBackgroundSessionRestore();
   return (
     <MainStack.Navigator screenOptions={{headerShown: false}}>
       <MainStack.Screen component={MainTabsScreen} name="MainTabs" />
       <MainStack.Screen component={NearbyPlacesRoute} name="NearbyPlaces" />
       <MainStack.Screen component={PlaceDetailRoute} name="PlaceDetail" />
+      <MainStack.Screen component={PlanBProgressRoute} name="PlanBProgress" />
+      <MainStack.Screen component={PlanBRecommendationRoute} name="PlanBRecommendation" />
+      <MainStack.Screen component={LoginRoute} name="Login" />
+      <MainStack.Screen component={SignUpScreen} name="SignUp" />
+      <MainStack.Screen component={AccountStatusScreen} name="AccountStatus" />
       {/* auth 소유 화면. 파라미터는 features/auth/navigation.ts 가 선언한다 (M-2) */}
       <MainStack.Screen component={SettingsRoute} name="Settings" />
       {/* admin-user-approval 소유 화면. 하단 탭바는 건드리지 않는다 (그 기능 design.md 결정 1) */}

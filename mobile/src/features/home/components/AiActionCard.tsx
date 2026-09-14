@@ -1,11 +1,13 @@
 import React from 'react';
 import {Pressable, Text, View} from 'react-native';
 
-export function AiActionCard() {
+export function AiActionCard({onPress}: {onPress?: () => void}) {
   return (
     <Pressable
       accessibilityRole="button"
-      className="mt-5 min-h-[104px] flex-row items-center rounded-card bg-brand-light p-4 active:opacity-70">
+      accessibilityLabel="Planbee AI에게 물어보기"
+      className="mt-5 min-h-[104px] flex-row items-center rounded-card bg-brand-light p-4 active:opacity-70"
+      onPress={onPress}>
       <View className="h-10 w-10 items-center justify-center rounded-button bg-surface">
         <Text className="text-title text-brand">✦</Text>
       </View>

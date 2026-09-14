@@ -1,0 +1,88 @@
+"""실제 Docker·원격 서버·시크릿 없이 배포 실패 경로를 검증한다."""
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import tempfile
+import unittest
+
+
+class DeploymentTest(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        shutil.copy(Path(__file__).with_name('manage.sh'), self.root)
+        (self.root / '.env.example').write_text('DB_URL=\n')
+        docker = self.root / 'docker'
+        docker.write_text('''#!/bin/bash
+printf '%s\\n' "$*" >> "$CALLS"
+case " $* " in
+  *" pull api "*) exit "${PULL_EXIT:-0}" ;;
+  *" up "*) exit "${UP_EXIT:-0}" ;;
+esac
+exit 0
+''')
+        docker.chmod(0o700)
+        self.env = {
+            **os.environ,
+            'DEPLOY_DIR': str(self.root),
+            'IMAGE_REPOSITORY': 'ghcr.io/planbee-detour/planbee-api',
+            'IMAGE_TAG': 'test-release',
+            'CALLS': str(self.root / 'calls'),
+            'PATH': str(self.root) + os.pathsep + os.environ['PATH'],
+        }
+
+    def run_action(self, action, **env):
+        return subprocess.run(['bash', str(self.root / 'manage.sh'), action],
+                              env={**self.env, **env}, capture_output=True, text=True)
+
+    def calls(self):
+        path = self.root / 'calls'
+        return path.read_text() if path.exists() else ''
+
+    def test_env_is_private_and_preserved(self):
+        self.assertEqual(self.run_action('env').returncode, 0)
+        path = self.root / '.env'
+        self.assertEqual(path.stat().st_mode & 0o777, 0o600)
+        path.write_text('existing-placeholder\n')
+        self.assertEqual(self.run_action('env').returncode, 0)
+        self.assertEqual(path.read_text(), 'existing-placeholder\n')
+
+    def test_invalid_tags_never_call_docker(self):
+        for tag in ['', 'latest', 'bad;tag']:
+            self.assertNotEqual(self.run_action('deploy', IMAGE_TAG=tag).returncode, 0)
+        self.assertEqual(self.calls(), '')
+
+    def test_missing_env_never_calls_docker(self):
+        self.assertNotEqual(self.run_action('deploy').returncode, 0)
+        self.assertEqual(self.calls(), '')
+
+    def test_failed_pull_keeps_running_container(self):
+        self.run_action('env')
+        self.assertNotEqual(self.run_action('deploy', PULL_EXIT='1').returncode, 0)
+        self.assertIn('pull api', self.calls())
+        self.assertNotIn(' up ', self.calls())
+
+    def test_failed_healthcheck_does_not_report_success(self):
+        self.run_action('env')
+        result = self.run_action('deploy', UP_EXIT='1')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertNotIn('배포 완료', result.stdout)
+
+    def test_deploy_pulls_then_waits_without_build(self):
+        self.run_action('env')
+        result = self.run_action('deploy')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        calls = self.calls()
+        self.assertLess(calls.index('pull api'), calls.index(' up '))
+        self.assertIn('--no-build --pull never --wait --wait-timeout 300', calls)
+        self.assertIn('--env-file /dev/null -p planbee-production', calls)
+
+    def test_check_never_loads_runtime_env(self):
+        self.assertEqual(self.run_action('check').returncode, 0)
+        self.assertIn('config --no-env-resolution --quiet', self.calls())
+
+
+if __name__ == '__main__':
+    unittest.main()

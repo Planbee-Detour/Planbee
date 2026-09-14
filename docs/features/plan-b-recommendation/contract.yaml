@@ -1,0 +1,142 @@
+openapi: 3.1.0
+info: {title: Planbee Plan B 추천 계약, version: 0.1.0}
+paths:
+  /api/v1/trips/{trip_id}/plan-b-impact:
+    get:
+      operationId: getPlanBImpact
+      summary: 오늘 일정의 실시간 변수 영향 조회
+      x-acceptance-criteria: [AC-PB-1, AC-PB-2, AC-PB-15, AC-PB-16, AC-PB-17, AC-PB-18, AC-PB-22, AC-PB-23]
+      parameters: [{$ref: '#/components/parameters/TripId'}]
+      responses:
+        '200': {description: 영향 판정, content: {application/json: {schema: {$ref: '#/components/schemas/PlanBImpact'}}}}
+        '404': {$ref: '#/components/responses/Problem'}
+        '500': {$ref: '#/components/responses/Problem'}
+  /api/v1/trips/{trip_id}/schedule-progress:
+    put:
+      operationId: updateScheduleProgress
+      summary: 일정 진행 상태 확인
+      x-acceptance-criteria: [AC-PB-19, AC-PB-20, AC-PB-21]
+      parameters: [{$ref: '#/components/parameters/TripId'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ScheduleProgressRequest'}}}}
+      responses:
+        '200': {description: 갱신된 영향 판정, content: {application/json: {schema: {$ref: '#/components/schemas/PlanBImpact'}}}}
+        '400': {$ref: '#/components/responses/Problem'}
+        '404': {$ref: '#/components/responses/Problem'}
+        '500': {$ref: '#/components/responses/Problem'}
+  /api/v1/trips/{trip_id}/plan-b-recommendations:
+    post:
+      operationId: createPlanBRecommendation
+      summary: 대체 계획 생성
+      x-acceptance-criteria: [AC-PB-4, AC-PB-5, AC-PB-6, AC-PB-7, AC-PB-8, AC-PB-9, AC-PB-10, AC-PB-12, AC-PB-13, AC-PB-14]
+      parameters: [{$ref: '#/components/parameters/TripId'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PlanBRecommendationRequest'}}}}
+      responses:
+        '200': {description: 대체 계획, content: {application/json: {schema: {$ref: '#/components/schemas/PlanBRecommendation'}}}}
+        '400': {$ref: '#/components/responses/Problem'}
+        '404': {$ref: '#/components/responses/Problem'}
+        '500': {$ref: '#/components/responses/Problem'}
+  /api/v1/trips/{trip_id}/plan-b:
+    put:
+      operationId: applyPlanB
+      summary: 선택한 대체 계획 적용
+      x-acceptance-criteria: [AC-PB-3, AC-PB-11]
+      parameters: [{$ref: '#/components/parameters/TripId'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ApplyPlanBRequest'}}}}
+      responses:
+        '200': {description: 적용 완료, content: {application/json: {schema: {$ref: '#/components/schemas/ApplyPlanBResponse'}}}}
+        '400': {$ref: '#/components/responses/Problem'}
+        '404': {$ref: '#/components/responses/Problem'}
+        '409': {$ref: '#/components/responses/Problem'}
+        '500': {$ref: '#/components/responses/Problem'}
+components:
+  parameters:
+    TripId: {name: trip_id, in: path, required: true, schema: {type: string}}
+  responses:
+    Problem: {description: RFC 9457 오류, content: {application/problem+json: {schema: {$ref: '#/components/schemas/Problem'}}}}
+  schemas:
+    PlanBImpact:
+      type: object
+      required: [trip_id, impact_status, event_labels, affected_schedules, completed_count, remaining_count]
+      properties:
+        trip_id: {type: string, example: seoul-day-1}
+        impact_status: {type: string, enum: [NEEDS_CONFIRMATION, CONFIRMED, NO_IMPACT], example: NEEDS_CONFIRMATION}
+        event_labels: {type: array, items: {type: string}, example: [20분 뒤 비 시작, 경복궁 오늘 휴궁]}
+        affected_schedules: {type: array, items: {$ref: '#/components/schemas/AffectedSchedule'}}
+        completed_count: {type: integer, minimum: 0, example: 0}
+        remaining_count: {type: integer, minimum: 0, example: 2}
+    AffectedSchedule:
+      type: object
+      required: [schedule_id, place_name, time_type, progress_status, time_label]
+      properties:
+        schedule_id: {type: string, example: gyeongbokgung}
+        place_name: {type: string, example: 경복궁}
+        time_type: {type: string, enum: [FIXED, TIME_WINDOW, FLEXIBLE], example: FLEXIBLE}
+        progress_status: {type: string, enum: [PLANNED, IN_PROGRESS, COMPLETED, SKIPPED, CANCELLED, UNKNOWN], example: UNKNOWN}
+        time_label: {type: string, example: 오늘 · 유연한 일정}
+    ScheduleProgressRequest:
+      type: object
+      required: [items]
+      properties:
+        items: {type: array, minItems: 1, items: {$ref: '#/components/schemas/ScheduleProgressItem'}}
+    ScheduleProgressItem:
+      type: object
+      required: [schedule_id, progress_status]
+      properties:
+        schedule_id: {type: string, example: gyeongbokgung}
+        progress_status: {type: string, enum: [PLANNED, COMPLETED], example: PLANNED}
+    PlanBRecommendationRequest:
+      type: object
+      required: [schedule_id, recommendation_type]
+      properties:
+        schedule_id: {type: string, example: gyeongbokgung}
+        recommendation_type: {type: string, enum: [PLACE, COURSE], example: PLACE}
+    PlanBRecommendation:
+      type: object
+      required: [recommendation_id, situation_title, event_labels, original_plan, options]
+      properties:
+        recommendation_id: {type: string, example: plan-b-001}
+        situation_title: {type: string, example: 경복궁 일정을 바꿔야 해요}
+        event_labels: {type: array, items: {type: string}}
+        original_plan: {$ref: '#/components/schemas/PlanBPlanItem'}
+        options: {type: array, items: {$ref: '#/components/schemas/PlanBOption'}}
+    PlanBOption:
+      type: object
+      required: [option_id, recommendation_type, title, summary, items, evidence_labels, caution_label, budget_label]
+      properties:
+        option_id: {type: string, example: option-mmca}
+        recommendation_type: {type: string, enum: [PLACE, COURSE], example: PLACE}
+        title: {type: string, example: 비를 피해 이어가는 역사·문화 일정}
+        summary: {type: string, example: 경복궁과 성격이 비슷한 실내 문화 공간이에요.}
+        items: {type: array, items: {$ref: '#/components/schemas/PlanBPlanItem'}}
+        evidence_labels: {type: array, items: {type: string}}
+        caution_label: {type: [string, 'null'], example: 다음 일정이 약 12분 늦어질 수 있어요.}
+        budget_label: {type: [string, 'null'], example: 총 160분 / 사용 가능 180분}
+    PlanBPlanItem:
+      type: object
+      required: [time_label, title, status_label]
+      properties:
+        time_label: {type: string, example: '14:10'}
+        title: {type: string, example: 국립현대미술관 서울}
+        status_label: {type: string, example: 실내 · 운영 중 · 도보 12분}
+    ApplyPlanBRequest:
+      type: object
+      required: [recommendation_id, option_id]
+      properties:
+        recommendation_id: {type: string, example: plan-b-001}
+        option_id: {type: string, example: option-mmca}
+    ApplyPlanBResponse:
+      type: object
+      required: [trip_id, changed_schedule_title, applied_at]
+      properties:
+        trip_id: {type: string, example: seoul-day-1}
+        changed_schedule_title: {type: string, example: 오후 2시 일정이 국립현대미술관 서울로 바뀌었어요.}
+        applied_at: {type: string, format: date-time, example: '2026-09-06T05:00:00Z'}
+    Problem:
+      type: object
+      required: [type, title, status, detail, code]
+      properties:
+        type: {type: string, example: about:blank}
+        title: {type: string, example: Internal Server Error}
+        status: {type: integer, example: 500}
+        detail: {type: string, example: 잠시 후 다시 시도해 주세요.}
+        code: {type: string, example: INTERNAL_ERROR}
