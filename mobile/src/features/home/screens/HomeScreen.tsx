@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {type ReactNode} from 'react';
 import {ScrollView, Text, View} from 'react-native';
 
 import {AiActionCard} from '../components/AiActionCard';
@@ -11,9 +11,11 @@ type HomeScreenProps = {
   onMorePlacesPress: () => void;
   onPlacePress: (placeId: string) => void;
   region: string | null;
+  situationSlot?: ReactNode;
+  onAiHelpPress?: () => void;
 };
 
-export function HomeScreen({isResolvingRegion, onMorePlacesPress, onPlacePress, region}: HomeScreenProps) {
+export function HomeScreen({isResolvingRegion, onMorePlacesPress, onPlacePress, region, situationSlot, onAiHelpPress}: HomeScreenProps) {
   return (
     <ScrollView
       className="flex-1"
@@ -28,7 +30,8 @@ export function HomeScreen({isResolvingRegion, onMorePlacesPress, onPlacePress, 
         </Text>
       </View>
 
-      <AiActionCard />
+      {situationSlot}
+      <AiActionCard onPress={onAiHelpPress} />
 
       <Text className="mt-6 text-title font-semibold text-ink">빠르게 도움받기</Text>
       <QuickActionList />

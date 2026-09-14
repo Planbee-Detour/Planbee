@@ -1,0 +1,37 @@
+{
+  "trip_id": "seoul-day-1",
+  "schedules": [
+    {"schedule_id": "gyeongbokgung", "place_name": "경복궁", "time_label": "오늘 · 유연한 일정"},
+    {"schedule_id": "bukchon", "place_name": "북촌 산책", "time_label": "오늘 · 유연한 일정"}
+  ],
+  "recommendation_id": "plan-b-001",
+  "situation_title": "경복궁 일정을 바꿔야 해요",
+  "event_labels": ["20분 뒤 비 시작", "경복궁 오늘 휴궁"],
+  "original_plan": {"time_label": "14:00", "title": "경복궁", "status_label": "방문 불가 · 오늘 휴궁"},
+  "options": [
+    {
+      "option_id": "option-mmca",
+      "recommendation_type": "PLACE",
+      "title": "비를 피해 이어가는 역사·문화 일정",
+      "summary": "경복궁과 성격이 비슷한 실내 문화 공간이며, 현재 위치와 다음 일정에서 크게 벗어나지 않아요.",
+      "items": [{"time_label": "14:10", "title": "국립현대미술관 서울", "status_label": "실내 · 운영 중 · 도보 12분"}],
+      "evidence_labels": ["비가 와도 이용 가능한 실내 장소", "현재 위치에서 도보 12분", "남은 2시간 안에 관람 가능", "역사·문화 취향과 유사"],
+      "caution_label": "다음 일정이 약 12분 늦어질 수 있어요.",
+      "budget_label": null
+    },
+    {
+      "option_id": "option-course",
+      "recommendation_type": "COURSE",
+      "title": "남은 2시간을 다시 구성했어요",
+      "summary": "비를 피하면서 관람과 휴식을 이어갈 수 있는 동선이에요.",
+      "items": [
+        {"time_label": "14:10", "title": "국립현대미술관 서울", "status_label": "관람 80분"},
+        {"time_label": "15:38", "title": "인근 카페", "status_label": "휴식 30분"},
+        {"time_label": "16:20", "title": "다음 일정으로 이동", "status_label": "이동 20분"}
+      ],
+      "evidence_labels": ["비가 와도 이용 가능한 실내 장소", "현재 위치에서 도보 12분", "남은 시간 안에 이동 가능", "역사·문화 취향과 유사"],
+      "caution_label": "다음 일정이 약 12분 늦어질 수 있어요.",
+      "budget_label": "총 160분 / 사용 가능 180분"
+    }
+  ]
+}

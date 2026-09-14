@@ -33,6 +33,7 @@ import type {UserSummary} from '../types';
 type Navigation = NativeStackNavigationProp<MainRouteParams, 'Settings'>;
 
 export type SettingsScreenProps = {
+  onSignedOut?: () => void;
   /**
    * `계정` 섹션 다음, `약관·정책` 앞에 들어가는 슬롯.
    *
@@ -45,7 +46,7 @@ export type SettingsScreenProps = {
 /** 앱 버전. 실제 값은 네이티브 빌드 설정에서 오지만 그 연결은 배포 설정 영역이다 (M-19). */
 const APP_VERSION = '1.0.0';
 
-export function SettingsScreen({renderExtraSection}: SettingsScreenProps = {}) {
+export function SettingsScreen({renderExtraSection, onSignedOut}: SettingsScreenProps = {}) {
   const navigation = useNavigation<Navigation>();
   const signOut = useSession(state => state.signOut);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -68,8 +69,9 @@ export function SettingsScreen({renderExtraSection}: SettingsScreenProps = {}) {
     }
     await clearTokens();
     signOut(null, LABELS.logoutDone);
+    onSignedOut?.();
     setLoggingOut(false);
-  }, [signOut]);
+  }, [onSignedOut, signOut]);
 
   const confirmLogout = useCallback(() => {
     Alert.alert(LABELS.logoutConfirmTitle, LABELS.logoutConfirmBody, [

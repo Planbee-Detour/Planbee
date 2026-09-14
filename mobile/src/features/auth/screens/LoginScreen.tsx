@@ -17,6 +17,7 @@ import {ApiError} from '../../../shared/api/problem';
 import {saveTokenPair} from '../../../shared/api/session';
 import {Banner} from '../../../shared/ui/Banner';
 import {Button} from '../../../shared/ui/Button';
+import {NavBar} from '../../../shared/ui/NavBar';
 import {TextField} from '../../../shared/ui/TextField';
 import {Toast} from '../../../shared/ui/Toast';
 import type {AuthRouteParams} from '../navigation';
@@ -45,7 +46,7 @@ type ErrorBanner =
  */
 const MIN_SUBMIT_MS = 400;
 
-export function LoginScreen() {
+export function LoginScreen({onSignedIn, onBack}: {onSignedIn?: () => void; onBack?: () => void}) {
   const navigation = useNavigation<Navigation>();
   const signIn = useSession(state => state.signIn);
   const notice = useSession(state => state.notice);
@@ -84,6 +85,7 @@ export function LoginScreen() {
         // 경계 → 저장 모델 변환은 `shared/api/session.ts` 한 곳에 있다 (M-17).
         await saveTokenPair(outcome.tokens);
         signIn(); // AC-11
+        onSignedIn?.();
         return;
       }
 
@@ -110,7 +112,7 @@ export function LoginScreen() {
     } finally {
       setSubmitting(false);
     }
-  }, [canSubmit, email, navigation, password, signIn]);
+  }, [canSubmit, email, navigation, onSignedIn, password, signIn]);
 
   useEffect(() => {
     // 로그인 화면에 도착하면 세션 배너를 한 번만 보여준다. 사용자가 입력을 시작하면 사라진다.
@@ -119,6 +121,10 @@ export function LoginScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-background">
+      <NavBar
+        title="로그인"
+        left={{label: '‹', accessibilityLabel: '뒤로', onPress: onBack ?? navigation.goBack}}
+      />
       <KeyboardAvoidingView
         // iOS 는 padding, 안드로이드는 높이 조정이 기본 동작과 맞는다 (M-20).
         behavior={Platform.select({ios: 'padding', android: 'height', default: 'height'})}

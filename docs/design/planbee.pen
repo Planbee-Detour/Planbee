@@ -8491,7 +8491,7 @@
       "name": "Screen 07a — 로그인 / 기본 · 비어있음",
       "clip": true,
       "width": 390,
-      "height": 844,
+      "height": 900,
       "fill": "$Color/Neutral/Background",
       "layout": "vertical",
       "children": [
@@ -8500,6 +8500,18 @@
           "type": "ref",
           "ref": "uD3vY",
           "name": "Status Bar"
+        },
+        {
+          "id": "WC4lZ",
+          "type": "ref",
+          "ref": "VWZM8",
+          "name": "Login Navigation",
+          "width": "fill_container",
+          "descendants": {
+            "Lsm3d": {
+              "content": "로그인"
+            }
+          }
         },
         {
           "type": "frame",
@@ -8766,7 +8778,7 @@
       "name": "Screen 07b — 로그인 / 제출 중",
       "clip": true,
       "width": 390,
-      "height": 844,
+      "height": 900,
       "fill": "$Color/Neutral/Background",
       "layout": "vertical",
       "children": [
@@ -8775,6 +8787,18 @@
           "type": "ref",
           "ref": "uD3vY",
           "name": "Status Bar"
+        },
+        {
+          "id": "D9R0ur",
+          "type": "ref",
+          "ref": "VWZM8",
+          "name": "Login Navigation",
+          "width": "fill_container",
+          "descendants": {
+            "Lsm3d": {
+              "content": "로그인"
+            }
+          }
         },
         {
           "type": "frame",
@@ -9041,7 +9065,7 @@
       "name": "Screen 07c — 로그인 / 자격 증명 오류",
       "clip": true,
       "width": 390,
-      "height": 844,
+      "height": 900,
       "fill": "$Color/Neutral/Background",
       "layout": "vertical",
       "children": [
@@ -9050,6 +9074,18 @@
           "type": "ref",
           "ref": "uD3vY",
           "name": "Status Bar"
+        },
+        {
+          "id": "LuMA3",
+          "type": "ref",
+          "ref": "VWZM8",
+          "name": "Login Navigation",
+          "width": "fill_container",
+          "descendants": {
+            "Lsm3d": {
+              "content": "로그인"
+            }
+          }
         },
         {
           "type": "frame",
@@ -9326,7 +9362,7 @@
       "name": "Screen 08a — 로그인 / 세션 만료 안내",
       "clip": true,
       "width": 390,
-      "height": 844,
+      "height": 900,
       "fill": "$Color/Neutral/Background",
       "layout": "vertical",
       "children": [
@@ -9335,6 +9371,18 @@
           "type": "ref",
           "ref": "uD3vY",
           "name": "Status Bar"
+        },
+        {
+          "id": "V8ucI8",
+          "type": "ref",
+          "ref": "VWZM8",
+          "name": "Login Navigation",
+          "width": "fill_container",
+          "descendants": {
+            "Lsm3d": {
+              "content": "로그인"
+            }
+          }
         },
         {
           "type": "frame",
@@ -9610,7 +9658,7 @@
       "name": "Screen 08b — 로그인 / 서버 오류",
       "clip": true,
       "width": 390,
-      "height": 844,
+      "height": 900,
       "fill": "$Color/Neutral/Background",
       "layout": "vertical",
       "children": [
@@ -9619,6 +9667,18 @@
           "type": "ref",
           "ref": "uD3vY",
           "name": "Status Bar"
+        },
+        {
+          "id": "cpUNO",
+          "type": "ref",
+          "ref": "VWZM8",
+          "name": "Login Navigation",
+          "width": "fill_container",
+          "descendants": {
+            "Lsm3d": {
+              "content": "로그인"
+            }
+          }
         },
         {
           "type": "frame",
@@ -9898,7 +9958,7 @@
       "name": "Screen 08c — 로그인 / 네트워크 끊김",
       "clip": true,
       "width": 390,
-      "height": 844,
+      "height": 900,
       "fill": "$Color/Neutral/Background",
       "layout": "vertical",
       "children": [
@@ -9907,6 +9967,18 @@
           "type": "ref",
           "ref": "uD3vY",
           "name": "Status Bar"
+        },
+        {
+          "id": "CVGk6",
+          "type": "ref",
+          "ref": "VWZM8",
+          "name": "Login Navigation",
+          "width": "fill_container",
+          "descendants": {
+            "Lsm3d": {
+              "content": "로그인"
+            }
+          }
         },
         {
           "type": "frame",
@@ -10184,7 +10256,7 @@
       "name": "Screen 07d — 로그인 / 시도 초과 잠금",
       "clip": true,
       "width": 390,
-      "height": 900,
+      "height": 956,
       "fill": "$Color/Neutral/Background",
       "layout": "vertical",
       "children": [
@@ -10193,6 +10265,18 @@
           "type": "ref",
           "ref": "uD3vY",
           "name": "Status Bar"
+        },
+        {
+          "id": "usoNO",
+          "type": "ref",
+          "ref": "VWZM8",
+          "name": "Login Navigation",
+          "width": "fill_container",
+          "descendants": {
+            "Lsm3d": {
+              "content": "로그인"
+            }
+          }
         },
         {
           "type": "frame",
@@ -19339,7 +19423,7 @@
       "name": "Screen 07e — 로그인 / 로그아웃 완료 토스트",
       "clip": true,
       "width": 390,
-      "height": 844,
+      "height": 900,
       "fill": "$Color/Neutral/Background",
       "layout": "vertical",
       "children": [
@@ -19348,6 +19432,18 @@
           "type": "ref",
           "ref": "uD3vY",
           "name": "Status Bar"
+        },
+        {
+          "id": "Ed734",
+          "type": "ref",
+          "ref": "VWZM8",
+          "name": "Login Navigation",
+          "width": "fill_container",
+          "descendants": {
+            "Lsm3d": {
+              "content": "로그인"
+            }
+          }
         },
         {
           "type": "frame",
