@@ -5,12 +5,13 @@ name: verify
 # (E2E/Maestro 는 macOS 러너 + 시뮬레이터가 필요해 제외한다. `make test-e2e` 는 수동 유지.)
 
 on:
+  workflow_call:
   pull_request:
   push:
     branches: [develop]
 
 concurrency:
-  group: verify-${{ github.ref }}
+  group: verify-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:

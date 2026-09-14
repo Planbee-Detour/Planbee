@@ -10,7 +10,7 @@ Bash 구문 검사, Docker 대체 실행기를 이용한 배포 안전 동작 �
 
 운영은 `make -f deploy/Makefile`을 사용한다. 이 Makefile은 루트의 개발용 `.env`를
 읽지 않으며, `deploy/`만 VM에 전달해 그 안에서 `make`를 실행할 수도 있다.
-기존 `make e2e-up`은 운영에 사용하지 않는다. CI 자동 배포는 후속 작업이다.
+기존 `make e2e-up`은 운영에 사용하지 않는다. 자동 배포 설정은 [ACTIONS.md](ACTIONS.md)를 따른다.
 
 ## 1. 최초 준비
 
@@ -65,7 +65,7 @@ make -f deploy/Makefile image-push IMAGE_TAG=release-001
 
 ```bash
 ssh 사용자명@GCP_IP 'mkdir -p ~/planbee/deploy'
-scp deploy/Makefile deploy/manage.sh deploy/compose.yml deploy/.env.example deploy/README.md deploy/test_manage.py 사용자명@GCP_IP:~/planbee/deploy/
+scp deploy/Makefile deploy/manage.sh deploy/compose.yml deploy/.env.example deploy/README.md deploy/test_manage.py deploy/remote-deploy.sh deploy/ACTIONS.md 사용자명@GCP_IP:~/planbee/deploy/
 ```
 
 이후 VM의 SSH 터미널에서:
@@ -168,5 +168,5 @@ make rollback IMAGE_TAG=release-001
 컬럼 삭제 등 이전 버전과 호환되지 않는 변경은 별도 복구 계획이 필요하다.
 한 JVM만 교체하므로 배포 중 짧은 중단이 있다. 중지하려면 `make stop`을 사용한다.
 
-향후 Actions에서는 같은 검증·이미지 타깃을 재사용하고 `GITHUB_TOKEN`으로 게시할 수 있다.
-자동 SSH 접속·서버 변경·도메인·HTTPS 구성은 이번 수동 배포 도구에 포함하지 않는다.
+Actions는 같은 검증·이미지 타깃을 재사용한다. 자동 배포의 계정·경로·설정은
+[ACTIONS.md](ACTIONS.md)를 따른다. 도메인·HTTPS 구성은 별도다.
