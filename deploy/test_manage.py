@@ -108,7 +108,7 @@ exit 0
 printf '%s\\n' "$*" >> "$CALLS"
 case " $* " in
   *" compute scp "*) exit "${SCP_EXIT:-0}" ;;
-  *"--command=test "*) exit "${PREFLIGHT_EXIT:-0}" ;;
+  *"--command=set -eu"*) exit "${PREFLIGHT_EXIT:-0}" ;;
 esac
 exit 0
 ''')
@@ -132,7 +132,7 @@ exit 0
 
     def test_remote_uses_iap_and_preserves_secrets(self):
         self.assertEqual(self.run_remote().returncode, 0)
-        calls = self.calls().splitlines()
+        calls = self.calls().split('compute ')[1:]
         self.assertEqual(len(calls), 3)
         self.assertTrue(all('--tunnel-through-iap' in line for line in calls))
         files = calls[1].split()
