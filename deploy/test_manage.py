@@ -1,4 +1,4 @@
-"""실제 Docker·원격 서버·시크릿 없이 배포 실패 경로를 검증한다."""
+"""배포 실패 경로 및 실제 Compose의 환경 파일 없는 검증을 확인한다. 컨테이너는 실행하지 않는다."""
 import os
 from pathlib import Path
 import shutil
@@ -82,7 +82,25 @@ exit 0
 
     def test_check_never_loads_runtime_env(self):
         self.assertEqual(self.run_action('check').returncode, 0)
-        self.assertIn('config --no-env-resolution --quiet', self.calls())
+        self.assertIn('config --quiet', self.calls())
+
+    def test_real_compose_check_without_env_file(self):
+        shutil.copy(Path(__file__).with_name('compose.yml'), self.root)
+        result = self.run_action('check', PATH=os.environ['PATH'])
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertFalse((self.root / '.env').exists())
+
+    def test_real_compose_check_ignores_runtime_env_path(self):
+        shutil.copy(Path(__file__).with_name('compose.yml'), self.root)
+        # 실제 운영 시크릿 대신 읽을 수 없는 디렉터리를 둔다. 검증은 이를 열면 안 된다.
+        (self.root / '.env').mkdir()
+        result = self.run_action('check', PATH=os.environ['PATH'])
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_publish_does_not_require_env(self):
+        self.assertEqual(self.run_action('image-push').returncode, 0)
+        self.assertIn('push ghcr.io/planbee-detour/planbee-api:test-release', self.calls())
+        self.assertFalse((self.root / '.env').exists())
 
     def run_remote(self, **env):
         gcloud = self.root / 'gcloud'

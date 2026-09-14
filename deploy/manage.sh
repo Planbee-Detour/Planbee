@@ -4,6 +4,7 @@ cd "${DEPLOY_DIR:?DEPLOY_DIR이 필요합니다}"
 action=${1:?명령이 필요합니다}
 fail() { echo "오류: $*" >&2; exit 1; }
 export COMPOSE_DISABLE_ENV_FILE=1
+export PLANBEE_RUNTIME_ENV=.env
 # Compose 변수 치환은 빈 파일을 사용한다. 운영 .env는 컨테이너 env_file로만 읽는다.
 compose() { docker compose --env-file /dev/null -p planbee-production -f compose.yml "$@"; }
 tagged_image() {
@@ -55,7 +56,11 @@ case "$action" in
       status) compose ps; compose images ;;
       logs) compose logs --tail=100 -f api ;;
       stop) compose stop api ;;
-      check) compose config --no-env-resolution --quiet ;;
+      check)
+        # --env-file은 Compose 변수 치환만 제어한다. 서비스 env_file도 별도로 분리한다.
+        export PLANBEE_RUNTIME_ENV=/dev/null
+        compose config --quiet
+        ;;
     esac
     ;;
   *) fail "알 수 없는 명령: $action" ;;
