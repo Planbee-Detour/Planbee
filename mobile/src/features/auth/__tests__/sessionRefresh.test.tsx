@@ -10,10 +10,11 @@ import React from 'react';
 import {render, screen, waitFor} from '@testing-library/react-native';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {QueryClientProvider} from '@tanstack/react-query';
 import {http, HttpResponse} from 'msw';
 
 import {API_ORIGIN, problemBody, server} from '../../../shared/test/mswServer';
+import {createTestQueryClient} from '../../../shared/test/queryClient';
 import {configureAuth} from '../../../shared/api/client';
 import {clearTokens, loadTokens, saveTokens} from '../../../shared/api/session';
 import {configureSession} from '../../../app/configureSession';
@@ -34,7 +35,7 @@ const RENEWED = {
 const Stack = createNativeStackNavigator<MainRouteParams>();
 
 async function renderSettings() {
-  const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
+  const queryClient = createTestQueryClient();
   return render(
     <QueryClientProvider client={queryClient}>
       <NavigationContainer>

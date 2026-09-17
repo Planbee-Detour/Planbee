@@ -4,6 +4,74 @@
  */
 
 export interface paths {
+    "/api/v1/trips/{trip_id}/plan-b-impact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 오늘 일정의 실시간 변수 영향 조회 */
+        get: operations["getPlanBImpact"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/trips/{trip_id}/schedule-progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** 일정 진행 상태 확인 */
+        put: operations["updateScheduleProgress"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/trips/{trip_id}/plan-b-recommendations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 대체 계획 생성 */
+        post: operations["createPlanBRecommendation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/trips/{trip_id}/plan-b": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** 선택한 대체 계획 적용 */
+        put: operations["applyPlanB"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/places/nearby": {
         parameters: {
             query?: never;
@@ -495,6 +563,74 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        PlanBImpact: {
+            /** @example seoul-day-1 */
+            trip_id: string;
+            /**
+             * @example NEEDS_CONFIRMATION
+             * @enum {string}
+             */
+            impact_status: "NEEDS_CONFIRMATION" | "CONFIRMED" | "NO_IMPACT";
+            event_labels: string[];
+            affected_schedules: components["schemas"]["AffectedSchedule"][];
+            completed_count: number;
+            remaining_count: number;
+        };
+        AffectedSchedule: {
+            schedule_id: string;
+            place_name: string;
+            /** @enum {string} */
+            time_type: "FIXED" | "TIME_WINDOW" | "FLEXIBLE";
+            /** @enum {string} */
+            progress_status: "PLANNED" | "IN_PROGRESS" | "COMPLETED" | "SKIPPED" | "CANCELLED" | "UNKNOWN";
+            time_label: string;
+        };
+        ScheduleProgressRequest: {
+            items: components["schemas"]["ScheduleProgressItem"][];
+        };
+        ScheduleProgressItem: {
+            schedule_id: string;
+            /** @enum {string} */
+            progress_status: "PLANNED" | "COMPLETED";
+        };
+        PlanBRecommendationRequest: {
+            schedule_id: string;
+            /** @enum {string} */
+            recommendation_type: "PLACE" | "COURSE";
+        };
+        PlanBRecommendation: {
+            recommendation_id: string;
+            situation_title: string;
+            event_labels: string[];
+            original_plan: components["schemas"]["PlanBPlanItem"];
+            options: components["schemas"]["PlanBOption"][];
+        };
+        PlanBOption: {
+            option_id: string;
+            /** @enum {string} */
+            recommendation_type: "PLACE" | "COURSE";
+            title: string;
+            summary: string;
+            items: components["schemas"]["PlanBPlanItem"][];
+            evidence_labels: string[];
+            caution_label: string | null;
+            budget_label: string | null;
+        };
+        PlanBPlanItem: {
+            time_label: string;
+            title: string;
+            status_label: string;
+        };
+        ApplyPlanBRequest: {
+            recommendation_id: string;
+            option_id: string;
+        };
+        ApplyPlanBResponse: {
+            trip_id: string;
+            changed_schedule_title: string;
+            /** Format: date-time */
+            applied_at: string;
+        };
         NearbyPlaceList: {
             items: components["schemas"]["NearbyPlace"][];
         };
@@ -1445,6 +1581,7 @@ export interface components {
         };
     };
     parameters: {
+        PlanBTripId: string;
         /**
          * @description 대상 사용자 식별자. 목록 응답의 `user_id` 를 그대로 되돌려 보낸다.
          *     이메일을 경로에 싣지 않는다 — 개인정보가 URL·접근 로그·프록시 캐시에 남는다.
@@ -1478,6 +1615,118 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    getPlanBImpact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                trip_id: components["parameters"]["PlanBTripId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 영향 판정 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanBImpact"];
+                };
+            };
+            404: components["responses"]["Problem"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    updateScheduleProgress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                trip_id: components["parameters"]["PlanBTripId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScheduleProgressRequest"];
+            };
+        };
+        responses: {
+            /** @description 갱신된 영향 판정 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanBImpact"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    createPlanBRecommendation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                trip_id: components["parameters"]["PlanBTripId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanBRecommendationRequest"];
+            };
+        };
+        responses: {
+            /** @description 대체 계획 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanBRecommendation"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    applyPlanB: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                trip_id: components["parameters"]["PlanBTripId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApplyPlanBRequest"];
+            };
+        };
+        responses: {
+            /** @description 적용 완료 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplyPlanBResponse"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            500: components["responses"]["InternalError"];
+        };
+    };
     getNearbyPlaces: {
         parameters: {
             query: {

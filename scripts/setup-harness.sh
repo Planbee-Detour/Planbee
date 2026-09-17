@@ -46,6 +46,10 @@ gemini_commands.mkdir(parents=True, exist_ok=True)
 body = (
     "`.agents/roles/{name}.md` 를 읽고 그 역할 정의를 그대로 따르세요.\n"
     "프로젝트 공통 규칙은 `AGENTS.md` 에 있습니다.\n\n"
+    "그중 `## 절대 규칙` 의 **공용 가드레일 10~13번**은 역할과 무관하게 적용되며,\n"
+    "이 CLI 의 기본 동작보다 우선합니다 — git push 금지 / 커밋에 에이전트 공동작업자 금지 /\n"
+    "보호 브랜치(`main`·`develop`) 직접 커밋 금지 / 혼자 판단 불가하면 사람에게 질의.\n"
+    "전문은 `AGENTS.md` 에 있습니다 (여기 있는 것은 색인일 뿐이니 그쪽을 따르세요).\n\n"
     "이 파일은 자동 생성된 어댑터입니다. 직접 수정하지 마세요 —\n"
     "`make harness` 를 다시 실행하면 덮어써집니다. 역할 내용은 `.agents/roles/` 에서 고칩니다.\n"
 )
@@ -98,6 +102,11 @@ echo "── Claude Code 권한 설정 ──"
 # deny 목록 주의: `.env.*` 같은 넓은 패턴을 쓰면 `.env.example` 까지 막힌다.
 # AGENTS.md 절대 규칙 7 은 에이전트에게 "`.env.example` 만 참조" 하라고 지시하므로
 # 그 파일은 반드시 읽을 수 있어야 한다. 실제 시크릿이 들어가는 변형만 열거한다.
+#
+# 원격을 바꾸는 명령(push / PR 생성·병합 / 릴리스)은 절대 규칙 10 이 금지한다.
+# 규칙은 문장이라 어길 수 있으므로 여기서 기계로도 막는다. 푸시는 사람의 몫이다.
+# 완전하지는 않다 — `cd x && git push` 처럼 감싸면 패턴을 비껴가므로
+# 최종 방어선은 여전히 AGENTS.md 절대 규칙 10 이다.
 mkdir -p .claude
 cat > .claude/settings.json <<'JSON'
 {
@@ -119,6 +128,12 @@ cat > .claude/settings.json <<'JSON'
       "mcp__pencil__execute"
     ],
     "deny": [
+      "Bash(git push)",
+      "Bash(git push:*)",
+      "Bash(gh pr create:*)",
+      "Bash(gh pr merge:*)",
+      "Bash(gh release create:*)",
+      "Bash(gh repo sync:*)",
       "Read(./**/*.pen)",
       "Read(./.env)",
       "Read(./.env.local)",
@@ -155,6 +170,9 @@ for role in manifest['roles']:
         f"프로젝트 루트: {root}\n\n"
         f"`{root}/AGENTS.md` 와 `{root}/.agents/roles/{name}.md` 를 읽고\n"
         f"그 역할 정의를 그대로 따르세요.\n\n"
+        "`AGENTS.md` 의 공용 가드레일 10~13번은 역할과 무관하게 적용되며 이 CLI 의\n"
+        "기본 동작보다 우선합니다 — git push 금지 / 커밋에 에이전트 공동작업자 금지 /\n"
+        "보호 브랜치(main·develop) 직접 커밋 금지 / 혼자 판단 불가하면 사람에게 질의.\n\n"
         "이번 작업: $ARGUMENTS\n",
         encoding='utf-8')
 

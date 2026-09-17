@@ -42,6 +42,13 @@ const colors = {
   // Color/Semantic
   success: '#2E9B64',
   danger: '#D94A4A',
+  // Color/Illustration — 캐릭터 일러스트 전용. UI 면·글자에 쓰지 않는다 (docs/design/bee-loader.md §4)
+  illustration: {
+    bee: '#FFC713', // Color/Illustration/BeeYellow
+    stripe: '#F49B24', // Color/Illustration/BeeStripe
+    cream: '#FFF3BE', // Color/Illustration/Cream
+    outline: '#1E1E1F', // Color/Illustration/Outline
+  },
 };
 
 /** 타이포 스케일. 이름은 design.md 가 쓰는 것과 같다. */
@@ -70,6 +77,9 @@ const borderRadius = {
 /** 카드·탭바가 쓰는 그림자. `shadow-card` 로 쓴다. */
 const boxShadow = {
   card: '0 2px 12px rgba(0, 0, 0, 0.06)',
+  // `Control/Segmented`(pen `M4j8Ky`)의 선택 칸 그림자. 카드보다 얕고 짧다 —
+  // pen 의 effect 값(#00000014 / offset y 1 / blur 3)을 그대로 옮겼다. 임의로 만든 값이 아니다.
+  segment: '0 1px 3px rgba(0, 0, 0, 0.08)',
 };
 
 module.exports = {colors, fontSize, fontFamily, borderRadius, boxShadow};

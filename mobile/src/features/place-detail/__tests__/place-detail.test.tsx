@@ -5,9 +5,10 @@
 import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react-native';
 import {http, HttpResponse} from 'msw';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {QueryClientProvider} from '@tanstack/react-query';
 
 import {API_ORIGIN, problemBody, server} from '../../../shared/test/mswServer';
+import {createTestQueryClient} from '../../../shared/test/queryClient';
 import {PlaceDetailScreen} from '../screens/PlaceDetailScreen';
 
 const DETAIL_URL = `${API_ORIGIN}/api/v1/places/:placeId`;
@@ -30,7 +31,7 @@ const fullDetail = {
 };
 
 function renderScreen(placeId = 'tour:126508') {
-  const client = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
+  const client = createTestQueryClient();
   return render(
     <QueryClientProvider client={client}>
       <PlaceDetailScreen onBack={jest.fn()} placeId={placeId} />

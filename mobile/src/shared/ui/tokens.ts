@@ -21,4 +21,13 @@ export const COLOR = {
   onDark: colors['on-dark'],
   /** Color/Neutral/Background — `bg-background` 와 같은 값 */
   background: colors.background,
+  /** Color/Brand/Honey — `bg-brand` 와 같은 값. 안드로이드 `RefreshControl colors` 용 */
+  brand: colors.brand.DEFAULT,
+  /** Color/Neutral/Surface — `bg-surface` 와 같은 값. 안드로이드 `progressBackgroundColor` 용 */
+  surface: colors.surface,
+  /** Color/Illustration/* — `BeeLoader` 의 SVG `fill`·`stroke` 용. UI 에 쓰지 않는다 */
+  illustrationBee: colors.illustration.bee,
+  illustrationStripe: colors.illustration.stripe,
+  illustrationCream: colors.illustration.cream,
+  illustrationOutline: colors.illustration.outline,
 } as const;

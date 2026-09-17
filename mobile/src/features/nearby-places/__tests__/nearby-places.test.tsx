@@ -9,9 +9,10 @@ import {PermissionsAndroid, Platform} from 'react-native';
 import {fireEvent, render, screen} from '@testing-library/react-native';
 import Geolocation from '@react-native-community/geolocation';
 import {http, HttpResponse} from 'msw';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {QueryClientProvider} from '@tanstack/react-query';
 
 import {API_ORIGIN, problemBody, server} from '../../../shared/test/mswServer';
+import {createTestQueryClient} from '../../../shared/test/queryClient';
 import {NearbyPlacesScreen} from '../screens/NearbyPlacesScreen';
 
 // 기본 목(mobile/__mocks__)은 항상 측위 성공이다. 권한 거부를 검증하려면 제어 가능한 jest.fn 이 필요하다.
@@ -57,7 +58,7 @@ function place(overrides: Record<string, unknown>) {
 }
 
 function renderScreen() {
-  const client = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
+  const client = createTestQueryClient();
   return render(
     <QueryClientProvider client={client}>
       <NearbyPlacesScreen onBack={jest.fn()} onPlacePress={jest.fn()} />

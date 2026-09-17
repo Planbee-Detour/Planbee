@@ -11,7 +11,7 @@ import {Alert, Linking} from 'react-native';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react-native';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {QueryClientProvider} from '@tanstack/react-query';
 
 import {AccountDeleteScreen} from '../screens/AccountDeleteScreen';
 import {AccountStatusScreen} from '../screens/AccountStatusScreen';
@@ -20,6 +20,7 @@ import {LoginScreen} from '../screens/LoginScreen';
 import {useSession} from '../hooks/useSession';
 import type {AuthRouteParams} from '../navigation';
 import type {AccountStatusView} from '../types';
+import {createTestQueryClient} from '../../../shared/test/queryClient';
 
 const CONTACT_UNAVAILABLE = '문의 창구를 준비하고 있어요. 조금 뒤에 다시 확인해 주세요.';
 
@@ -65,7 +66,7 @@ async function renderStatus(
   accountStatus: AccountStatusView,
   deletionToken: string | null = null,
 ) {
-  const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
+  const queryClient = createTestQueryClient();
   return render(
     <QueryClientProvider client={queryClient}>
       <NavigationContainer>

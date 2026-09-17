@@ -36,6 +36,9 @@ services:
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET 이 필요합니다. 'make env' 를 실행하세요.}
       # E2E 플로우는 place 를 호출하지 않지만 기동에는 필요하다 (RequiredEnvironmentCheck).
       TOUR_API_KEY: ${TOUR_API_KEY:?TOUR_API_KEY 가 필요합니다. 'make env' 를 실행하세요.}
+      # 관리자 알림(Discord). 비어 있는 것이 정상 동작이라(AC-29 / server.md S-28)
+      # 다른 변수와 달리 `:?`(없으면 중단)를 쓰지 않는다 — 쓰면 값이 없을 때 기동이 막힌다.
+      DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL:-}
       TZ: UTC
     ports:
       # 호스트 포트가 이미 쓰이고 있으면 API_PORT 로 바꾼다. (예: API_PORT=18080 make e2e-up)

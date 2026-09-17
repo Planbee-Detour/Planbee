@@ -25,6 +25,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
  * <p>컨트롤러는 바인딩과 위임만 한다 (S-5). 파라미터 검증과 오류는 {@link PlaceService} 가
  * {@code BusinessException} 으로 던지고 {@code GlobalExceptionHandler} 가 RFC 9457 로 바꾼다.
  *
+ * <p><b>{@code @Parameter(schema = @Schema(...))} 에는 {@code type} 을 반드시 적는다.</b>
+ * 비워 두면 springdoc 이 애노테이션의 스키마로 자동 추론을 덮어써 {@code type: string} 으로 내보내고
+ * {@code defaultValue} 까지 통째로 떨어뜨린다 — 런타임 동작({@code @RequestParam(defaultValue)})은
+ * 멀쩡한데 스펙만 어긋나 {@code make contract-check} 가 실패한다 (2026-09-09 확인). S-19 참조.
+ *
  * <p>두 엔드포인트 모두 공개다 — {@code SecurityConfig.PUBLIC_PATHS} 의 {@code /api/v1/places/**}
  * 와 일치시킨다. 공개임을 스펙에도 명시한다 ({@code @SecurityRequirements}, S-19).
  */
@@ -48,11 +53,11 @@ public class PlaceController {
 			@Parameter(description = "콘텐츠 유형. 생략 시 attraction,culture", array = @ArraySchema(schema = @Schema(
 					allowableValues = { "attraction", "culture", "leisure", "accommodation", "shopping", "restaurant" })))
 			@RequestParam(name = "category", required = false) List<String> category,
-			@Parameter(description = "검색 반경(m)", schema = @Schema(minimum = "100", maximum = "20000", defaultValue = "2000"))
+			@Parameter(description = "검색 반경(m)", schema = @Schema(type = "integer", minimum = "100", maximum = "20000", defaultValue = "2000"))
 			@RequestParam(required = false, defaultValue = "2000") int radius,
-			@Parameter(description = "반환할 최대 장소 수", schema = @Schema(minimum = "1", maximum = "45", defaultValue = "15"))
+			@Parameter(description = "반환할 최대 장소 수", schema = @Schema(type = "integer", minimum = "1", maximum = "45", defaultValue = "15"))
 			@RequestParam(required = false, defaultValue = "15") int size,
-			@Parameter(description = "정렬. 현재 distance 만", schema = @Schema(allowableValues = "distance", defaultValue = "distance"))
+			@Parameter(description = "정렬. 현재 distance 만", schema = @Schema(type = "string", allowableValues = "distance", defaultValue = "distance"))
 			@RequestParam(required = false, defaultValue = "distance") String sort) {
 		return placeService.nearby(latitude, longitude, radius, size, sort, category);
 	}

@@ -16,6 +16,7 @@ import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Component;
 
+import com.planbee.api.common.security.JwtClaims;
 import com.planbee.api.common.security.JwtProperties;
 import com.planbee.api.common.security.TokenScope;
 
@@ -47,13 +48,20 @@ public class TokenIssuer {
 	 * <p>{@code scope} 클레임은 Spring Security 의 기본 변환기가 {@code SCOPE_<값>} 권한으로
 	 * 바꿔 준다. 그래서 경로별 인가를 {@code SecurityConfig} 에서 선언으로 걸 수 있다.
 	 *
+	 * <p>{@code role} 클레임도 같은 방식으로 {@code ROLE_<값>} 권한이 되어 관리자 경로의
+	 * 인가에 쓰인다 (admin-user-approval AC-3). 앱에 역할을 바꾸는 경로가 없으므로
+	 * (auth PRD 제약) 토큰에 담아도 실제 역할과 갈라지지 않는다.
+	 *
 	 * @param scope {@link TokenScope#FULL} 이면 일반 세션,
 	 *              {@link TokenScope#ACCOUNT_DELETE} 면 계정 삭제만 가능한 단기 토큰 (AC-50)
+	 * @param role  {@link UserRole} 의 이름. {@code SecurityConfig} 가 권한으로 바꾼다
 	 */
-	public String issueAccessToken(Long userId, String email, TokenScope scope, Instant now, Duration ttl) {
+	public String issueAccessToken(Long userId, String email, UserRole role, TokenScope scope, Instant now,
+			Duration ttl) {
 		JwtClaimsSet claims = JwtClaimsSet.builder()
 				.subject(String.valueOf(userId))
-				.claim("email", email)
+				.claim(JwtClaims.EMAIL, email)
+				.claim(JwtClaims.ROLE, role.name())
 				.claim("scope", scope.claimValue())
 				.issuedAt(now)
 				.expiresAt(now.plus(ttl))

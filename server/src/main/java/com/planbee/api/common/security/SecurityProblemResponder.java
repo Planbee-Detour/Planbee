@@ -3,6 +3,7 @@ package com.planbee.api.common.security;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -10,13 +11,16 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.planbee.api.common.error.CommonErrorCode;
+import com.planbee.api.common.error.ErrorCode;
 
 /**
  * 인증/인가 실패는 필터 체인에서 발생하므로 {@code GlobalExceptionHandler} 를 타지 않는다.
@@ -29,8 +33,15 @@ public class SecurityProblemResponder implements AuthenticationEntryPoint, Acces
 
 	private final ObjectMapper objectMapper;
 
-	public SecurityProblemResponder(ObjectMapper objectMapper) {
+	/**
+	 * 403 의 코드를 경로에 따라 갈라 주는 도메인 확장점. 없으면 공통 {@code FORBIDDEN} 이다.
+	 * 공통 계층이 도메인 enum 을 직접 참조하지 않기 위한 배선이다 (S-2).
+	 */
+	private final List<ForbiddenCodeResolver> forbiddenCodeResolvers;
+
+	public SecurityProblemResponder(ObjectMapper objectMapper, List<ForbiddenCodeResolver> forbiddenCodeResolvers) {
 		this.objectMapper = objectMapper;
+		this.forbiddenCodeResolvers = forbiddenCodeResolvers;
 	}
 
 	@Override
@@ -46,10 +57,19 @@ public class SecurityProblemResponder implements AuthenticationEntryPoint, Acces
 			HttpServletRequest request,
 			HttpServletResponse response,
 			AccessDeniedException accessDeniedException) throws IOException {
-		write(request, response, CommonErrorCode.FORBIDDEN);
+		write(request, response, forbiddenCode(request));
 	}
 
-	private void write(HttpServletRequest request, HttpServletResponse response, CommonErrorCode errorCode)
+	/** 도메인이 코드를 갈랐으면 그것을, 아무도 판단하지 않았으면 공통 {@code FORBIDDEN} 을 쓴다. */
+	private ErrorCode forbiddenCode(HttpServletRequest request) {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		return forbiddenCodeResolvers.stream()
+				.flatMap(resolver -> resolver.resolve(request, authentication).stream())
+				.findFirst()
+				.orElse(CommonErrorCode.FORBIDDEN);
+	}
+
+	private void write(HttpServletRequest request, HttpServletResponse response, ErrorCode errorCode)
 			throws IOException {
 
 		ProblemDetail problem = ProblemDetail.forStatusAndDetail(errorCode.status(), errorCode.defaultMessage());

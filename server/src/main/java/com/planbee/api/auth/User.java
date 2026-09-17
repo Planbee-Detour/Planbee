@@ -51,6 +51,37 @@ public class User {
 	@Column(name = "age_over_14_confirmed_at", nullable = false)
 	private Instant ageOver14ConfirmedAt;
 
+	/**
+	 * 승인 시각 (admin-user-approval AC-10 · AC-24). <b>정지 해제가 이 값을 갱신한다</b> —
+	 * 목록 행("승인 …")과 상세 시트("승인 시각 …")가 서로 다른 날짜를 말하지 않게 하기 위해서다
+	 * (계약 {@code POST /api/v1/admin/users/{user_id}/suspend/cancel}).
+	 */
+	@Column(name = "approved_at")
+	private Instant approvedAt;
+
+	/** 정지 시각. {@code SUSPENDED} 일 때만 값이 있다 — 정지 해제가 비운다. */
+	@Column(name = "suspended_at")
+	private Instant suspendedAt;
+
+	/** 거절 시각. {@code REJECTED} 일 때만 값이 있다 — 거절 취소가 비운다. */
+	@Column(name = "rejected_at")
+	private Instant rejectedAt;
+
+	/**
+	 * 마지막으로 상태가 바뀐 시각. 처리 완료 목록의 정렬 키이자 커서 키다.
+	 * {@code PENDING} 은 아직 처리되지 않았으므로 {@code null} 이다.
+	 */
+	@Column(name = "processed_at")
+	private Instant processedAt;
+
+	/**
+	 * 거절 사유 (선택, 최대 200자). <b>저장만 하고 어떤 응답에도 싣지 않는다</b> —
+	 * 사용자에게도 관리자에게도 표시하지 않기로 확정됐다 (계약 {@code RejectUserRequest}).
+	 * 거절 취소 시 비운다.
+	 */
+	@Column(name = "rejection_reason", length = 200)
+	private String rejectionReason;
+
 	@Column(name = "created_at", nullable = false)
 	private Instant createdAt;
 
@@ -110,6 +141,69 @@ public class User {
 		consent.assignTo(this);
 	}
 
+	/**
+	 * 가입 신청 승인 ({@code PENDING} → {@code APPROVED}, AC-10).
+	 *
+	 * <p>전이 가능 여부는 호출자가 먼저 확인한다 — 그 판정은 오류 코드
+	 * ({@code ADMIN_USER_ALREADY_PROCESSED})와 짝이라 admin 도메인의 몫이다.
+	 * 엔티티는 "바뀌면 어떤 값이 되는가" 만 안다.
+	 */
+	public void approve(Instant now) {
+		this.status = UserStatus.APPROVED;
+		this.approvedAt = now;
+		this.suspendedAt = null;
+		this.rejectedAt = null;
+		this.rejectionReason = null;
+		touchProcessed(now);
+	}
+
+	/** 가입 신청 거절 ({@code PENDING} → {@code REJECTED}, AC-15). 사유는 선택이다 (AC-17). */
+	public void reject(String reason, Instant now) {
+		this.status = UserStatus.REJECTED;
+		this.rejectedAt = now;
+		this.rejectionReason = reason;
+		this.approvedAt = null;
+		this.suspendedAt = null;
+		touchProcessed(now);
+	}
+
+	/**
+	 * 거절 취소 ({@code REJECTED} → {@code PENDING}, AC-19).
+	 *
+	 * <p>{@code createdAt}(= 신청 시각)은 건드리지 않는다 — 원래 자리로 돌아가야 한다
+	 * (design.md §7.5). 저장된 거절 사유는 비운다.
+	 */
+	public void cancelRejection(Instant now) {
+		this.status = UserStatus.PENDING;
+		this.rejectedAt = null;
+		this.rejectionReason = null;
+		this.processedAt = null;
+		this.updatedAt = now;
+	}
+
+	/** 이용 정지 ({@code APPROVED} → {@code SUSPENDED}, AC-21). 사유를 받지 않는다. */
+	public void suspend(Instant now) {
+		this.status = UserStatus.SUSPENDED;
+		this.suspendedAt = now;
+		touchProcessed(now);
+	}
+
+	/**
+	 * 정지 해제 ({@code SUSPENDED} → {@code APPROVED}, AC-24).
+	 * <b>승인 시각을 이 시각으로 갱신한다</b> — 근거는 {@link #approvedAt} 의 설명에 있다.
+	 */
+	public void cancelSuspension(Instant now) {
+		this.status = UserStatus.APPROVED;
+		this.approvedAt = now;
+		this.suspendedAt = null;
+		touchProcessed(now);
+	}
+
+	private void touchProcessed(Instant now) {
+		this.processedAt = now;
+		this.updatedAt = now;
+	}
+
 	public Long id() {
 		return id;
 	}
@@ -136,6 +230,22 @@ public class User {
 
 	public Instant createdAt() {
 		return createdAt;
+	}
+
+	public Instant approvedAt() {
+		return approvedAt;
+	}
+
+	public Instant suspendedAt() {
+		return suspendedAt;
+	}
+
+	public Instant rejectedAt() {
+		return rejectedAt;
+	}
+
+	public Instant processedAt() {
+		return processedAt;
 	}
 
 	public List<UserConsent> consents() {
